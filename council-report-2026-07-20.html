@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Council Verdict — Could Argentina Have Won?</title>
+<style>
+  :root {
+    --ink: #1a1d21; --muted: #5c6470; --line: #e4e7eb; --bg: #ffffff; --panel: #f7f8fa;
+    --blue: #2b5fad; --red: #b0413e; --green: #2e7d4f; --amber: #a06a1f; --violet: #6b4fa0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink); background: var(--bg); line-height: 1.6; padding: 3rem 1.25rem 4rem;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; }
+  .kicker { text-transform: uppercase; letter-spacing: 0.12em; font-size: 0.75rem; color: var(--muted); font-weight: 600; }
+  h1 { font-size: 1.9rem; line-height: 1.25; margin: 0.4rem 0 0.75rem; }
+  .subhead { color: var(--muted); font-size: 1rem; max-width: 44rem; }
+  .scoreline {
+    display: flex; gap: 1.5rem; flex-wrap: wrap; margin: 1.5rem 0 0;
+    border: 1px solid var(--line); border-radius: 10px; padding: 1rem 1.25rem; background: var(--panel);
+  }
+  .stat { min-width: 8.5rem; }
+  .stat .n { font-size: 1.35rem; font-weight: 700; }
+  .stat .l { font-size: 0.8rem; color: var(--muted); }
+  section { margin-top: 2.75rem; }
+  h2 { font-size: 1.25rem; margin-bottom: 0.9rem; padding-bottom: 0.45rem; border-bottom: 2px solid var(--ink); }
+  h3 { font-size: 1rem; margin: 1.4rem 0 0.4rem; }
+  p + p { margin-top: 0.75rem; }
+  ul { padding-left: 1.25rem; margin: 0.5rem 0; }
+  li { margin: 0.45rem 0; }
+  .verdict {
+    border: 2px solid var(--ink); border-radius: 12px; padding: 1.5rem 1.75rem; margin-top: 1.25rem;
+  }
+  .verdict .answer { font-size: 1.15rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .gridwrap { overflow-x: auto; }
+  table.positions { border-collapse: collapse; width: 100%; min-width: 640px; margin-top: 0.75rem; font-size: 0.9rem; }
+  table.positions th, table.positions td { border: 1px solid var(--line); padding: 0.6rem 0.75rem; text-align: left; vertical-align: top; }
+  table.positions th { background: var(--panel); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  .dot { display: inline-block; width: 0.65rem; height: 0.65rem; border-radius: 50%; margin-right: 0.45rem; vertical-align: baseline; }
+  .pos-no { color: var(--red); font-weight: 600; }
+  .pos-yes { color: var(--green); font-weight: 600; }
+  .pos-mid { color: var(--amber); font-weight: 600; }
+  details { border: 1px solid var(--line); border-radius: 10px; margin: 0.6rem 0; background: var(--bg); }
+  details summary {
+    cursor: pointer; padding: 0.85rem 1.1rem; font-weight: 600; list-style: none; display: flex; align-items: center;
+  }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::after { content: "+"; margin-left: auto; color: var(--muted); font-weight: 400; font-size: 1.1rem; }
+  details[open] summary::after { content: "–"; }
+  details .body { padding: 0 1.1rem 1.1rem; color: #2b3036; font-size: 0.95rem; }
+  details .body p { margin-top: 0.7rem; }
+  .tag { font-size: 0.72rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 999px; margin-left: 0.6rem; background: var(--panel); color: var(--muted); border: 1px solid var(--line); }
+  .accent-contrarian summary { border-left: 4px solid var(--red); border-radius: 10px 0 0 10px; }
+  .accent-firstprinciples summary { border-left: 4px solid var(--blue); }
+  .accent-expansionist summary { border-left: 4px solid var(--green); }
+  .accent-outsider summary { border-left: 4px solid var(--violet); }
+  .accent-executor summary { border-left: 4px solid var(--amber); }
+  .callout { background: var(--panel); border-left: 4px solid var(--blue); border-radius: 0 8px 8px 0; padding: 0.9rem 1.1rem; margin: 1rem 0; font-size: 0.95rem; }
+  footer { margin-top: 3.5rem; padding-top: 1rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.82rem; }
+  @media (prefers-color-scheme: dark) {
+    :root { --ink: #e8eaed; --muted: #9aa3ad; --line: #33383f; --bg: #16181c; --panel: #1e2126;
+            --blue: #6f9fe0; --red: #d97c79; --green: #6dbb8d; --amber: #d3a35a; --violet: #a68fd6; }
+    details .body { color: #c6ccd3; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="kicker">LLM Council · Verdict · July 20, 2026</div>
+  <h1>Could Argentina have won the 2026 World Cup final?</h1>
+  <p class="subhead">Spain 1 – 0 Argentina (a.e.t., Ferran Torres 106'), MetLife Stadium, July 19, 2026. Five advisors analyzed independently, peer-reviewed anonymously, verdict synthesized by the chairman.</p>
+
+  <div class="scoreline">
+    <div class="stat"><div class="n">20 – 2</div><div class="l">Shots (Spain – Argentina)</div></div>
+    <div class="stat"><div class="n">1.94 – 0.2</div><div class="l">Expected goals (xG)</div></div>
+    <div class="stat"><div class="n">0</div><div class="l">Argentina shots on target</div></div>
+    <div class="stat"><div class="n">11</div><div class="l">Martínez saves (final record)</div></div>
+    <div class="stat"><div class="n">90'+</div><div class="l">Enzo Fernández sent off</div></div>
+  </div>
+
+  <section>
+    <h2>The Verdict</h2>
+    <div class="verdict">
+      <p class="answer">Yes — but only through one narrow door, and Argentina closed it themselves.</p>
+      <p>There was never a realistic path to <em>outplaying</em> Spain. The realistic ceiling was surviving 120 minutes at 0-0 and winning a penalty shootout behind Emiliano Martínez — a path that was genuinely alive until the 106th minute. Two controllable decisions killed it: not substituting the already-booked Enzo Fernández around minute 70, and leaving an exhausted, 3/10-rated Messi on until the end. Make both calls and Argentina plausibly reaches penalties — roughly a one-in-four outcome, not a coin flip, because Spain was still generating chances against a tiring block.</p>
+      <p>On the framing question: this was primarily <strong>losing to a better team</strong>, materially worsened by a <strong>squad-cycle failure</strong> (a 39-year-old Messi as the attacking plan, with no successor developed in four years), with <strong>two identifiable coaching errors on the night</strong> that cost Argentina its only real win condition. The scoreline says close; the process says it wasn't.</p>
+    </div>
+    <h3>The one thing to take away</h3>
+    <p>Stop relitigating the red card and extra time. The question that determines whether this pain repeats: <strong>who generates Argentina's attacking xG in 2030?</strong> That was the unanswered question for four years before this final, and it's the only variable still fixable.</p>
+  </section>
+
+  <section>
+    <h2>Where the Advisors Landed</h2>
+    <div class="gridwrap">
+      <table class="positions">
+        <thead>
+          <tr><th>Advisor</th><th>Was a win realistic?</th><th>Primary diagnosis</th><th>Core argument</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="dot" style="background:var(--red)"></span>Contrarian</td>
+            <td class="pos-mid">Made it easy for Spain</td>
+            <td>All three at once</td>
+            <td>The "better team" narrative absolves everyone. Messi's selection was coaching; the empty bench was squad-cycle; Enzo's red was a discipline failure coaches are paid to prevent.</td>
+          </tr>
+          <tr>
+            <td><span class="dot" style="background:var(--blue)"></span>First Principles</td>
+            <td class="pos-no">Only as a low-probability event</td>
+            <td>Squad-cycle failure</td>
+            <td>The final is one draw from a distribution Spain wins most of. Grade the four years, not the 120 minutes: no succession plan for a decline visible for years.</td>
+          </tr>
+          <tr>
+            <td><span class="dot" style="background:var(--green)"></span>Expansionist</td>
+            <td class="pos-yes">Inches from history</td>
+            <td>One moment / one card</td>
+            <td>The plan was low block + Dibu + penalties, and it nearly worked. Remove Enzo's second yellow and this plausibly goes to a shootout Argentina is favored in.</td>
+          </tr>
+          <tr>
+            <td><span class="dot" style="background:var(--violet)"></span>Outsider</td>
+            <td class="pos-no">No — scoreline flattered them</td>
+            <td>Outproduced 10:1</td>
+            <td>Spain underperformed its xG (1 from 1.94); Argentina matched its own (0 from 0.2). At normal finishing rates this is a 2-3 goal game. Substitutions move fractions, not gaps this size.</td>
+          </tr>
+          <tr>
+            <td><span class="dot" style="background:var(--amber)"></span>Executor</td>
+            <td class="pos-mid">Not inevitable ≠ nothing to change</td>
+            <td>Two bench errors</td>
+            <td>Sub the booked Enzo at 70'. Take a passenger Messi off by 85'. Neither closes the xG gap, but both were live, executable decisions that weren't made.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout">
+      <strong>Peer review signal:</strong> 4 of 5 reviewers rated the Outsider's data-only analysis strongest. All 5 independently flagged the Expansionist's "one moment from penalties" case as the biggest blind spot — removing the red card doesn't create a shot on target.
+    </div>
+  </section>
+
+  <section>
+    <h2>Where the Council Agrees</h2>
+    <ul>
+      <li><strong>The gap was built at 11-v-11.</strong> The 20-2 shot count and 1.74 xG gap were established in regulation with a full team. The red card explains extra time, not the first 90 minutes.</li>
+      <li><strong>Martínez's 11 saves are a symptom, not a comfort.</strong> When the keeper is the only positive data point, the team plan has already failed.</li>
+      <li><strong>Enzo's second yellow was the most consequential controllable moment</strong> — and it was a management failure as much as a player one: a booked midfielder in a knockout final gets substituted.</li>
+      <li><strong>Keeping a 3/10 Messi on until minute 106 was sentiment over logic.</strong></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Where the Council Clashes</h2>
+    <p><strong>"One moment away" vs. "outproduced by an order of magnitude."</strong> The Expansionist treats surviving to penalties as a legitimate win condition that nearly landed; the Outsider and First Principles Thinker counter that the scoreline flattered Argentina and the shootout path was a lottery ticket, not a plan. Both are internally coherent — they disagree on whether a ~20% survival path counts as "realistic."</p>
+    <p><strong>Coaching vs. squad-cycle.</strong> First Principles says the four-year failure to build a post-Messi attack dwarfs any decision on the night. The Contrarian rejects the choice entirely — it's all three at once, and picking one lane is how everyone avoids accountability. The Executor holds the narrow ground: whatever the structural causes, two specific bench decisions were errors regardless.</p>
+  </section>
+
+  <section>
+    <h2>Blind Spots the Council Caught</h2>
+    <ul>
+      <li><strong>The finishing asymmetry</strong> (Outsider, endorsed by 4 reviewers): Spain scored 1 from 1.94 xG while Argentina scored 0 from 0.2 — the 1-0 scoreline was the <em>kind</em> outcome, not the harsh one.</li>
+      <li><strong>The Expansionist's counterfactual doesn't survive review:</strong> the creation problem existed for 90+ minutes with 11 men; erasing the red card relocates the problem, it doesn't solve it.</li>
+      <li><strong>What everyone missed:</strong> nobody analyzed Scaloni's actual bench options (who should have come on, for whom, when); nobody examined Spain's specific plan to nullify Messi; nobody asked whether "low block + hope for one moment" was itself the diagnosable pregame error; and Messi's undroppable status past his effectiveness is a <em>governance</em> failure, distinct from coaching.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Full Advisor Responses</h2>
+
+    <details class="accent-contrarian">
+      <summary>The Contrarian <span class="tag">Response D in review</span></summary>
+      <div class="body">
+        <p>The "gap on the day" narrative is exactly what I'm suspicious of, because it conveniently absolves everyone. Let's pressure-test it.</p>
+        <p>First, the score is doing more work in this discourse than it should. 1-0 after extra time, one Ferran Torres strike in the 106th minute — that's a margin any mid-table team beats a superior side by on a given Tuesday. Football at this quality level is not measured accurately by a single-goal scoreline. Martínez making 11 saves isn't neutral evidence of "Argentina hung on bravely" — it's evidence Argentina's structure had already broken and one man was papering over it. If your keeper is setting a final record for saves, your team plan failed long before the 106th minute.</p>
+        <p>Second, the "coaching failure vs. squad-cycle failure vs. better team" framing is a false trichotomy — it's almost certainly all three, and the question wants you to pick one. Playing a 39-year-old Messi (rated 3/10) in a World Cup final against a team that conceded once all tournament is a selection decision, not fate. Someone chose that lineup. That's coaching. But it's also squad-cycle failure if there was no better attacking alternative on the bench — which is itself a talent-pipeline indictment stretching back years, not a July 19 problem.</p>
+        <p>Third, and this is the part everyone will skate past: Enzo Fernández's second yellow in stoppage time isn't a footnote, it's the single biggest tactical own-goal in the match. Ten men for all of extra time against a side averaging 20 shots isn't bad luck, it's a discipline and game-management failure — the kind coaches are explicitly paid to drill out of players in high-leverage moments.</p>
+        <p>Don't let "Spain was just better" become the answer before you've asked why Argentina made it so easy for Spain to prove it.</p>
+      </div>
+    </details>
+
+    <details class="accent-firstprinciples">
+      <summary>The First Principles Thinker <span class="tag">Response B in review</span></summary>
+      <div class="body">
+        <p>The question "was defeat inevitable" is the wrong question, because it assumes the final is the unit of analysis. It isn't. The final is a single 120-minute draw from a probability distribution, and you're asking me to explain a low-probability draw as if it were the expected outcome.</p>
+        <p>Here's the actual structure: xG 1.94 vs 0.2 isn't a description of one bad night — it's a measurement of the gap between two processes. Run that matchup 100 times and Spain wins the vast majority, many by more than one goal. Argentina getting to extra time at all — with a sending-off, zero shots on target, and a goalkeeper playing the game of his life — is the lucky branch, not the unlucky one. So "could Argentina have won" is answerable (yes, low-probability events happen, that's why we play the game) but it's answering a question that doesn't tell you anything useful about what to do differently.</p>
+        <p>The question worth asking is: what produced a team that generates 0.2 xG from two shots against elite opposition, with a 39-year-old Messi rated 3/10, four years after the last cycle? That's not a final-decisions question. That's "why did the pipeline behind this squad stop producing attacking outlets," "why was there no succession plan for Messi's decline that was visible for years," "why did the coaching staff have no answer once the first plan failed for 90+ minutes." Tactics-on-the-day and lineup changes are rounding errors against a talent and process gap this size. If you want the real diagnosis, stop grading the 120 minutes and start grading the four years that preceded it — squad-cycle failure, not coaching failure, and definitely not bad luck.</p>
+      </div>
+    </details>
+
+    <details class="accent-expansionist">
+      <summary>The Expansionist <span class="tag">Response E in review</span></summary>
+      <div class="body">
+        <p>Zero shots on target with an 11-save masterclass from Martínez tells you exactly where this final was actually decided: not on the scoreboard math, but in the two or three moments Argentina's plan hinged on. And that's the point everyone rushing to "Spain were just better" will miss — an xG gap of 1.94 to 0.2 describes a team that spent 120 minutes defending a shape, not a team that had no theory of how to win.</p>
+        <p>Here's the undervalued read: Argentina didn't need to outplay Spain, they needed one moment. Down to 10 men and getting outshot 20-2 sounds like annihilation, but Martínez making 11 saves means Spain needed 20 attempts to score once. That's not dominance converting efficiently — that's a finishing problem for Spain as much as a creation problem for Argentina. Scaloni built explicitly around banking on exactly this: a low block, a generational keeper, and one Messi moment. It nearly worked. Extra time at 0-0 with Spain gassed and Argentina still compact was one Messi flick, one set piece, one Julián Álvarez breakaway from being a penalty shootout — where Argentina, with Martínez, are arguably the best team on earth.</p>
+        <p>The bigger missed opportunity isn't tactical, it's temporal: Enzo's second yellow. Remove that single card and Argentina holds 11 men through extra time, the low block holds longer, and this plausibly goes to penalties where Dibu Martínez has already won them a World Cup. One referee decision, one moment of discipline, separates "gap team" from "inches from history."</p>
+      </div>
+    </details>
+
+    <details class="accent-outsider">
+      <summary>The Outsider <span class="tag">Response C in review · rated strongest by 4/5 reviewers</span></summary>
+      <div class="body">
+        <p>Here's what the data sheet says, stripped of narrative.</p>
+        <p>Shot volume: Spain 20, Argentina 2. That's a 10:1 ratio. In any possession/territory sport, a 10:1 attempt differential is not "unlucky," it's a measurement of who controlled the contest.</p>
+        <p>Expected goals: 1.94 vs 0.2 — a 1.74 xG gap. Argentina's actual output (0) roughly matched their expected output (0.2, rounds to zero goals most simulations). Spain underperformed their xG (scored 1 off 1.94) — meaning the actual scoreline (1-0) flattered Argentina relative to the underlying process. If Spain finishes at a normal rate, this isn't a 1-goal game, it's 2-3 goals.</p>
+        <p>Zero shots on target from Argentina in a 116-minute final is the number that matters most here. Not "we lost," but "we generated no moments where the outcome was ever in question." The team's only positive data point is the goalkeeper's 11 saves — meaning the final margin was determined almost entirely by one player's individual performance variance, not by team structure or game plan. That's a fragile way to almost win something.</p>
+        <p>Secondary inputs compound the primary gap, they don't cause it: a red card in stoppage time reduced Argentina to 10 men for 20+ extra minutes — but the underlying shot/xG gap was already established well before that card, across regulation time with 11 men on the pitch. So the man-disadvantage explains some of extra time, none of the first 90.</p>
+        <p>One individual data point (age 39, rated 3/10) suggests a personnel input was already depreciated before kickoff, not something that failed mid-match.</p>
+        <p>Conclusion from the numbers alone: this wasn't a close contest that swung on one bounce. The underlying production gap (10:1 shots, 1.74 xG) is too large to attribute to tactics or in-game management. Different substitutions might move the margin by fractions; they don't close a gap of that size. The data describes a team that got outproduced by roughly an order of magnitude and survived on one outlier goalkeeping performance until the sample size caught up with them in minute 106.</p>
+      </div>
+    </details>
+
+    <details class="accent-executor">
+      <summary>The Executor <span class="tag">Response A in review</span></summary>
+      <div class="body">
+        <p>Zero shots on target in 120 minutes. Start there. That's the number that ends the "just tactics" argument before it starts.</p>
+        <p><strong>Enzo's second yellow.</strong> He's on a yellow already in the second half of a knockout final. That's the moment a manager subs him regardless of how the game is going — you don't leave a player one poor challenge from wrecking your extra-time shape. If Scaloni pulls him at minute 70 for a fresh-legs midfielder, Argentina plays all of extra time with 11. That's the single highest-leverage, cheapest substitution available and it wasn't made. Preventable.</p>
+        <p><strong>Messi at 39, rated 3/10, in the 106th minute.</strong> If he's a passenger by the 80th, he comes off. Keep him for the trophy lift, not for extra-time legs he doesn't have. A fresh attacker at minute 85 changes nothing about the xG gap already banked, but it's still the correct call and wasn't made — suggests sentiment overrode substitution logic.</p>
+        <p><strong>0.2 xG from two shots is a supply problem, not a finishing problem.</strong> You don't fix that with a formation tweak in-game — you fix it by not sitting that deep for 120 minutes in the first place. But that's a pregame setup call, and by halftime, with Spain already dominant, the practical in-match lever was pushing one more body forward to win second balls, which never happened.</p>
+        <p>None of this closes a 1.94-to-0.2 xG gap. That gap says Argentina were outclassed for large stretches and survived on Martínez's 11 saves, not tactics. But "inevitable" and "nothing to change" aren't the same claim. The Enzo substitution specifically was a live, executable decision Scaloni had and didn't take — that's on the bench, not the scoreline.</p>
+      </div>
+    </details>
+  </section>
+
+  <section>
+    <h2>Peer Review Highlights</h2>
+    <details>
+      <summary>What the anonymous review round surfaced</summary>
+      <div class="body">
+        <p><strong>Strongest response:</strong> 4 of 5 reviewers picked the Outsider (Response C) — specifically for the finishing-asymmetry insight (Spain underperformed xG, Argentina matched theirs exactly) and for proving the gap was established before the red card. The fifth reviewer picked the Contrarian (D) as the only response that resolved the coaching/squad-cycle/better-team question rather than picking a lane.</p>
+        <p><strong>Biggest blind spot:</strong> unanimous — the Expansionist (E). Every reviewer independently noted the same flaw: the penalties counterfactual requires erasing the red card while ignoring that Argentina produced zero shots on target across 90+ minutes with a full team. Removing the card relocates the problem; it doesn't solve it.</p>
+        <p><strong>What all five advisors missed:</strong> Scaloni's actual bench usage (who was available, who should have come on, when); Spain's specific plan to nullify Messi; whether "low block + one moment" was itself the diagnosable pregame error; whether the red card was even proportionate; and the governance question — Messi's undroppable status past his effectiveness is a culture failure distinct from coaching.</p>
+      </div>
+    </details>
+  </section>
+
+  <footer>
+    Counciled: "Could Argentina have won the 2026 World Cup final?" · Convened 2026-07-20 · 5 advisors, 5 anonymous peer reviews, chairman synthesis · Methodology: Andrej Karpathy's LLM Council · Full transcript: council-transcript-2026-07-20.md
+  </footer>
+
+</div>
+</body>
+</html>
