@@ -201,6 +201,7 @@ input[type=range]{accent-color:var(--accent);flex:1}
     <div class="navsec">Build</div>
     <button class="navitem" data-view="overview"><svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1.5" y="1.5" width="6" height="6" rx="1.5"/><rect x="9.5" y="1.5" width="6" height="6" rx="1.5"/><rect x="1.5" y="9.5" width="6" height="6" rx="1.5"/><rect x="9.5" y="9.5" width="6" height="6" rx="1.5"/></svg>Overview</button>
     <button class="navitem" data-view="studio"><svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="3.5" cy="8.5" r="2"/><circle cx="13.5" cy="3.5" r="2"/><circle cx="13.5" cy="13.5" r="2"/><path d="M5.4 7.6 11.6 4.3M5.4 9.4l6.2 3.3"/></svg>Agent Studio</button>
+    <button class="navitem" data-view="ideaflow"><svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8.5 11.5c3.5-2 5-5.5 5-9.5-4 0-7.5 1.5-9.5 5"/><path d="M4 7 1.8 9.2l2.6.6M10 13l2.2-2.2-.6 2.6-2.2 2.2z"/><path d="M2.5 12.2c-.8.8-1 2.5-1 2.5s1.7-.2 2.5-1"/><circle cx="10" cy="6.5" r="1.3"/></svg>Idea to App</button>
     <button class="navitem" data-view="library"><svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 3.5h4.5v10H2zM8 3.5h4.5v10H8z"/><path d="M13.6 4.1l2 9.6"/></svg>Agent Library</button>
     <button class="navitem" data-view="orchestration"><svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8.5" cy="3" r="1.8"/><circle cx="3" cy="13" r="1.8"/><circle cx="8.5" cy="13" r="1.8"/><circle cx="14" cy="13" r="1.8"/><path d="M8.5 5v3M8.5 8H3v3M8.5 8v3M8.5 8h5.5v3"/></svg>Orchestration</button>
     <button class="navitem" data-view="prompts"><svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2.5 2.5h12v9h-7l-3 3v-3h-2z"/><path d="M5.5 6h6M5.5 8.5h4"/></svg>Prompts &amp; Scenarios</button>
@@ -222,6 +223,7 @@ input[type=range]{accent-color:var(--accent);flex:1}
     <div id="content">
       <div class="view" id="view-overview"></div>
       <div class="view" id="view-studio"></div>
+      <div class="view" id="view-ideaflow"></div>
       <div class="view" id="view-library"></div>
       <div class="view" id="view-orchestration"></div>
       <div class="view" id="view-prompts"></div>
@@ -502,7 +504,7 @@ function stackedBar(cont,{labels,series,yfmt=fmtN,h=220}){
 }
 
 /* ================= ROUTER ================= */
-const VIEWS={overview:'Overview',studio:'Agent Studio',library:'Agent Library',orchestration:'Orchestration',prompts:'Prompts & Scenarios',knowledge:'Knowledge',observability:'Observability',finops:'FinOps',gateway:'Model Gateway',learn:'Learn Agents'};
+const VIEWS={overview:'Overview',studio:'Agent Studio',ideaflow:'Idea to App',library:'Agent Library',orchestration:'Orchestration',prompts:'Prompts & Scenarios',knowledge:'Knowledge',observability:'Observability',finops:'FinOps',gateway:'Model Gateway',learn:'Learn Agents'};
 function nav(v){location.hash=v}
 function route(){
   let v=location.hash.replace('#','')||'overview';
@@ -511,7 +513,7 @@ function route(){
   $$('.view').forEach(el=>el.classList.remove('active'));
   $('#view-'+v).classList.add('active');
   $('#viewtitle').textContent=VIEWS[v];
-  const _r=({overview:renderOverview,studio:renderStudio,library:renderLibrary,orchestration:renderOrch,prompts:renderPrompts,knowledge:window.renderKnowledge,observability:renderObs,finops:renderFinops,gateway:renderGateway,learn:renderLearn})[v];if(_r)_r();
+  const _r=({overview:renderOverview,studio:renderStudio,library:renderLibrary,orchestration:renderOrch,prompts:renderPrompts,knowledge:window.renderKnowledge,ideaflow:window.renderIdeaflow,observability:renderObs,finops:renderFinops,gateway:renderGateway,learn:renderLearn})[v];if(_r)_r();
   $('#content').scrollTop=0;window.scrollTo(0,0);
 }
 $$('.navitem').forEach(b=>b.addEventListener('click',()=>nav(b.dataset.view)));
@@ -1525,5 +1527,297 @@ function testRun(){
  });
 }
 /* re-render current view so the new modules take over immediately */
+route();
+</script>
+<style>
+/* ===== idea-to-app flow ===== */
+.stepper{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px}
+.step{display:flex;align-items:center;gap:8px;padding:7px 14px 7px 9px;border:1px solid var(--line);border-radius:999px;background:var(--surface);font-size:12.5px;font-weight:600;color:var(--muted);cursor:default}
+.step .sn{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;background:var(--surface2);color:var(--muted)}
+.step.done{color:var(--ink2);cursor:pointer}
+.step.done .sn{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok-text)}
+.step.active{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.step.active .sn{background:var(--accent);color:#fff}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:9px;overflow:hidden}
+.seg button{border:none;border-radius:0;padding:7px 16px;font-weight:600;font-size:12.5px}
+.seg button.on{background:var(--accent);color:#fff}
+.tpl-card{cursor:pointer;transition:border-color .12s,box-shadow .12s}
+.tpl-card:hover{border-color:var(--accent-line);box-shadow:0 0 0 3px var(--accent-soft)}
+.story{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px;background:var(--surface)}
+.story h4{font-size:13px;margin:0 0 6px}
+.story .ears{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink2);padding:3px 0 3px 12px;border-left:2px solid var(--accent-line)}
+.story .ears b{color:var(--accent);font-weight:600}
+.tasklist .task{display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid var(--line);font-size:13px}
+.tasklist .task:last-child{border-bottom:none}
+.tasklist .tk{width:19px;height:19px;border-radius:6px;border:1.6px solid var(--line2);display:grid;place-items:center;font-size:11px;flex:none;cursor:pointer;background:var(--surface)}
+.tasklist .task.doing .tk{border-color:var(--accent);color:var(--accent)}
+.tasklist .task.done .tk{background:var(--ok);border-color:var(--ok);color:#fff}
+.tasklist .task.done span.tt{color:var(--muted);text-decoration:line-through}
+.codeframe{display:grid;grid-template-columns:220px 1fr;border:1px solid var(--line);border-radius:10px;overflow:hidden;min-height:320px}
+@media(max-width:860px){.codeframe{grid-template-columns:1fr}}
+.filetree{border-right:1px solid var(--line);background:var(--surface2);padding:8px}
+.filetree button{display:block;width:100%;text-align:left;border:none;background:none;font-family:"IBM Plex Mono",monospace;font-size:11.5px;padding:6px 9px;border-radius:6px;color:var(--ink2)}
+.filetree button.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.codepane{margin:0;padding:14px;font-family:"IBM Plex Mono",monospace;font-size:11.5px;line-height:1.6;overflow:auto;max-height:420px;background:var(--surface);white-space:pre}
+.deploy-result{border:1.5px solid var(--ok);border-radius:12px;padding:18px;background:color-mix(in srgb,var(--ok) 6%,var(--surface))}
+</style>
+<script>
+/* ================= IDEA → APP (spec-driven flow) ================= */
+const IDEA_SEEDS=[
+ 'A mobile app that wins back lapsed prepaid subscribers with one personalised bridge offer and one-tap UPI recharge, driven by the churn agent.',
+ 'A web portal where enterprise customers track network complaints with a live outage map and an agent that drafts proactive updates.',
+ 'A kirana retailer app that digitises the credit khata, predicts restock needs from sales photos, and sends polite WhatsApp payment reminders.',
+ 'A cashflow dashboard for MSMEs that ingests invoices, forecasts crunches 30 days out, and lets a collections agent chase overdue payments.',
+ 'A SecOps triage desk where an agent enriches SIEM alerts with context, scores blast radius, and proposes playbook actions for analyst approval.',
+];
+const APP_TEMPLATES=[
+ {id:'recharge-rescue',name:'Recharge Rescue',sector:'Telecom',target:'mobile',color:'var(--c1)',
+  idea:'A mobile PWA that wins back lapsed prepaid subscribers: shows one personalised, margin-safe bridge offer, one-tap UPI recharge, and proactive network-fix status — offer selection delegated to the Churn Shield agent.',
+  stories:[
+   ['Lapsed subscriber sees a personalised offer',['WHEN a subscriber with recharge lapse > 3 days opens the app, THE SYSTEM SHALL display exactly one bridge offer within 800 ms.','IF the subscriber is on the DND registry, THE SYSTEM SHALL suppress all push notifications and rely on in-app surfaces only.']],
+   ['One-tap UPI recharge',['WHEN the offer is accepted, THE SYSTEM SHALL raise a UPI intent and confirm payment within 5 s.','IF payment fails, THE SYSTEM SHALL retry once, then offer wallet and card fallbacks.']],
+   ['Agent-selected offers',['WHEN churn risk ≥ 0.7, THE SYSTEM SHALL request a next-best-offer from the Churn Shield agent with a 20% discount cap.','WHEN the agent cites a network complaint, THE SYSTEM SHALL show the fix ETA beside the offer.']]],
+  components:[['Mobile PWA (React + Vite)','Offer screen, UPI intent, offline cache'],['Offer API (FastAPI)','Serves next-best-offer, validates margin caps'],['Churn Shield agent','Harness agent: risk scoring + offer selection'],['UPI adapter','Payment intent + webhook reconciliation'],['Subscriber 360 KG','Grounding: lapse, QoE, complaint context']],
+  stack:['React PWA','FastAPI','Trellis agent API','Postgres','UPI intents'],
+  tasks:['Scaffold PWA shell with offline cache','Define /next-best-offer API contract','Wire Churn Shield agent endpoint with margin guardrail','Build offer screen with fix-ETA panel','Implement UPI intent + webhook reconciliation','Add DND & quiet-hours suppression','Instrument accept/decline analytics events','End-to-end tests: lapse → offer → recharge'],
+  files:{'src/OfferScreen.tsx':`export function OfferScreen({msisdn}:{msisdn:string}){\n  const {offer,eta}=useNextBestOffer(msisdn); // Churn Shield via gateway\n  if(!offer) return <Skeleton/>;\n  return (\n    <Card>\n      <h2>{offer.title}</h2>\n      <p>{offer.price_inr} · {offer.validity_days} days</p>\n      {eta && <FixBanner eta={eta}/>} {/* network complaint context */}\n      <PayButton onTap={()=>upiIntent(offer.id,msisdn)}>Recharge now</PayButton>\n    </Card>\n  );\n}`,
+   'api/offers.py':`@app.post("/next-best-offer")\nasync def nbo(req: NboRequest) -> Offer:\n    facts = kg.subgraph(req.msisdn, hops=2)          # Subscriber 360\n    result = await agents.run("churn-shield", {\n        "goal": "pick cheapest saving lever",\n        "facts": facts, "discount_cap": 0.20,\n    })\n    guardrails.assert_margin(result.offer)\n    return result.offer`,
+   'infra/deploy.yaml':`app: recharge-rescue\nruntime: pwa\nregions: [ap-south-1]\nbudget:\n  per_run_usd: 0.004   # FinOps hard cap\nrouting_class: retention  # gateway picks llama-3.1-70b`}},
+ {id:'outage-companion',name:'Outage Companion',sector:'Telecom',target:'web',color:'var(--c4)',
+  idea:'A web app where subscribers track complaints against a live outage map; a NOC agent correlates cell-site incidents and drafts proactive status updates before complaint volume spikes.',
+  stories:[
+   ['Live complaint status',['WHEN a subscriber opens a complaint, THE SYSTEM SHALL show current state, owning team and ETA from the OSS feed.','WHEN the linked cell site recovers, THE SYSTEM SHALL notify the subscriber within 2 minutes.']],
+   ['Proactive outage map',['WHEN ≥ 25 QoE alarms cluster on one site, THE SYSTEM SHALL render an outage polygon before the first complaint arrives.']],
+   ['Agent-drafted comms',['WHEN an outage is confirmed, THE SYSTEM SHALL have Network Sentinel draft a status update for human approval, never auto-send.']]],
+  components:[['Web app (React)','Complaint timeline + Leaflet-style map'],['Incident API','Alarm clusters, complaint linkage'],['Network Sentinel agent','Correlation + drafted comms'],['OSS alarms MCP','Fault/performance resources'],['Notify service','SMS/push with quiet-hours guard']],
+  stack:['React','Node API','Trellis agent API','OSS MCP','Redis geo'],
+  tasks:['Scaffold web app + map layer','Ingest alarm clusters into incident API','Link complaints to serving cell sites','Integrate Network Sentinel drafts with approval queue','Recovery-notification worker','Quiet-hours + DND guard','Load test the map at 50k concurrent','Playwright e2e suite'],
+  files:{'src/OutageMap.tsx':`export function OutageMap(){\n  const incidents=useIncidents();  // SSE stream\n  return <Map>{incidents.map(i=>\n    <Polygon key={i.id} points={i.hull}\n      status={i.state}  // building | confirmed | recovering\n      onClick={()=>openTimeline(i)}/>)}\n  </Map>;\n}`,
+   'api/incidents.js':`router.get('/incidents', async (req,res)=>{\n  const clusters = await alarms.cluster({minSize:25, windowMin:10});\n  for (const c of clusters.filter(x=>x.state==='confirmed' && !x.draft)) {\n    c.draft = await agents.run('network-sentinel',\n      {task:'draft_status_update', cluster:c}); // human approves in queue\n  }\n  res.json(clusters);\n});`}},
+ {id:'simswap-sentinel',name:'SIM-Swap Sentinel',sector:'Telecom · security',target:'web',color:'var(--c8)',
+  idea:'A fraud-ops console that scores SIM-swap requests in real time (device change + location + recent OTP patterns), lets an agent explain the risk, and one-click freezes high-risk swaps pending eKYC re-verification.',
+  stories:[
+   ['Real-time risk scoring',['WHEN a SIM-swap request arrives, THE SYSTEM SHALL score it within 300 ms using device, location and OTP-velocity features.']],
+   ['Explainable holds',['WHEN risk ≥ 0.8, THE SYSTEM SHALL hold the swap and the agent SHALL produce a human-readable evidence summary citing each signal.']],
+   ['Analyst actions',['WHEN an analyst approves or releases a hold, THE SYSTEM SHALL log actor, rationale and evidence hash for audit.','IF no action in 30 min, THE SYSTEM SHALL escalate to the fraud queue.']]],
+  components:[['Fraud console (React)','Queue, evidence panel, freeze action'],['Scoring service','Feature store + gradient model'],['Explainer agent','Evidence narrative from KG signals'],['eKYC re-verify flow','Aadhaar-consent based re-check'],['Audit log','Append-only, hash-chained']],
+  stack:['React','Go scoring svc','Trellis agent API','Feature store','Kafka'],
+  tasks:['Scaffold console with hold queue','Define feature vector + scoring contract','Stream swap events via Kafka','Explainer agent with evidence citations','Freeze / release actions with audit hash','eKYC re-verification flow','Alert thresholds + escalation timer','Red-team test with replayed fraud patterns'],
+  files:{'svc/score.go':`func Score(ev SwapEvent) Risk {\n    f := features.Vector(ev.Msisdn,\n        "device_age","geo_jump_km","otp_burst_10m","acct_age")\n    r := model.Predict(f)\n    if r >= 0.8 {\n        holds.Create(ev, r)          // freeze pending review\n        agents.Async("explainer", ev) // evidence narrative\n    }\n    return r\n}`,
+   'src/EvidencePanel.tsx':`export function EvidencePanel({hold}:{hold:Hold}){\n  return <aside>\n    <RiskDial value={hold.risk}/>\n    {hold.evidence.map(e=>\n      <Fact key={e.id} signal={e.signal} weight={e.weight}\n            citation={e.kg_ref}/>)}  {/* every claim cites the graph */}\n    <FreezeButton hold={hold}/>\n  </aside>;\n}`}},
+ {id:'partner-hub',name:'Partner Recharge Hub',sector:'Telecom · channel',target:'web',color:'var(--c2)',
+  idea:'A portal for distributor and retail partners: bulk recharges, SIM stock and commissions in one place, with a sales agent that flags which retailers are going inactive and drafts the beat plan.',
+  stories:[
+   ['Bulk recharge with limits',['WHEN a partner uploads a recharge sheet, THE SYSTEM SHALL validate against wallet balance and per-day caps before executing.']],
+   ['Commission clarity',['WHEN a slab changes, THE SYSTEM SHALL show projected earnings per product before the partner commits stock.']],
+   ['Churn-risk retailers',['WHEN a retailer’s weekly volume drops > 40%, THE SYSTEM SHALL have SalesEdge draft a visit plan with talking points.']]],
+  components:[['Partner portal (React)','Wallet, bulk ops, commissions'],['Ledger service','Wallet, slabs, settlements'],['SalesEdge agent','Inactive-retailer detection + beat plan'],['Recharge rails','Operator provisioning APIs'],['Reports','Daily settlement + GST invoices']],
+  stack:['React','Java ledger','Trellis agent API','Postgres','S3 reports'],
+  tasks:['Scaffold portal with wallet view','Bulk upload + validation pipeline','Commission slab engine','Settlement + GST invoice generation','SalesEdge weekly beat-plan job','Recharge rails integration with retries','Role-based access (distributor vs retailer)','UAT with 3 pilot distributors'],
+  files:{'src/BulkRecharge.tsx':`export function BulkRecharge(){\n  const [rows,setRows]=useState<Row[]>([]);\n  return <Dropzone onSheet={async f=>{\n    const parsed=await parseSheet(f);\n    const checked=await api.validate(parsed); // caps + wallet\n    setRows(checked);\n  }}>\n    <PreflightTable rows={rows}/>\n    <ExecuteButton disabled={rows.some(r=>r.error)}/>\n  </Dropzone>;\n}`,
+   'jobs/beatplan.sql':`-- retailers going quiet: feed to SalesEdge weekly\nSELECT retailer_id, circle,\n       sum(amount) FILTER (WHERE week = this_week)  AS wk_now,\n       sum(amount) FILTER (WHERE week = last_week)  AS wk_prev\nFROM  recharges GROUP BY 1,2\nHAVING wk_now < 0.6 * wk_prev;`}},
+ {id:'kirana-books',name:'KiranaBooks',sector:'MSME · retail',target:'mobile',color:'var(--c3)',
+  idea:'A mobile app for kirana retailers: digital credit khata with customer-wise ledger, restock suggestions from sales patterns, and an agent that sends polite payment reminders on WhatsApp in the customer’s language.',
+  stories:[
+   ['Digital khata',['WHEN the retailer records a credit sale, THE SYSTEM SHALL update the customer ledger and running balance instantly, offline-first.']],
+   ['Restock intelligence',['WHEN an SKU’s cover drops below 3 days, THE SYSTEM SHALL suggest a restock quantity from the last 4 weeks’ velocity.']],
+   ['Polite reminders',['WHEN a balance is 7+ days overdue, THE SYSTEM SHALL draft a WhatsApp reminder in the customer’s language for one-tap send — never auto-send.','IF the customer replies with a promise-to-pay date, THE SYSTEM SHALL reschedule the follow-up.']]],
+  components:[['Mobile app (React Native)','Khata, catalog, reminders'],['Sync service','Offline-first CRDT ledger sync'],['Reminder agent','Tone-safe multilingual drafts'],['WhatsApp Business API','Template + session messages'],['Restock model','SKU velocity forecasting']],
+  stack:['React Native','Supabase-style sync','Trellis agent API','WhatsApp BSP','SQLite'],
+  tasks:['Scaffold RN app with offline ledger','Customer + SKU data model','CRDT sync service','Restock suggestion job','Reminder agent with language pick + tone guard','WhatsApp template approval + send flow','Promise-to-pay parsing','Pilot with 20 stores, measure recovery rate'],
+  files:{'src/Khata.tsx':`export function Khata({customer}:{customer:Customer}){\n  const ledger=useLedger(customer.id);           // offline-first\n  return <Screen>\n    <Balance amount={ledger.balance}/>\n    <EntryList entries={ledger.entries}/>\n    {ledger.overdueDays>=7 &&\n      <ReminderDraft customer={customer}/>}  {/* agent-drafted, tap to send */}\n  </Screen>;\n}`,
+   'agent/reminder.md':`# Reminder agent — instructions\nDraft a WhatsApp payment reminder.\nTone: warm, respectful, never threatening; max 2 sentences.\nLanguage: customer.preferred_language (default Hindi).\nInclude: balance, oldest item date, UPI link.\nNever send without the retailer's explicit tap.`}},
+ {id:'cashflow-lens',name:'CashFlow Lens',sector:'MSME · fintech',target:'web',color:'var(--c7)',
+  idea:'A cashflow analytics app for small businesses: ingest invoices and bank statements, visualise inflows/outflows and a 30-day crunch forecast, and let a collections agent chase overdue invoices with escalating, owner-approved nudges.',
+  stories:[
+   ['Ingest anything',['WHEN an invoice PDF or bank CSV is uploaded, THE SYSTEM SHALL extract structured lines with ≥ 95% field accuracy and flag low-confidence rows for review.']],
+   ['See the crunch coming',['WHEN forecast cash dips below the buffer within 30 days, THE SYSTEM SHALL highlight the gap week and the three receivables that close it.']],
+   ['Collections that escalate politely',['WHEN an invoice is 15/30/45 days overdue, THE SYSTEM SHALL draft stage-appropriate nudges for approval, and record promised dates.']]],
+  components:[['Analytics web app','Cashflow charts + crunch forecast'],['Extraction pipeline','Invoice/statement parsing with review queue'],['Collections agent','Escalation ladder, promise tracking'],['Forecast engine','Receivables-weighted 30-day projection'],['Accounting connectors','Tally/Zoho-style imports']],
+  stack:['React + charts','Python pipeline','Trellis agent API','DuckDB','S3'],
+  tasks:['Scaffold app with cashflow dashboard','Invoice/statement extraction with confidence scores','Review queue for low-confidence rows','30-day forecast engine with buffer alerts','Collections agent ladder (15/30/45d)','Promise-to-pay tracking','Connector: Tally export import','Accuracy eval set: 200 labelled invoices'],
+  files:{'src/CrunchChart.tsx':`export function CrunchChart(){\n  const {days,buffer}=useForecast(30);\n  return <LineChart data={days} y="balance"\n    bands={[{below:buffer,label:'crunch risk'}]}\n    annotations={topReceivables(3)}   // the 3 invoices that close the gap\n    onPointHover={showDayDetail}/>;\n}`,
+   'pipeline/extract.py':`def extract(doc: bytes) -> list[Row]:\n    rows = llm.extract(doc, schema=InvoiceRow,\n                       model=route("analysis"))   # gateway picks qwen2.5\n    for r in rows:\n        if r.confidence < 0.95:\n            review_queue.push(r)     # human verifies, model learns\n    return rows`}},
+ {id:'secops-triage',name:'SecOps Triage Desk',sector:'Security ops',target:'web',color:'var(--c6)',
+  idea:'An alert-triage console for the security team: an agent enriches SIEM alerts with asset and identity context, scores blast radius, groups duplicates, and proposes playbook actions that an analyst approves — the agent never executes alone.',
+  stories:[
+   ['Enriched alerts',['WHEN a SIEM alert lands, THE SYSTEM SHALL attach asset owner, exposure and recent-change context within 10 s.']],
+   ['Noise collapse',['WHEN alerts share a root indicator, THE SYSTEM SHALL group them into one incident and show the dedup count.']],
+   ['Human-approved response',['WHEN the agent proposes a playbook action, THE SYSTEM SHALL require analyst approval and record the decision; the agent SHALL never execute containment autonomously.']]],
+  components:[['Triage console (React)','Incident queue, context panel'],['Enrichment agent','Asset/identity context + blast radius'],['Playbook engine','Proposed actions, approval gate'],['SIEM connector','Alert stream in, status back'],['Case store','Timeline, decisions, metrics']],
+  stack:['React','Node stream svc','Trellis agent API','OpenSearch','SOAR hooks'],
+  tasks:['Scaffold console with incident queue','SIEM alert stream connector','Enrichment agent with context citations','Root-indicator grouping','Playbook proposals with approval gate','Containment hooks (approved-only)','MTTA/MTTR metrics panel','Tabletop exercise with replayed incidents'],
+  files:{'src/IncidentQueue.tsx':`export function IncidentQueue(){\n  const incidents=useIncidents({order:'blast_radius'});\n  return incidents.map(i=>\n    <IncidentRow key={i.id} incident={i}\n      dedup={i.grouped_count}\n      proposal={i.proposal}          // agent-suggested playbook step\n      onApprove={()=>approve(i)}     // human gate, always\n    />);\n}`,
+   'agent/enrich.yaml':`agent: secops-enricher\ngoal: attach context, score blast radius, propose next step\ntools: [cmdb.lookup, idp.identity, change.calendar]\nguardrails:\n  - never_execute: [contain, isolate, disable_account]\n  - cite_source_for_every_claim: true\nrouting_class: high-stakes   # closed frontier model`}},
+];
+let FLOW={stage:0,maxStage:0,idea:'',target:'web',tpl:null,seed:0,spec:null,design:null,tasks:null,files:null,codeDone:false,deployDone:false};
+function flowReset(){FLOW={stage:0,maxStage:0,idea:'',target:'web',tpl:null,seed:FLOW.seed,spec:null,design:null,tasks:null,files:null,codeDone:false,deployDone:false};renderIdeaflow()}
+function flowTpl(id){const t=APP_TEMPLATES.find(x=>x.id===id);FLOW.tpl=t;FLOW.idea=t.idea;FLOW.target=t.target;buildFlowDocs();FLOW.stage=1;FLOW.maxStage=Math.max(FLOW.maxStage,1);renderIdeaflow();toast('Template loaded — specs drafted from the idea')}
+function ideaTitle(){const t=FLOW.tpl;if(t)return t.name;const w=FLOW.idea.replace(/^a\s+|^an\s+/i,'').split(/\s+/).slice(0,3).join(' ');return (w||'New app').replace(/\b\w/g,c=>c.toUpperCase())}
+function buildFlowDocs(){
+ const t=FLOW.tpl;
+ FLOW.spec=t?t.stories:[
+  ['Core user flow',['WHEN a user opens the app, THE SYSTEM SHALL surface the primary action from the idea within one screen: "'+FLOW.idea.slice(0,90)+'…".','IF required data is unavailable, THE SYSTEM SHALL degrade gracefully with a clear empty state.']],
+  ['Agent-assisted decisions',['WHEN a decision needs judgement, THE SYSTEM SHALL delegate to a harness agent with the knowledge graph as context.','WHEN confidence < 0.7, THE SYSTEM SHALL route to a human with the evidence attached.']],
+  ['Trust & guardrails',['WHEN the agent proposes an outward action, THE SYSTEM SHALL require explicit user approval before executing.','THE SYSTEM SHALL log every agent decision with inputs, model and cost for audit.']]];
+ FLOW.design=t?{components:t.components,stack:t.stack}:{
+  components:[[FLOW.target==='mobile'?'Mobile app (React Native)':'Web app (React)','Primary UI for the flow'],['App API','Thin backend-for-frontend'],['Harness agent','Reasoning + tool calls via gateway'],['Knowledge graph','Grounding context'],['Notify service','Email / push / WhatsApp']],
+  stack:[FLOW.target==='mobile'?'React Native':'React','FastAPI','Trellis agent API','Postgres','Docker']};
+ FLOW.tasks=(t?t.tasks:['Scaffold the app shell','Define API contracts','Wire the harness agent endpoint','Build the primary screen','Guardrails + approval gates','Analytics events','Automated tests','Pilot rollout checklist']).map(x=>({t:x,st:'todo'}));
+ FLOW.files=t?t.files:{
+  'src/App.tsx':`export default function App(){\n  const state=useAppState();\n  return <Shell title="${ideaTitle()}">\n    <PrimaryFlow state={state}/>\n    <AgentPanel onPropose={requireApproval}/>\n  </Shell>;\n}`,
+  'api/main.py':`@app.post("/act")\nasync def act(req: ActRequest):\n    facts = kg.subgraph(req.entity_id, hops=2)\n    plan  = await agents.run("app-agent", {"goal": GOAL, "facts": facts})\n    return {"proposal": plan, "needs_approval": True}`};
+ FLOW.codeDone=false;FLOW.deployDone=false;FLOW.curFile=Object.keys(FLOW.files)[0];
+}
+const FLOW_STEPS=['Idea','Spec','Design','Tasks','Code','Deploy'];
+function flowGo(i){if(i<=FLOW.maxStage){FLOW.stage=i;renderIdeaflow()}}
+function renderIdeaflow(){
+ const stepper='<div class="stepper">'+FLOW_STEPS.map((s,i)=>`<span class="step ${i===FLOW.stage?'active':i<=FLOW.maxStage?'done':''}" ${i<=FLOW.maxStage?`onclick="flowGo(${i})" role="button" tabindex="0"`:''}><span class="sn">${i<FLOW.stage?'✓':i+1}</span>${s}</span>`).join('')+'</div>';
+ let body='';
+ if(FLOW.stage===0){
+  body=`<div class="grid cols2" style="align-items:start">
+   <div class="card"><h3>Start with an idea</h3><p class="sub">Raw and rough is fine — the flow drafts specs, design, tasks, code and a deployment from it</p>
+    <textarea id="fl-idea" rows="4" style="width:100%" placeholder="e.g. An app that helps our retail partners never run out of SIM stock…">${esc(FLOW.idea)}</textarea>
+    <div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap">
+      <button id="fl-gen">✨ Generate an idea</button>
+      <div class="seg" role="radiogroup" aria-label="target">
+        <button class="${FLOW.target==='web'?'on':''}" id="fl-web">Web app</button>
+        <button class="${FLOW.target==='mobile'?'on':''}" id="fl-mob">Mobile app</button>
+      </div>
+      <span class="spacer" style="flex:1"></span>
+      <button class="primary" id="fl-spec">Draft specs →</button>
+    </div></div>
+   <div class="card"><h3>How this flow works</h3><p class="sub">Spec-driven development, agent-native</p>
+    <ul style="font-size:13px;color:var(--ink2);padding-left:18px;margin:0;line-height:1.7">
+     <li><b>Spec</b> — user stories with EARS acceptance criteria (WHEN … THE SYSTEM SHALL …), so "done" is testable before code exists.</li>
+     <li><b>Design</b> — components, stack and where a harness agent + knowledge graph slot in.</li>
+     <li><b>Tasks</b> — a sequenced checklist you can execute step by step and audit.</li>
+     <li><b>Code &amp; Deploy</b> — generated scaffold, tests, then a build pipeline to web (PWA) or mobile.</li>
+    </ul></div></div>
+   <h3 style="font-size:14px;margin:22px 0 10px">Or start from a template</h3>
+   <div class="grid cols3">
+    ${APP_TEMPLATES.map(t=>`<div class="card tpl-card" onclick="flowTpl('${t.id}')" role="button" tabindex="0">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="agent-avatar" style="background:${t.color};width:34px;height:34px;font-size:13px">${esc(t.name.split(' ').map(w=>w[0]).join('').slice(0,2))}</span>
+      <div><h3 style="font-size:13.5px">${esc(t.name)}</h3><span class="pill info">${esc(t.sector)}</span> <span class="pill neutral">${t.target==='mobile'?'📱 mobile':'🖥 web'}</span></div></div>
+      <p style="font-size:12px;color:var(--ink2);margin:0">${esc(t.idea.slice(0,150))}…</p></div>`).join('')}
+   </div>`;
+ }else if(FLOW.stage===1){
+  body=`<div class="card"><div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap"><h3 style="font-size:16px">${esc(ideaTitle())} — requirements</h3><span class="pill neutral">${FLOW.target==='mobile'?'📱 mobile app':'🖥 web app'}</span></div>
+   <p class="sub" style="max-width:70ch">${esc(FLOW.idea)}</p>
+   ${FLOW.spec.map((s,i)=>`<div class="story"><h4>Story ${i+1} · ${esc(s[0])}</h4>${s[1].map(c=>`<div class="ears">${esc(c).replace(/WHEN|IF|THE SYSTEM SHALL/g,m=>'<b>'+m+'</b>')}</div>`).join('')}</div>`).join('')}
+   <div style="display:flex;gap:10px;margin-top:14px"><button onclick="flowGo(0)">← Edit idea</button><button class="primary" id="fl-approve1">Approve spec → Design</button></div></div>`;
+ }else if(FLOW.stage===2){
+  const comps=FLOW.design.components;
+  const lanes=['Client','API','Agent runtime','Context'];
+  body=`<div class="card"><h3 style="font-size:16px">${esc(ideaTitle())} — design</h3><p class="sub">Architecture, components and where the harness plugs in</p>
+   <svg viewBox="0 0 640 120" style="width:100%;height:auto;max-width:760px" role="img" aria-label="architecture">
+    ${comps.slice(0,4).map((c,i)=>{const x=10+i*160;return `<rect x="${x}" y="26" width="140" height="52" rx="10" fill="var(--raise)" stroke="var(--line2)" stroke-width="1.5"/><text x="${x+70}" y="47" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--ink)">${esc(c[0].split('(')[0].trim().slice(0,20))}</text><text x="${x+70}" y="62" text-anchor="middle" font-size="8.5" fill="var(--muted)">${esc(lanes[i]||'')}</text>${i<3?`<path d="M${x+150},52 h10" stroke="var(--accent)" stroke-width="2" marker-end="url(#fa)"/>`:''}`}).join('')}
+    <defs><marker id="fa" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0L8,4L0,8z" fill="var(--accent)"/></marker></defs>
+   </svg>
+   <div class="scrollx" style="margin-top:10px"><table class="data"><tr><th>Component</th><th>Responsibility</th></tr>
+    ${comps.map(c=>`<tr><td><b>${esc(c[0])}</b></td><td style="font-size:12.5px;color:var(--ink2)">${esc(c[1])}</td></tr>`).join('')}</table></div>
+   <div style="margin-top:12px">${FLOW.design.stack.map(s=>'<span class="tag">'+esc(s)+'</span>').join('')}</div>
+   <div style="display:flex;gap:10px;margin-top:16px"><button onclick="flowGo(1)">← Spec</button><button class="primary" id="fl-approve2">Approve design → Tasks</button></div></div>`;
+ }else if(FLOW.stage===3){
+  const done=FLOW.tasks.filter(t=>t.st==='done').length;
+  body=`<div class="card"><div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap"><h3 style="font-size:16px">${esc(ideaTitle())} — implementation tasks</h3><span class="pill ${done===FLOW.tasks.length?'ok':'neutral'} num">${done}/${FLOW.tasks.length} done</span><span class="spacer" style="flex:1"></span><button id="fl-exec" ${done===FLOW.tasks.length?'disabled':''}>▶ Execute all</button></div>
+   <div class="budgetbar" style="margin:10px 0 14px"><i style="width:${done/FLOW.tasks.length*100}%;background:var(--ok)"></i></div>
+   <div class="tasklist">${FLOW.tasks.map((t,i)=>`<div class="task ${t.st}" data-ti="${i}"><span class="tk" role="checkbox" aria-checked="${t.st==='done'}" tabindex="0" onclick="flowTaskToggle(${i})">${t.st==='done'?'✓':t.st==='doing'?'⟳':''}</span><span class="tt">${esc(t.t)}</span></div>`).join('')}</div>
+   <div style="display:flex;gap:10px;margin-top:16px"><button onclick="flowGo(2)">← Design</button><button class="primary" id="fl-approve3" ${done<FLOW.tasks.length?'disabled title="Finish the tasks first — or Execute all"':''}>Continue → Code</button></div></div>`;
+ }else if(FLOW.stage===4){
+  const names=Object.keys(FLOW.files);
+  body=`<div class="card"><h3 style="font-size:16px">${esc(ideaTitle())} — generated code</h3><p class="sub">Scaffold written against the approved spec — every file traces back to a story</p>
+   ${FLOW.codeDone?`<div class="codeframe"><div class="filetree">${names.map(n=>`<button class="${n===FLOW.curFile?'on':''}" onclick="FLOW.curFile='${n}';renderIdeaflow()">${esc(n)}</button>`).join('')}</div><pre class="codepane">${esc(FLOW.files[FLOW.curFile])}</pre></div>
+   <div style="display:flex;gap:14px;align-items:center;margin-top:12px;flex-wrap:wrap"><span class="pill ok">✓ 23 unit tests passing</span><span class="pill ok">✓ lint clean</span><span class="pill ok">✓ acceptance criteria mapped: ${FLOW.spec.reduce((a,s)=>a+s[1].length,0)}/${FLOW.spec.reduce((a,s)=>a+s[1].length,0)}</span></div>`:
+   `<div class="runlog" id="fl-codelog"><div class="ln"><span class="k msg">ready</span><span>Generate the scaffold from the approved spec and design.</span></div></div>
+   <button class="primary" style="margin-top:12px" id="fl-gencode">Generate code</button>`}
+   <div style="display:flex;gap:10px;margin-top:16px"><button onclick="flowGo(3)">← Tasks</button><button class="primary" id="fl-approve4" ${FLOW.codeDone?'':'disabled'}>Continue → Deploy</button></div></div>`;
+ }else{
+  body=`<div class="card"><h3 style="font-size:16px">${esc(ideaTitle())} — build &amp; deploy</h3><p class="sub">One pipeline to a live ${FLOW.target==='mobile'?'mobile build (PWA + store bundle)':'web app'}</p>
+   ${FLOW.deployDone?`<div class="deploy-result"><div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap">
+     <div style="flex:1;min-width:240px"><h3 style="color:var(--ok-text)">✓ Deployed</h3>
+      <p style="font-size:13px;color:var(--ink2);margin:6px 0">Live at <b class="mono">https://${ideaTitle().toLowerCase().replace(/[^a-z0-9]+/g,'-')}.trellis.app</b></p>
+      ${FLOW.target==='mobile'?'<p style="font-size:12.5px;color:var(--muted);margin:0">Installable PWA + signed Android bundle (.aab) ready for Play Console. Scan to open on your phone.</p>':'<p style="font-size:12.5px;color:var(--muted);margin:0">Served on the edge, ap-south-1 primary. Rollback keeps the last 5 releases.</p>'}
+      <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+       <button class="primary" onclick="flowToAgent()">Create backing agent in Studio</button>
+       <button onclick="flowReset()">Start a new idea</button>
+      </div></div>
+     ${FLOW.target==='mobile'?'<svg width="96" height="96" viewBox="0 0 21 21" style="background:#fff;border-radius:8px;padding:6px;flex:none" aria-label="QR code">'+qrCells()+'</svg>':''}
+   </div></div>`:
+   `<div class="runlog" id="fl-deplog"><div class="ln"><span class="k msg">ready</span><span>Pipeline: install → tests → build → containerise → deploy${FLOW.target==='mobile'?' → sign store bundle':''}</span></div></div>
+   <button class="primary" style="margin-top:12px" id="fl-deploy">🚀 Run pipeline</button>`}
+   <div style="display:flex;gap:10px;margin-top:16px"><button onclick="flowGo(4)">← Code</button></div></div>`;
+ }
+ $('#view-ideaflow').innerHTML=`<div class="toolbar"><p style="margin:0;color:var(--ink2);font-size:13.5px">From a raw idea to a deployed app in one spec-driven flow — idea → spec → design → tasks → code → deploy — with harness agents and the knowledge graph wired in.</p><span class="spacer"></span>${FLOW.maxStage>0?'<button class="small ghost" onclick="flowReset()">Reset flow</button>':''}</div>${stepper}${body}`;
+ if(FLOW.stage===0){
+  $('#fl-idea').addEventListener('input',e=>FLOW.idea=e.target.value);
+  $('#fl-gen').addEventListener('click',()=>{FLOW.idea=IDEA_SEEDS[FLOW.seed++%IDEA_SEEDS.length];FLOW.tpl=null;$('#fl-idea').value=FLOW.idea});
+  $('#fl-web').addEventListener('click',()=>{FLOW.target='web';renderIdeaflow()});
+  $('#fl-mob').addEventListener('click',()=>{FLOW.target='mobile';renderIdeaflow()});
+  $('#fl-spec').addEventListener('click',()=>{if(!FLOW.idea.trim()){toast('Write or generate an idea first');return}if(!FLOW.tpl)buildFlowDocs();FLOW.stage=1;FLOW.maxStage=Math.max(FLOW.maxStage,1);renderIdeaflow()});
+ }
+ const adv=(btn,st)=>{const b=$(btn);if(b)b.addEventListener('click',()=>{FLOW.stage=st;FLOW.maxStage=Math.max(FLOW.maxStage,st);renderIdeaflow()})};
+ adv('#fl-approve1',2);adv('#fl-approve2',3);adv('#fl-approve3',4);adv('#fl-approve4',5);
+ if(FLOW.stage===3){const ex=$('#fl-exec');if(ex)ex.addEventListener('click',flowExec)}
+ if(FLOW.stage===4){const g=$('#fl-gencode');if(g)g.addEventListener('click',flowGenCode)}
+ if(FLOW.stage===5){const d=$('#fl-deploy');if(d)d.addEventListener('click',flowDeploy)}
+}
+function flowTaskToggle(i){const t=FLOW.tasks[i];t.st=t.st==='done'?'todo':'done';renderIdeaflow()}
+function flowExec(){
+ const todo=FLOW.tasks.map((t,i)=>[t,i]).filter(([t])=>t.st!=='done');
+ todo.forEach(([t,i],k)=>{
+  setTimeout(()=>{t.st='doing';renderIdeaflow()},k*650);
+  setTimeout(()=>{t.st='done';renderIdeaflow();if(k===todo.length-1)toast('All tasks complete — code generation unlocked')},k*650+520);
+ });
+}
+function flowGenCode(){
+ const log=$('#fl-codelog');log.innerHTML='';const t0=Date.now();
+ const line=(k,cls,txt)=>{const dv=document.createElement('div');dv.className='ln';dv.innerHTML=`<span class="t num">${((Date.now()-t0)/1000).toFixed(1)}s</span><span class="k ${cls}">${k}</span><span>${esc(txt)}</span>`;log.appendChild(dv);log.scrollTop=log.scrollHeight};
+ const files=Object.keys(FLOW.files);
+ const steps=[
+  ()=>line('PLAN','plan','Mapping '+FLOW.spec.length+' stories → modules, choosing scaffold for '+(FLOW.target==='mobile'?'React Native / PWA':'React web')),
+  ...files.map(f=>()=>line('WRITE','tool',f+' ('+FLOW.files[f].split('\n').length+' lines) — traces to story '+(1+Math.floor(Math.random()*FLOW.spec.length)))),
+  ()=>line('WRITE','tool','tests/acceptance.spec.ts — one test per EARS criterion ('+FLOW.spec.reduce((a,s)=>a+s[1].length,0)+')'),
+  ()=>line('TEST','guard','pnpm test → 23 passing, 0 failing · lint clean'),
+  ()=>line('DONE','done','Scaffold ready for review'),
+ ];
+ steps.forEach((f,i)=>setTimeout(f,300+i*480));
+ setTimeout(()=>{FLOW.codeDone=true;renderIdeaflow()},300+steps.length*480);
+}
+function flowDeploy(){
+ const log=$('#fl-deplog');log.innerHTML='';const t0=Date.now();
+ const line=(k,cls,txt)=>{const dv=document.createElement('div');dv.className='ln';dv.innerHTML=`<span class="t num">${((Date.now()-t0)/1000).toFixed(1)}s</span><span class="k ${cls}">${k}</span><span>${esc(txt)}</span>`;log.appendChild(dv);log.scrollTop=log.scrollHeight};
+ const steps=[
+  ['INSTALL','tool','pnpm install --frozen-lockfile · cache hit 94%'],
+  ['TEST','guard','23 unit + '+FLOW.spec.reduce((a,s)=>a+s[1].length,0)+' acceptance tests passing'],
+  ['BUILD','tool',FLOW.target==='mobile'?'PWA bundle 412 kB gz + Android .aab (signed)':'production bundle 384 kB gz'],
+  ['IMAGE','tool','container built & pushed · sha256:9f2e…'],
+  ['DEPLOY','llm','rolling out to ap-south-1 · health checks green'],
+  ['AGENT','mem','registered app with the gateway · routing class assigned · FinOps per-run cap set'],
+  ['DONE','done','Live · runs will appear in Observability & FinOps'],
+ ];
+ steps.forEach((s,i)=>setTimeout(()=>line(s[0],s[1],s[2]),300+i*560));
+ setTimeout(()=>{FLOW.deployDone=true;renderIdeaflow();toast(ideaTitle()+' deployed 🎉')},300+steps.length*560);
+}
+function qrCells(){
+ const r=mulberry(99);let s='';
+ for(let y=0;y<21;y++)for(let x=0;x<21;x++){
+  const finder=(x<7&&y<7)||(x>13&&y<7)||(x<7&&y>13);
+  const on=finder?((x%6===0||y%6===0||x===2&&y>=2&&y<=4||x>=2&&x<=4&&y===2||x>=2&&x<=4&&y===4)&&x<7&&y<7)||((x-14)%6===0&&y<7||y%6===0&&x>13)||(x<7&&(y-14)%6===0||y>13&&x%6===0):r()>0.5;
+  if(on||finder&&(x===1&&y>=1&&y<=5||y===1&&x>=1&&x<=5))s+=`<rect x="${x}" y="${y}" width="1" height="1" fill="#111"/>`;
+ }
+ return s;
+}
+function flowToAgent(){
+ const t=FLOW.tpl;
+ ST={name:ideaTitle()+' agent',tplId:null,model:'llama-3.1-70b',nodes:[],edges:[],sel:null,
+  prompt:{persona:'You are the backing agent for the "'+ideaTitle()+'" app.',
+   goal:FLOW.idea,
+   instructions:FLOW.spec.map((s,i)=>(i+1)+'. Satisfy: '+s[0]).join('\n'),
+   constraints:'Every outward action needs explicit user approval. Log every decision with inputs, model and cost. Respect the app\'s per-run FinOps cap.',
+   examples:'',output:'Strict JSON: {action, rationale, confidence, needs_approval}',
+   skills:['Structured extraction','Summarisation'],tools:t?[TOOLCAT[0],TOOLCAT[3]]:[TOOLCAT[0]],useKG:true,temp:0.3}};
+ pbCompile();nav('studio');
+}
 route();
 </script>
