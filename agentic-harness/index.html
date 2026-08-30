@@ -204,6 +204,7 @@ input[type=range]{accent-color:var(--accent);flex:1}
     <button class="navitem" data-view="library"><svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 3.5h4.5v10H2zM8 3.5h4.5v10H8z"/><path d="M13.6 4.1l2 9.6"/></svg>Agent Library</button>
     <button class="navitem" data-view="orchestration"><svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8.5" cy="3" r="1.8"/><circle cx="3" cy="13" r="1.8"/><circle cx="8.5" cy="13" r="1.8"/><circle cx="14" cy="13" r="1.8"/><path d="M8.5 5v3M8.5 8H3v3M8.5 8v3M8.5 8h5.5v3"/></svg>Orchestration</button>
     <button class="navitem" data-view="prompts"><svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2.5 2.5h12v9h-7l-3 3v-3h-2z"/><path d="M5.5 6h6M5.5 8.5h4"/></svg>Prompts &amp; Scenarios</button>
+    <button class="navitem" data-view="knowledge"><svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8.5" cy="3.2" r="1.9"/><circle cx="3" cy="10.5" r="1.9"/><circle cx="14" cy="10.5" r="1.9"/><circle cx="8.5" cy="14.2" r="1.6"/><path d="M7.2 4.6 4.2 9M9.8 4.6l3 4.4M4.8 11.6l2.4 2M12.2 11.6l-2.4 2"/></svg>Knowledge</button>
     <div class="navsec">Operate</div>
     <button class="navitem" data-view="observability"><svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M1.5 8.5S4 3.5 8.5 3.5 15.5 8.5 15.5 8.5 13 13.5 8.5 13.5 1.5 8.5 1.5 8.5z"/><circle cx="8.5" cy="8.5" r="2.2"/></svg>Observability</button>
     <button class="navitem" data-view="finops"><svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8.5" cy="8.5" r="6.5"/><path d="M8.5 4.5v8M11 6.2c-.5-1-4.4-1.4-4.4.6 0 2.2 4.6 1 4.6 3.2 0 2-4 1.8-4.8.6"/></svg>FinOps</button>
@@ -224,6 +225,7 @@ input[type=range]{accent-color:var(--accent);flex:1}
       <div class="view" id="view-library"></div>
       <div class="view" id="view-orchestration"></div>
       <div class="view" id="view-prompts"></div>
+      <div class="view" id="view-knowledge"></div>
       <div class="view" id="view-observability"></div>
       <div class="view" id="view-finops"></div>
       <div class="view" id="view-gateway"></div>
@@ -421,7 +423,7 @@ function seed(){
     budget:{monthly:600},
     openPct:78};
 }
-function saveState(){store('state',{prompts:S.prompts,providers:S.providers,routing:S.routing,budget:S.budget,openPct:S.openPct})}
+function saveState(){store('state',{prompts:S.prompts,providers:S.providers,routing:S.routing,budget:S.budget,openPct:S.openPct,kg:S.kg})}
 function initState(){S=seed();const saved=load('state',null);if(saved){Object.assign(S,saved)}}
 
 /* ================= CHART ENGINE ================= */
@@ -500,7 +502,7 @@ function stackedBar(cont,{labels,series,yfmt=fmtN,h=220}){
 }
 
 /* ================= ROUTER ================= */
-const VIEWS={overview:'Overview',studio:'Agent Studio',library:'Agent Library',orchestration:'Orchestration',prompts:'Prompts & Scenarios',observability:'Observability',finops:'FinOps',gateway:'Model Gateway',learn:'Learn Agents'};
+const VIEWS={overview:'Overview',studio:'Agent Studio',library:'Agent Library',orchestration:'Orchestration',prompts:'Prompts & Scenarios',knowledge:'Knowledge',observability:'Observability',finops:'FinOps',gateway:'Model Gateway',learn:'Learn Agents'};
 function nav(v){location.hash=v}
 function route(){
   let v=location.hash.replace('#','')||'overview';
@@ -509,7 +511,7 @@ function route(){
   $$('.view').forEach(el=>el.classList.remove('active'));
   $('#view-'+v).classList.add('active');
   $('#viewtitle').textContent=VIEWS[v];
-  ({overview:renderOverview,studio:renderStudio,library:renderLibrary,orchestration:renderOrch,prompts:renderPrompts,observability:renderObs,finops:renderFinops,gateway:renderGateway,learn:renderLearn})[v]();
+  const _r=({overview:renderOverview,studio:renderStudio,library:renderLibrary,orchestration:renderOrch,prompts:renderPrompts,knowledge:window.renderKnowledge,observability:renderObs,finops:renderFinops,gateway:renderGateway,learn:renderLearn})[v];if(_r)_r();
   $('#content').scrollTop=0;window.scrollTo(0,0);
 }
 $$('.navitem').forEach(b=>b.addEventListener('click',()=>nav(b.dataset.view)));
@@ -1088,5 +1090,440 @@ function renderLearn(){
 /* ================= INIT ================= */
 initState();
 $('#gw-default').textContent=S.routing[1].model;
+route();
+</script>
+<style>
+/* ===== v2: studio tabs, zoom, run states ===== */
+.tabs{display:flex;gap:2px;border:1px solid var(--line);border-radius:9px;padding:3px;background:var(--surface2);width:max-content}
+.tabs button{border:none;background:none;padding:6px 14px;border-radius:7px;font-weight:600;color:var(--ink2);font-size:13px}
+.tabs button:hover{background:var(--surface)}
+.tabs button.on{background:var(--surface);color:var(--accent);box-shadow:var(--shadow)}
+.zoombar{position:sticky;top:10px;left:10px;z-index:6;display:inline-flex;gap:4px;background:var(--raise);border:1px solid var(--line2);border-radius:9px;padding:4px;box-shadow:var(--shadow);width:max-content;margin:10px}
+.zoombar button{border:none;background:none;padding:3px 9px;font-weight:700;border-radius:6px}
+.zoombar .zl{font-size:11.5px;color:var(--muted);align-self:center;min-width:38px;text-align:center}
+.node.running{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft),var(--shadow)}
+.node .runstat{position:absolute;top:-9px;right:-9px;width:20px;height:20px;border-radius:50%;display:none;place-items:center;font-size:11px;font-weight:700;background:var(--accent);color:#fff;border:2px solid var(--surface)}
+.node.running .runstat,.node.stepdone .runstat{display:grid}
+.node.stepdone .runstat{background:var(--ok)}
+/* ===== prompt builder ===== */
+#pb-grid{display:grid;grid-template-columns:1fr 400px;gap:16px;align-items:start}
+@media(max-width:1100px){#pb-grid{grid-template-columns:1fr}}
+#pb-preview{position:sticky;top:80px}
+#pb-preview pre{white-space:pre-wrap;background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:12px;font-family:"IBM Plex Mono",monospace;font-size:11.5px;max-height:430px;overflow:auto;margin:10px 0}
+.checkrow{display:flex;flex-wrap:wrap;gap:7px}
+.checkrow .ck{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;border:1px solid var(--line2);border-radius:999px;padding:4px 12px;cursor:pointer;user-select:none;background:var(--surface)}
+.checkrow .ck.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:600}
+/* ===== knowledge ===== */
+.upzone{border:2px dashed var(--line2);border-radius:12px;padding:26px;text-align:center;color:var(--muted);font-size:13px;transition:border-color .15s,background .15s;cursor:pointer}
+.upzone.drag,.upzone:hover{border-color:var(--accent);background:var(--accent-soft);color:var(--ink2)}
+.upzone b{color:var(--ink)}
+.kg-edge-label{font-size:8.5px;fill:var(--muted);letter-spacing:.04em}
+.decision{border-left:3px solid var(--line2);padding:10px 14px;margin-bottom:10px;background:var(--surface2);border-radius:0 9px 9px 0}
+.decision.adopted{border-left-color:var(--ok)}
+.decision.review{border-left-color:var(--warn)}
+.decision h4{font-size:12.5px;margin:0}
+.decision p{font-size:12px;color:var(--ink2);margin:4px 0 0}
+.factline{font-family:"IBM Plex Mono",monospace;font-size:11.5px;padding:4px 0;border-bottom:1px dashed var(--line)}
+.factline:last-child{border-bottom:none}
+.factline .ent{font-weight:600}
+.factline .rel{color:var(--accent)}
+</style>
+<script>
+/* ================= KNOWLEDGE GRAPH MODULE ================= */
+NODETYPES.trigger={label:'Trigger',color:'var(--serious)',hint:'What starts a run: webhook, schedule, or a platform event (e.g. churn-risk score crosses a threshold).'};
+function defaultKG(){return{
+ sources:[
+  {id:uid('src'),name:'subscriber_360.csv',kind:'CSV',rows:'2.1M rows · 38 cols',status:'ingested',mapped:'Subscriber, Plan, Circle'},
+  {id:uid('src'),name:'complaints_q2.json',kind:'JSON',rows:'184k records',status:'ingested',mapped:'Complaint, CellSite'},
+  {id:uid('src'),name:'vendor_contracts.pdf',kind:'PDF',rows:'312 pages · 4.1k chunks',status:'ingested',mapped:'Vendor, Contract'},
+  {id:uid('src'),name:'network_qoe_feed',kind:'Stream',rows:'live · ~4k events/s',status:'streaming',mapped:'CellSite'},
+ ],
+ entities:[
+  {name:'Subscriber',attrs:'msisdn, arpu, tenure, language, dnd_flag',count:2100000,color:'var(--c1)'},
+  {name:'Plan',attrs:'price, validity, data_gb, ott_bundle',count:142,color:'var(--c2)'},
+  {name:'Circle',attrs:'name, region, competitor_share',count:22,color:'var(--c3)'},
+  {name:'CellSite',attrs:'site_id, tech, congestion_pct, qoe_score',count:48200,color:'var(--c4)'},
+  {name:'Complaint',attrs:'trai_class, severity, resolved_at',count:184000,color:'var(--c5)'},
+  {name:'Offer',attrs:'discount_pct, margin_floor, channel',count:96,color:'var(--c6)'},
+  {name:'Vendor',attrs:'category, spend_ytd, risk_score',count:310,color:'var(--c7)'},
+  {name:'Contract',attrs:'value, renewal_date, sla_terms',count:1240,color:'var(--c8)'},
+ ],
+ relations:[
+  ['Subscriber','SUBSCRIBES_TO','Plan'],['Subscriber','LOCATED_IN','Circle'],['Subscriber','RAISED','Complaint'],
+  ['Complaint','ABOUT','CellSite'],['CellSite','SERVES','Circle'],['Subscriber','RECEIVED','Offer'],
+  ['Vendor','PARTY_TO','Contract'],['Contract','COVERS','CellSite'],
+ ],
+ decisions:[
+  {q:'Entity-resolution key for people',choice:'MSISDN + eKYC hash',why:'Survives SIM swaps and dedupes multi-SIM users; pure MSISDN split 4.2% of subscribers into duplicates.',status:'adopted'},
+  {q:'Granularity of network nodes',choice:'Cell site, not sector',why:'Sector-level tripled edge count for <2% lift in churn-model AUC. Revisit for 5G slicing use cases.',status:'adopted'},
+  {q:'Temporal modelling',choice:'Current snapshot + 90-day event edges',why:'Agent journeys need recency, not full history; older events roll into monthly aggregates in cold store.',status:'adopted'},
+  {q:'Complaint taxonomy',choice:'TRAI 7-class + internal subtags',why:'Keeps regulatory reporting aligned while agents get finer routing signals.',status:'review'},
+ ],
+ attached:['ag-churn-shield','ag-voice-care'],
+ edgeCount:12400000, coverage:96.4, orphan:1.8, freshMin:22
+}}
+if(!S.kg)S.kg=defaultKG();
+function renderKnowledge(){
+ const K=S.kg;
+ const totalEnt=K.entities.reduce((a,e)=>a+e.count,0);
+ $('#view-knowledge').innerHTML=`
+  <div class="grid cols4" style="margin-bottom:16px">
+    <div class="card tile"><div class="k">Entities</div><div class="v num">${fmtN(totalEnt)}</div><div class="d">${K.entities.length} types in the ontology</div></div>
+    <div class="card tile"><div class="k">Relationships</div><div class="v num">${fmtN(K.edgeCount)}</div><div class="d">${K.relations.length} relation types</div></div>
+    <div class="card tile"><div class="k">Subscriber coverage</div><div class="v num">${K.coverage}%</div><div class="d">of active base linked · orphans ${K.orphan}%</div></div>
+    <div class="card tile"><div class="k">Freshness</div><div class="v num">${K.freshMin} min</div><div class="d">since last incremental sync</div></div>
+  </div>
+  <div class="grid cols2" style="margin-bottom:16px">
+   <div class="card"><h3>Data sources</h3><p class="sub">Upload files or connect feeds — they are profiled, chunked/loaded, and mapped onto the ontology</p>
+     <div class="upzone" id="kg-drop"><b>Drop CSV, JSON, TXT or PDF here</b><br>or click to browse — columns are profiled and mapped to entity types automatically<input type="file" id="kg-file" multiple hidden accept=".csv,.json,.txt,.pdf,.tsv,.md"></div>
+     <div class="scrollx" style="margin-top:12px"><table class="data"><tr><th>Source</th><th>Kind</th><th>Volume</th><th>Mapped to</th><th>Status</th></tr>
+      ${K.sources.map(s=>`<tr><td><b>${esc(s.name)}</b></td><td><span class="pill neutral">${esc(s.kind)}</span></td><td style="font-size:12px" class="num">${esc(s.rows)}</td><td style="font-size:12px">${esc(s.mapped)}</td><td>${s.status==='ingested'?'<span class="pill ok">✓ ingested</span>':s.status==='streaming'?'<span class="pill info">● streaming</span>':'<span class="pill warn">… '+esc(s.status)+'</span>'}</td></tr>`).join('')}
+     </table></div></div>
+   <div class="card"><h3>Ontology graph</h3><p class="sub">Entity types sized by instance count — hover for attributes; this schema is what retrieval traverses</p><div id="kg-viz"></div></div>
+  </div>
+  <div class="grid cols2" style="margin-bottom:16px">
+   <div class="card"><h3>Ontology</h3><p class="sub">Entity and relation types. Keep it as small as the use cases allow.</p>
+     <div class="scrollx"><table class="data"><tr><th>Entity type</th><th>Key attributes</th><th>Instances</th><th></th></tr>
+      ${K.entities.map((e,i)=>`<tr><td><span class="sw" style="display:inline-block;width:9px;height:9px;border-radius:3px;background:${e.color};margin-right:7px"></span><b>${esc(e.name)}</b></td><td style="font-size:11.5px;color:var(--ink2)" class="mono">${esc(e.attrs)}</td><td class="num">${fmtN(e.count)}</td><td><button class="small ghost" onclick="delEntity(${i})" aria-label="remove ${esc(e.name)}">✕</button></td></tr>`).join('')}
+     </table></div>
+     <div class="scrollx" style="margin-top:10px"><table class="data"><tr><th>From</th><th>Relation</th><th>To</th><th></th></tr>
+      ${K.relations.map((r,i)=>`<tr><td>${esc(r[0])}</td><td class="mono" style="color:var(--accent);font-size:11.5px">${esc(r[1])}</td><td>${esc(r[2])}</td><td><button class="small ghost" onclick="delRelation(${i})" aria-label="remove relation">✕</button></td></tr>`).join('')}
+     </table></div>
+     <div style="display:flex;gap:8px;margin-top:12px"><button class="small" onclick="addEntity()">＋ Entity type</button><button class="small" onclick="addRelation()">＋ Relation</button></div></div>
+   <div class="card"><h3>Ontology decisions</h3><p class="sub">The judgement calls behind the schema — recorded so future you knows why</p>
+     ${K.decisions.map((d,i)=>`<div class="decision ${d.status==='adopted'?'adopted':'review'}"><h4>${esc(d.q)} <span class="pill ${d.status==='adopted'?'ok':'warn'}" style="margin-left:6px">${d.status==='adopted'?'adopted':'under review'}</span></h4><p><b>${esc(d.choice)}</b> — ${esc(d.why)}</p></div>`).join('')}
+     <button class="small" onclick="addDecision()">＋ Record a decision</button>
+     <h3 style="margin-top:18px;font-size:13px">Instances by entity type</h3><div id="kg-counts" style="margin-top:8px"></div></div>
+  </div>
+  <div class="card"><h3>Serve as agent context</h3><p class="sub">Attached agents ground every claim through graph retrieval (entity linking → subgraph expansion → fact injection)</p>
+    <div class="checkrow" style="margin-bottom:14px">
+     ${S.agents.map(a=>`<span class="ck ${K.attached.includes(a.id)?'on':''}" role="checkbox" aria-checked="${K.attached.includes(a.id)}" tabindex="0" onclick="toggleKG('${a.id}')">${K.attached.includes(a.id)?'✓ ':''}${esc(a.name)}</span>`).join('')}
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+     <input id="kg-q" style="flex:1;min-width:260px" value="Why is subscriber 98xxxxxx21 at churn risk?" aria-label="test retrieval query">
+     <button class="primary" onclick="kgRetrieve()">Test retrieval</button>
+    </div>
+    <div id="kg-facts" style="margin-top:12px"></div></div>`;
+ kgViz();
+ barChart($('#kg-counts'),{items:K.entities.map(e=>({label:e.name,value:e.count,color:e.color,note:e.attrs}))});
+ const drop=$('#kg-drop'),fi=$('#kg-file');
+ drop.addEventListener('click',()=>fi.click());
+ fi.addEventListener('change',()=>ingestFiles([...fi.files]));
+ ;['dragover','dragenter'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('drag')}));
+ ;['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('drag')}));
+ drop.addEventListener('drop',e=>ingestFiles([...e.dataTransfer.files]));
+}
+function guessMapping(name,header){
+ const h=(name+' '+header).toLowerCase();const hits=[];
+ if(/msisdn|subscriber|customer|arpu|recharge/.test(h))hits.push('Subscriber');
+ if(/plan|pack|tariff/.test(h))hits.push('Plan');
+ if(/complaint|ticket|grievance/.test(h))hits.push('Complaint');
+ if(/site|cell|tower|qoe|network/.test(h))hits.push('CellSite');
+ if(/vendor|supplier|quote/.test(h))hits.push('Vendor');
+ if(/contract|amc|po\b/.test(h))hits.push('Contract');
+ if(/offer|campaign/.test(h))hits.push('Offer');
+ if(/circle|region/.test(h))hits.push('Circle');
+ return hits.length?hits.join(', '):'Document chunks (RAG)';
+}
+function ingestFiles(files){
+ files.forEach(f=>{
+  const ext=(f.name.split('.').pop()||'').toUpperCase();
+  const src={id:uid('src'),name:f.name,kind:ext||'FILE',rows:'profiling…',status:'profiling',mapped:'—'};
+  S.kg.sources.unshift(src);renderKnowledge();
+  const finish=(vol,map,addEnt)=>{setTimeout(()=>{src.rows=vol;src.mapped=map;src.status='ingested';
+    S.kg.edgeCount+=Math.round(20000+Math.random()*80000);S.kg.freshMin=0;
+    saveState();renderKnowledge();toast('"'+f.name+'" ingested and linked into the graph')},1400)};
+  if(/^(CSV|TSV|TXT|JSON|MD)$/.test(ext)){
+   const rd=new FileReader();
+   rd.onload=()=>{const txt=String(rd.result||'');const lines=txt.split(/\r?\n/).filter(Boolean);
+     const header=lines[0]||'';const cols=ext==='CSV'||ext==='TSV'?header.split(ext==='TSV'?'\t':',').length:0;
+     finish(fmtN(Math.max(0,lines.length-1))+(cols?' rows · '+cols+' cols':' lines'),guessMapping(f.name,header))};
+   rd.onerror=()=>finish('unreadable','Document chunks (RAG)');
+   rd.readAsText(f.slice(0,262144));
+  }else{
+   finish(fmtN(Math.max(1,Math.round(f.size/2600)))+' chunks',guessMapping(f.name,''));
+  }
+ });
+}
+function kgViz(){
+ const K=S.kg,W=560,H=400,cx=W/2,cy=H/2-6,R=150;
+ const pos={};K.entities.forEach((e,i)=>{const a=-Math.PI/2+i*2*Math.PI/K.entities.length;pos[e.name]={x:cx+R*Math.cos(a),y:cy+R*Math.sin(a)}});
+ const maxC=Math.max(...K.entities.map(e=>e.count));
+ const edges=K.relations.map(r=>{const a=pos[r[0]],b=pos[r[2]];if(!a||!b)return '';
+   const mx=(a.x+b.x)/2+(cx-(a.x+b.x)/2)*0.25,my=(a.y+b.y)/2+(cy-(a.y+b.y)/2)*0.25;
+   return `<path d="M${a.x},${a.y} Q${mx},${my} ${b.x},${b.y}" fill="none" stroke="var(--line2)" stroke-width="1.4"/><text x="${mx}" y="${my-4}" text-anchor="middle" class="kg-edge-label">${esc(r[1])}</text>`}).join('');
+ const nodes=K.entities.map((e,i)=>{const p=pos[e.name],r=10+14*Math.sqrt(e.count/maxC);
+   return `<circle data-ent="${i}" cx="${p.x}" cy="${p.y}" r="${r.toFixed(1)}" fill="${e.color}" stroke="var(--chart-surface)" stroke-width="2.5"/><text x="${p.x}" y="${(p.y+r+13).toFixed(1)}" text-anchor="middle" font-size="10.5" font-weight="600" fill="var(--ink2)">${esc(e.name)}</text>`}).join('');
+ $('#kg-viz').innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="ontology graph" style="width:100%;height:auto">${edges}${nodes}</svg>`;
+ const sv=$('#kg-viz svg');
+ sv.addEventListener('mousemove',e=>{const t=e.target.closest('circle[data-ent]');if(!t){tipHide();return}
+   const en=S.kg.entities[+t.dataset.ent];
+   tipShow('<b>'+esc(en.name)+' · '+fmtN(en.count)+' instances</b><span class="mono" style="font-size:11px;color:var(--ink2)">'+esc(en.attrs)+'</span>',e.clientX,e.clientY)});
+ sv.addEventListener('mouseleave',tipHide);
+}
+function toggleKG(id){const K=S.kg,i=K.attached.indexOf(id);if(i>=0)K.attached.splice(i,1);else K.attached.push(id);saveState();renderKnowledge()}
+function delEntity(i){const e=S.kg.entities[i];S.kg.relations=S.kg.relations.filter(r=>r[0]!==e.name&&r[2]!==e.name);S.kg.entities.splice(i,1);saveState();renderKnowledge()}
+function delRelation(i){S.kg.relations.splice(i,1);saveState();renderKnowledge()}
+function addEntity(){
+ const d=openModal(`<h3>New entity type</h3>
+  <div class="field" style="margin-top:12px"><label>Name</label><input id="en-name" placeholder="e.g. Device"></div>
+  <div class="field"><label>Key attributes (comma separated)</label><input id="en-attrs" placeholder="model, os, vo_lte_capable"></div>
+  <button class="primary" id="en-save">Add to ontology</button>`);
+ $('#en-save',d).addEventListener('click',()=>{const n=$('#en-name',d).value.trim();if(!n){toast('Name the entity type');return}
+  S.kg.entities.push({name:n,attrs:$('#en-attrs',d).value.trim()||'—',count:0,color:'var(--c'+((S.kg.entities.length%8)+1)+')'});
+  saveState();closeModal();renderKnowledge();toast('Entity type added — map a source to populate it')});
+}
+function addRelation(){
+ const opts=S.kg.entities.map(e=>'<option>'+esc(e.name)+'</option>').join('');
+ const d=openModal(`<h3>New relation</h3>
+  <div class="field" style="margin-top:12px"><label>From</label><select id="re-from">${opts}</select></div>
+  <div class="field"><label>Predicate (VERB_CASE)</label><input id="re-p" placeholder="USES"></div>
+  <div class="field"><label>To</label><select id="re-to">${opts}</select></div>
+  <button class="primary" id="re-save">Add relation</button>`);
+ $('#re-save',d).addEventListener('click',()=>{const p=$('#re-p',d).value.trim().toUpperCase().replace(/\s+/g,'_');if(!p){toast('Name the predicate');return}
+  S.kg.relations.push([$('#re-from',d).value,p,$('#re-to',d).value]);saveState();closeModal();renderKnowledge()});
+}
+function addDecision(){
+ const d=openModal(`<h3>Record an ontology decision</h3>
+  <div class="field" style="margin-top:12px"><label>Question</label><input id="dc-q" placeholder="e.g. How do we model household relationships?"></div>
+  <div class="field"><label>Decision</label><input id="dc-c" placeholder="e.g. Shared-recharge inference, no explicit Household entity"></div>
+  <div class="field"><label>Rationale (with the metric that settled it)</label><textarea id="dc-w" rows="3"></textarea></div>
+  <div class="field"><label>Status</label><select id="dc-s"><option value="adopted">adopted</option><option value="review">under review</option></select></div>
+  <button class="primary" id="dc-save">Save decision</button>`);
+ $('#dc-save',d).addEventListener('click',()=>{const q=$('#dc-q',d).value.trim();if(!q){toast('State the question');return}
+  S.kg.decisions.push({q,choice:$('#dc-c',d).value.trim()||'—',why:$('#dc-w',d).value.trim()||'—',status:$('#dc-s',d).value});
+  saveState();closeModal();renderKnowledge()});
+}
+function kgRetrieve(){
+ const q=$('#kg-q').value;
+ const box=$('#kg-facts');
+ box.innerHTML='<div class="empty">Linking entities and expanding subgraph…</div>';
+ setTimeout(()=>{
+  box.innerHTML=`<div style="border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--surface2)">
+   <div style="font-size:11px;color:var(--muted);margin-bottom:8px">RETRIEVED SUBGRAPH · 6 facts · 2 hops · 41ms — injected into the agent's context for: <i>${esc(q)}</i></div>
+   <div class="factline"><span class="ent" style="color:var(--c1)">(Subscriber 98xxxxxx21)</span> <span class="rel">−[SUBSCRIBES_TO]→</span> <span class="ent" style="color:var(--c2)">(Plan ₹239 · 1.5GB/day)</span> · recharge lapsed 6d</div>
+   <div class="factline"><span class="ent" style="color:var(--c1)">(Subscriber 98xxxxxx21)</span> <span class="rel">−[LOCATED_IN]→</span> <span class="ent" style="color:var(--c3)">(Circle Maharashtra)</span> · competitor ₹199 launch active</div>
+   <div class="factline"><span class="ent" style="color:var(--c1)">(Subscriber 98xxxxxx21)</span> <span class="rel">−[RAISED]→</span> <span class="ent" style="color:var(--c5)">(Complaint #C-88123 · data speed)</span> · open 3d</div>
+   <div class="factline"><span class="ent" style="color:var(--c5)">(Complaint #C-88123)</span> <span class="rel">−[ABOUT]→</span> <span class="ent" style="color:var(--c4)">(CellSite MH-PUNE-0412)</span> · congestion 87%</div>
+   <div class="factline"><span class="ent" style="color:var(--c1)">(Subscriber 98xxxxxx21)</span> <span class="rel">−[RECEIVED]→</span> <span class="ent" style="color:var(--c6)">(Offer OTT-3mo)</span> · ignored 2w ago</div>
+   <div class="factline">derived: churn_risk 0.81 · drivers: QoE degradation (0.44), lapse (0.27), competitor pressure (0.10)</div>
+  </div>`;
+ },700);
+}
+</script>
+<script>
+/* ================= AGENT STUDIO v2: tabs, prompt builder, zoom, live runs ================= */
+const SKILLCAT=['Churn scoring','Offer selection','Copy studio (multilingual)','Should-cost modelling','Concession ladder','Audience builder','Incident correlation','Proposal builder','Summarisation','Structured extraction'];
+const TOOLCAT=['CRM lookup','Billing API','CVM offer API','SMS / WhatsApp send','Telephony (SIP)','ERP lookup','Campaign manager API','Network diagnostics','Email / Calendar MCP','Web research'];
+let studioTab='canvas', ZOOM=1;
+function pbDefault(){return{persona:'You are a retention specialist for an Indian telco consumer base — warm, concise, fluent in Hinglish.',
+ goal:'Identify why this subscriber is at churn risk and execute the cheapest journey that retains them.',
+ instructions:'1. Pull the subscriber subgraph from the knowledge graph before reasoning.\n2. Diagnose the primary churn driver (price / network / service).\n3. Pick ONE lever: network fix, plan right-size, or margin-safe offer.\n4. Draft the outreach in the subscriber\'s preferred language.',
+ constraints:'Never exceed 20% discount. Respect DND and TRAI quiet hours. Never mention competitors by name. Escalate accounts with ARPU > ₹2,000 to a human.',
+ examples:'Input: lapse 6d, complaint about data speed, Pune.\nOutput: {"driver":"network","action":"priority_ticket+bridge_offer","message":"..."}',
+ output:'Strict JSON: {driver, action, offer_id?, message, confidence}',
+ skills:['Churn scoring','Offer selection'],tools:['CVM offer API','SMS / WhatsApp send'],useKG:true,temp:0.3}}
+function pbCompiled(){
+ const p=ST.prompt;
+ const parts=[['# Role',p.persona],['# Goal',p.goal],['# Instructions',p.instructions],['# Constraints & guardrails',p.constraints],['# Output format',p.output],['# Examples',p.examples]];
+ let s=parts.filter(x=>x[1].trim()).map(x=>x[0]+'\n'+x[1].trim()).join('\n\n');
+ if(p.skills.length)s+='\n\n# Loaded skills\n'+p.skills.map(x=>'- '+x).join('\n');
+ if(p.tools.length)s+='\n\n# Tools available\n'+p.tools.map(x=>'- '+x).join('\n');
+ if(p.useKG)s+='\n\n# Context\nKnowledge-graph retrieval enabled: entity linking → 2-hop subgraph → facts injected before each reasoning pass. Cite retrieved facts; if the graph has no answer, say so.';
+ const vars=[...new Set((s.match(/\{\{\s*[\w.]+\s*\}\}/g)||[]))];
+ return{text:s,tokens:Math.round(s.length/4),vars};
+}
+function renderStudio(){
+ if(!ST){ST=newBlank();ST.sel=null}
+ if(!ST.prompt)ST.prompt=pbDefault();
+ $('#view-studio').innerHTML=`
+  <div class="toolbar">
+    <input id="st-name" value="${esc(ST.name)}" aria-label="Agent name" style="font-weight:600;width:210px">
+    <select id="st-tpl" aria-label="Load template"><option value="">Start from template…</option>${TEMPLATES.map(t=>`<option value="${t.id}">${esc(t.name)} — ${esc(t.cat)}</option>`).join('')}</select>
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="${studioTab==='canvas'}" class="${studioTab==='canvas'?'on':''}" id="tab-canvas">Canvas</button>
+      <button role="tab" aria-selected="${studioTab==='prompt'}" class="${studioTab==='prompt'?'on':''}" id="tab-prompt">Prompt Builder</button>
+    </div>
+    <span class="spacer"></span>
+    <button id="st-validate">Validate</button>
+    <button id="st-test">▶ Test run</button>
+    <button class="primary" id="st-deploy">Deploy agent</button>
+  </div>
+  ${studioTab==='canvas'?`
+  <div id="studio-frame">
+    <div id="palette" aria-label="Component palette">
+      <h4>Add components</h4>
+      ${Object.entries(NODETYPES).map(([k,v])=>`<div class="pal-item" data-add="${k}" role="button" tabindex="0"><span class="nd" style="background:${v.color}"></span>${esc(v.label)}</div>`).join('')}
+      <p style="font-size:11px;color:var(--muted);line-height:1.5;margin-top:12px">Click to add, drag cards to arrange, drag a right port onto another card to connect. Test runs light the path up live.</p>
+    </div>
+    <div id="canvas-holder">
+      <div class="zoombar"><button id="zm-out" aria-label="zoom out">−</button><span class="zl num" id="zm-l">${Math.round(ZOOM*100)}%</span><button id="zm-in" aria-label="zoom in">＋</button><button id="zm-fit" style="font-size:11px">Fit</button></div>
+      <div id="canvas" style="transform:scale(${ZOOM});transform-origin:0 0"><svg id="edgelayer"></svg></div>
+    </div>
+    <div id="propspanel"><h4 style="font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">Properties</h4><div id="props-body"></div></div>
+  </div>`:`
+  <div id="pb-grid">
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="card"><h3>Prompt engineering</h3><p class="sub">The agent's brain, written as structured prompt sections — {{variables}} become run-time inputs</p>
+        <div class="field"><label>Persona / role</label><textarea data-pb="persona" rows="2">${esc(ST.prompt.persona)}</textarea></div>
+        <div class="field"><label>Goal</label><textarea data-pb="goal" rows="2">${esc(ST.prompt.goal)}</textarea></div>
+        <div class="field"><label>Instructions (the agent's procedure)</label><textarea data-pb="instructions" rows="5">${esc(ST.prompt.instructions)}</textarea></div>
+        <div class="field"><label>Constraints &amp; guardrails</label><textarea data-pb="constraints" rows="3">${esc(ST.prompt.constraints)}</textarea></div>
+        <div class="field"><label>Few-shot examples</label><textarea data-pb="examples" rows="3">${esc(ST.prompt.examples)}</textarea></div>
+        <div class="field"><label>Output format</label><textarea data-pb="output" rows="2">${esc(ST.prompt.output)}</textarea></div>
+      </div>
+      <div class="card"><h3>Capabilities</h3><p class="sub">Skills and tools the prompt can call on — these become nodes when you compile to canvas</p>
+        <label style="display:block;margin-bottom:6px">Skills</label>
+        <div class="checkrow" style="margin-bottom:14px">${SKILLCAT.map(s=>`<span class="ck ${ST.prompt.skills.includes(s)?'on':''}" role="checkbox" aria-checked="${ST.prompt.skills.includes(s)}" tabindex="0" data-skill="${esc(s)}">${ST.prompt.skills.includes(s)?'✓ ':''}${esc(s)}</span>`).join('')}</div>
+        <label style="display:block;margin-bottom:6px">Tools</label>
+        <div class="checkrow" style="margin-bottom:14px">${TOOLCAT.map(s=>`<span class="ck ${ST.prompt.tools.includes(s)?'on':''}" role="checkbox" aria-checked="${ST.prompt.tools.includes(s)}" tabindex="0" data-tool="${esc(s)}">${ST.prompt.tools.includes(s)?'✓ ':''}${esc(s)}</span>`).join('')}</div>
+        <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap">
+          <span class="ck ${ST.prompt.useKG?'on':''}" id="pb-kg" role="checkbox" aria-checked="${ST.prompt.useKG}" tabindex="0">${ST.prompt.useKG?'✓ ':''}Knowledge graph context</span>
+          <div class="range-row" style="flex:1;min-width:220px"><label for="pb-temp" style="white-space:nowrap">Temperature</label><input type="range" id="pb-temp" min="0" max="1" step="0.1" value="${ST.prompt.temp}"><b class="num" id="pb-temp-v" style="min-width:26px">${ST.prompt.temp}</b></div>
+          <select id="pb-model" aria-label="model">${MODELS.map(m=>`<option value="${m.id}" ${m.id===ST.model?'selected':''}>${esc(m.name)} ${m.open?'· open':'· closed'}</option>`).join('')}</select>
+        </div></div>
+    </div>
+    <div class="card" id="pb-preview"><h3>Compiled system prompt</h3><p class="sub" id="pb-meta"></p>
+      <pre id="pb-out" class="mono"></pre>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="primary" id="pb-test">▶ Test prompt</button>
+        <button id="pb-compile">Compile to canvas →</button>
+        <button class="ghost" id="pb-save">Save to prompt library</button>
+      </div></div>
+  </div>`}`;
+ $('#st-name').addEventListener('input',e=>ST.name=e.target.value);
+ $('#st-tpl').addEventListener('change',e=>{if(e.target.value)openAgentInStudio(e.target.value)});
+ $('#tab-canvas').addEventListener('click',()=>{studioTab='canvas';renderStudio()});
+ $('#tab-prompt').addEventListener('click',()=>{studioTab='prompt';renderStudio()});
+ $('#st-validate').addEventListener('click',validateGraph);
+ $('#st-test').addEventListener('click',testRun);
+ $('#st-deploy').addEventListener('click',deployFromStudio);
+ if(studioTab==='canvas'){
+   $$('#palette .pal-item').forEach(el=>{const add=()=>{addNode(el.dataset.add)};el.addEventListener('click',add);el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();add()}})});
+   const setZ=z=>{ZOOM=Math.min(1.5,Math.max(0.4,z));$('#canvas').style.transform='scale('+ZOOM+')';$('#zm-l').textContent=Math.round(ZOOM*100)+'%'};
+   $('#zm-in').addEventListener('click',()=>setZ(ZOOM+0.1));
+   $('#zm-out').addEventListener('click',()=>setZ(ZOOM-0.1));
+   $('#zm-fit').addEventListener('click',()=>{const maxX=Math.max(...ST.nodes.map(n=>n.x+220),400);setZ(Math.min(1,($('#canvas-holder').clientWidth-40)/maxX));$('#canvas-holder').scrollTo(0,0)});
+   drawCanvas();renderProps();
+ }else{
+   const upd=()=>{const c=pbCompiled();$('#pb-out').textContent=c.text;
+     $('#pb-meta').innerHTML='≈ <b class="num">'+fmtN(c.tokens)+'</b> tokens · '+(c.vars.length?c.vars.length+' variables: '+c.vars.map(v=>'<code>'+esc(v)+'</code>').join(' '):'no variables')+' · '+esc(modelById(ST.model).name)};
+   $$('[data-pb]').forEach(t=>t.addEventListener('input',()=>{ST.prompt[t.dataset.pb]=t.value;upd()}));
+   const togg=(el,arr,key)=>{const v=el.dataset[key];const i=arr.indexOf(v);if(i>=0)arr.splice(i,1);else arr.push(v);renderStudio()};
+   $$('[data-skill]').forEach(el=>{const f=()=>togg(el,ST.prompt.skills,'skill');el.addEventListener('click',f);el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();f()}})});
+   $$('[data-tool]').forEach(el=>{const f=()=>togg(el,ST.prompt.tools,'tool');el.addEventListener('click',f);el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();f()}})});
+   $('#pb-kg').addEventListener('click',()=>{ST.prompt.useKG=!ST.prompt.useKG;renderStudio()});
+   $('#pb-temp').addEventListener('input',e=>{ST.prompt.temp=+e.target.value;$('#pb-temp-v').textContent=e.target.value});
+   $('#pb-model').addEventListener('change',e=>{ST.model=e.target.value;upd()});
+   $('#pb-test').addEventListener('click',pbTest);
+   $('#pb-compile').addEventListener('click',pbCompile);
+   $('#pb-save').addEventListener('click',()=>{const c=pbCompiled();S.prompts.unshift({id:uid('p'),title:ST.name+' — system prompt',cat:'Retention',lang:'—',shares:0,body:c.text});saveState();toast('Saved to the prompt library — shareable with your team')});
+   upd();
+ }
+}
+function drawCanvas(){
+ const cv=$('#canvas');if(!cv)return;
+ $$('.node',cv).forEach(e=>e.remove());
+ ST.nodes.forEach(n=>{
+  const t=NODETYPES[n.type];
+  const el=document.createElement('div');
+  el.className='node'+(ST.sel===n.id?' selected':'');
+  el.style.left=n.x+'px';el.style.top=n.y+'px';el.dataset.id=n.id;
+  el.innerHTML=`<header><span class="nd" style="background:${t.color}"></span>${esc(n.cfg.name||t.label)}<span style="margin-left:auto;font-size:10px;color:var(--muted);font-weight:500">${esc(t.label.split(' ')[0])}</span></header><div class="body">${esc(n.cfg.detail||t.hint)}</div><span class="port in" data-port="in" title="input"></span><span class="port out" data-port="out" title="drag to connect"></span><span class="runstat" aria-hidden="true">⟳</span>`;
+  cv.appendChild(el);
+  el.addEventListener('pointerdown',e=>{
+    if(e.target.dataset.port==='out'){startWire(n,e);return}
+    if(e.target.dataset.port==='in')return;
+    ST.sel=n.id;$$('.node',cv).forEach(x=>x.classList.toggle('selected',x.dataset.id===n.id));renderProps();
+    const sx=e.clientX,sy=e.clientY,ox=n.x,oy=n.y;
+    el.setPointerCapture(e.pointerId);el.style.cursor='grabbing';
+    const mv=ev=>{n.x=Math.max(0,ox+(ev.clientX-sx)/ZOOM);n.y=Math.max(0,oy+(ev.clientY-sy)/ZOOM);el.style.left=n.x+'px';el.style.top=n.y+'px';drawEdges()};
+    const up=()=>{el.removeEventListener('pointermove',mv);el.removeEventListener('pointerup',up);el.style.cursor='grab'};
+    el.addEventListener('pointermove',mv);el.addEventListener('pointerup',up);
+  });
+ });
+ drawEdges();
+}
+function startWire(n,e){
+ e.preventDefault();
+ const toLocal=ev=>{const r=$('#canvas').getBoundingClientRect();return{x:(ev.clientX-r.left)/ZOOM,y:(ev.clientY-r.top)/ZOOM}};
+ const mv=ev=>{const a=portPos(n.id,'out'),b=toLocal(ev);drawEdges(`<path d="${edgePath(a,b)}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-dasharray="5 4"/>`)};
+ const up=ev=>{
+  removeEventListener('pointermove',mv);removeEventListener('pointerup',up);
+  const tgt=document.elementFromPoint(ev.clientX,ev.clientY);
+  const nodeEl=tgt&&tgt.closest('.node');
+  if(nodeEl&&nodeEl.dataset.id!==n.id&&!ST.edges.some(x=>x.from===n.id&&x.to===nodeEl.dataset.id)){ST.edges.push({from:n.id,to:nodeEl.dataset.id});toast('Connected')}
+  drawEdges();
+ };
+ addEventListener('pointermove',mv);addEventListener('pointerup',up);
+}
+function pbCompile(){
+ const p=ST.prompt;let nodes=[],edges=[],i=0;const id=()=> 'c'+(++i);
+ const goal=id();nodes.push({id:goal,type:'goal',x:60,y:40,cfg:{name:ST.name==='Untitled agent'?'Goal & instructions':ST.name,detail:(p.goal+'\n'+p.instructions).slice(0,220)}});
+ const model=id();nodes.push({id:model,type:'model',x:60,y:210,cfg:{name:ST.model,detail:'temp '+p.temp+' · via gateway'}});edges.push({from:model,to:goal});
+ if(p.useKG){const kg=id();nodes.push({id:kg,type:'knowledge',x:60,y:360,cfg:{name:'Subscriber 360 KG',detail:'Entity linking → 2-hop subgraph → fact injection'}});edges.push({from:kg,to:goal})}
+ let prev=goal;
+ p.skills.forEach((s,si)=>{const nid=id();nodes.push({id:nid,type:'skill',x:330,y:40+si*110,cfg:{name:s,detail:'Loaded from skills catalog'}});edges.push({from:goal,to:nid});prev=nid});
+ p.tools.forEach((tn,ti)=>{const nid=id();nodes.push({id:nid,type:'tool',x:600,y:40+ti*110,cfg:{name:tn,detail:'Typed function via gateway'}});edges.push({from:prev,to:nid});prev=nid});
+ if(p.constraints.trim()){const g=id();nodes.push({id:g,type:'guardrail',x:870,y:40,cfg:{name:'Policy guardrails',detail:p.constraints.slice(0,180)}});edges.push({from:prev,to:g});prev=g}
+ const mem=id();nodes.push({id:mem,type:'memory',x:870,y:190,cfg:{name:'Long-term memory',detail:'Journey history, 90-day TTL'}});edges.push({from:prev,to:mem});
+ ST.nodes=nodes;ST.edges=edges;ST.sel=null;studioTab='canvas';renderStudio();
+ toast('Prompt compiled to a canvas graph — same agent, two views');
+}
+function pbTest(){
+ const c=pbCompiled(),m=modelById(ST.model);
+ const d=openModal(`<h3>Prompt test — ${esc(ST.name)}</h3>
+  <div class="field" style="margin:12px 0"><label for="pt-in">Test input ${c.vars.length?'(variables: '+c.vars.map(esc).join(', ')+')':''}</label><textarea id="pt-in" rows="2">Subscriber 98xxxxxx21: recharge lapsed 6 days, plan ₹239, 2 data-speed complaints, Pune, prefers Marathi.</textarea></div>
+  <button class="primary" id="pt-go">Run against ${esc(m.name)}</button>
+  <div class="runlog" id="pt-log" style="margin-top:14px" aria-live="polite"></div>`,'drawer');
+ $('#pt-go',d).addEventListener('click',()=>{
+  const log=$('#pt-log',d);log.innerHTML='';const t0=Date.now();
+  const line=(k,cls,txt)=>{const dv=document.createElement('div');dv.className='ln';dv.innerHTML=`<span class="t num">${((Date.now()-t0)/1000).toFixed(1)}s</span><span class="k ${cls}">${k}</span><span>${esc(txt)}</span>`;log.appendChild(dv);log.scrollTop=log.scrollHeight};
+  const steps=[
+   ()=>line('PROMPT','plan','System prompt assembled: '+fmtN(c.tokens)+' tokens · '+ST.prompt.skills.length+' skills · '+ST.prompt.tools.length+' tools'),
+   ()=>line('CONTEXT','mem',ST.prompt.useKG?'KG retrieval: 6 facts injected (plan, circle, complaint, cell congestion, offer history)':'No knowledge graph attached — reasoning from prompt only'),
+   ()=>line('LLM','llm',m.name+' · temp '+ST.prompt.temp+' · streaming'),
+   ()=>line('OUTPUT','done','{"driver":"network","action":"priority_ticket+bridge_offer","offer_id":"BR-199","message":"Namaskar! Tumchya bhagat network sudharat aahe…","confidence":0.87}'),
+   ()=>line('CHECK','guard','Output matches declared format ✓ · constraints respected (discount 16.7% ≤ 20%, DND clear) ✓'),
+  ];
+  steps.forEach((f,i)=>setTimeout(f,300+i*550));
+ });
+}
+function testRun(){
+ const modelNode=ST.nodes.find(n=>n.type==='model');
+ const m=modelById(modelNode?modelNode.cfg.name:ST.model);
+ const tools=ST.nodes.filter(n=>n.type==='tool'||n.type==='mcp');
+ const seq=['trigger','knowledge','goal','model','skill','tool','guardrail','model','memory'];
+ const liveNodes=seq.map(t=>ST.nodes.find(n=>n.type===t)).map(n=>n?n.id:null);
+ const mark=(i,cls)=>{const id=liveNodes[i];if(!id)return;const el=$('.node[data-id="'+id+'"]');if(!el)return;
+   el.classList.remove('running','stepdone');el.classList.add(cls);const b=$('.runstat',el);if(b)b.textContent=cls==='running'?'⟳':'✓'};
+ const d=openModal(`<h3>Test run — ${esc(ST.name)}</h3>
+   <div class="field" style="margin:12px 0"><label for="tr-input">Scenario input</label><textarea id="tr-input" rows="2">Subscriber 98xxxxxx21, prepaid ₹239 plan, recharge lapsed 6 days, 2 network complaints this month in Pune. Decide the win-back action.</textarea></div>
+   <button class="primary" id="tr-go">Run</button>
+   <div class="runlog" id="tr-log" style="margin-top:14px" aria-live="polite"><div class="ln"><span class="t">—</span><span class="k msg">ready</span><span>Model: ${esc(m.name)} (${m.open?'open-source':'closed'}) via gateway — watch the canvas light up as steps execute</span></div></div>`,'drawer');
+ $('#tr-go',d).addEventListener('click',()=>{
+  const log=$('#tr-log',d);log.innerHTML='';const t0=Date.now();
+  $$('#canvas .node').forEach(el=>{el.classList.remove('running','stepdone')});
+  const line=(k,cls,txt)=>{const dv=document.createElement('div');dv.className='ln';dv.innerHTML=`<span class="t num">${((Date.now()-t0)/1000).toFixed(1)}s</span><span class="k ${cls}">${k}</span><span>${esc(txt)}</span>`;log.appendChild(dv);log.scrollTop=log.scrollHeight};
+  const steps=[
+   ['TRIGGER','guard','Manual run (production triggers: churn-score webhook, nightly schedule)'],
+   ['CONTEXT','mem','Knowledge graph: 6 facts injected · memory hits (2)'],
+   ['PLAN','plan','Goal decomposed → score risk → pick cheapest saving lever → execute → verify guardrails'],
+   ['LLM','llm',m.name+' · plan pass · 1,120 tokens in / 240 out'],
+   ['SKILL','plan','Churn scoring → risk 0.81 (high): lapse 6d + QoE degradation on serving cell'],
+   ['TOOL','tool',(tools[0]?tools[0].cfg.name:'action api')+' → ₹239→₹199 bridge offer + priority ticket (margin-safe)'],
+   ['GUARD','guard','Policy check passed: discount 16.7% ≤ 20% cap · DND clear · tone OK'],
+   ['LLM','llm',m.name+' · respond pass · 890 tokens in / 310 out'],
+   ['MEMORY','mem','Journey written to long-term memory (subscriber timeline)'],
+   ['DONE','done','Win-back SMS queued in Marathi + ticket NOC-88123 raised · est. cost '+fmt$(runCost(m,2010,550))],
+  ];
+  steps.forEach((s,i)=>setTimeout(()=>{line(s[0],s[1],s[2]);if(i<9){if(i>0)mark(i-1,'stepdone');mark(i,'running')}else{mark(8,'stepdone')}},350+i*520));
+  setTimeout(()=>{
+   const tr={id:'tr-'+(1000+S.traces.length+1),agentId:'studio',ts:Date.now(),status:'ok',latency:1900+Math.round(Math.random()*900),tokensIn:2010,tokensOut:550,model:m.id,cost:runCost(m,2010,550),evals:{grounded:.94,helpful:.9,guardrail:0}};
+   S.traces.unshift(tr);toast('Test complete — trace '+tr.id+' captured in Observability');
+  },350+steps.length*520);
+ });
+}
+/* re-render current view so the new modules take over immediately */
 route();
 </script>
