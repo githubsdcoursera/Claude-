@@ -1,0 +1,1092 @@
+<title>Trellis Harness</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* ================= TOKENS ================= */
+:root{
+  color-scheme:light;
+  --bg:#f3f4f6; --surface:#fcfdfe; --surface2:#eceef1; --raise:#ffffff;
+  --ink:#14181e; --ink2:#4c5560; --muted:#8a93a0; --line:#e2e6eb; --line2:#d3d9e0;
+  --accent:#e4581b; --accent-soft:rgba(228,88,27,.10); --accent-line:rgba(228,88,27,.35); --accent-ink:#ffffff;
+  --ok:#0ca30c; --ok-text:#006300; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b;
+  --c1:#2a78d6; --c2:#eb6834; --c3:#1baf7a; --c4:#eda100; --c5:#e87ba4; --c6:#008300; --c7:#4a3aa7; --c8:#e34948;
+  --grid:#e6e5df; --axis:#c3c2b7; --chart-surface:#fcfdfe;
+  --shadow:0 1px 2px rgba(15,20,30,.06),0 8px 24px rgba(15,20,30,.07);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0e1116; --surface:#151a21; --surface2:#1c232d; --raise:#1a212b;
+    --ink:#f2f5f8; --ink2:#b7c0cb; --muted:#7c8794; --line:#262e3a; --line2:#333d4c;
+    --accent:#f0692b; --accent-soft:rgba(240,105,43,.14); --accent-line:rgba(240,105,43,.45); --accent-ink:#ffffff;
+    --ok:#0ca30c; --ok-text:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b;
+    --c1:#3987e5; --c2:#d95926; --c3:#199e70; --c4:#c98500; --c5:#d55181; --c6:#008300; --c7:#9085e9; --c8:#e66767;
+    --grid:#262e3a; --axis:#3a4452; --chart-surface:#151a21;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0e1116; --surface:#151a21; --surface2:#1c232d; --raise:#1a212b;
+  --ink:#f2f5f8; --ink2:#b7c0cb; --muted:#7c8794; --line:#262e3a; --line2:#333d4c;
+  --accent:#f0692b; --accent-soft:rgba(240,105,43,.14); --accent-line:rgba(240,105,43,.45); --accent-ink:#ffffff;
+  --ok:#0ca30c; --ok-text:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b;
+  --c1:#3987e5; --c2:#d95926; --c3:#199e70; --c4:#c98500; --c5:#d55181; --c6:#008300; --c7:#9085e9; --c8:#e66767;
+  --grid:#262e3a; --axis:#3a4452; --chart-surface:#151a21;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+}
+/* ================= BASE ================= */
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.55 "IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:"Archivo","IBM Plex Sans",system-ui,sans-serif;margin:0;text-wrap:balance;letter-spacing:-.01em}
+button{font:inherit;cursor:pointer;border:1px solid var(--line2);background:var(--surface);color:var(--ink);border-radius:8px;padding:7px 13px;transition:background .12s,border-color .12s}
+button:hover{background:var(--surface2)}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+button.primary:hover{filter:brightness(1.07)}
+button.ghost{background:transparent;border-color:transparent;color:var(--ink2)}
+button.ghost:hover{background:var(--surface2);color:var(--ink)}
+button.small{padding:4px 10px;font-size:12.5px;border-radius:7px}
+button.danger{color:var(--crit);border-color:var(--crit)}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line2);border-radius:8px;padding:7px 10px}
+textarea{resize:vertical;line-height:1.5}
+label{font-size:12px;font-weight:600;color:var(--ink2);letter-spacing:.03em}
+code,.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.92em}
+.num{font-variant-numeric:tabular-nums}
+::selection{background:var(--accent-soft)}
+/* ================= APP FRAME ================= */
+#app{display:grid;grid-template-columns:228px 1fr;min-height:100vh}
+#rail{background:var(--surface);border-right:1px solid var(--line);padding:18px 12px;position:sticky;top:0;height:100vh;overflow:auto;display:flex;flex-direction:column;gap:2px}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 8px 16px}
+.brand-mark{width:30px;height:30px;border-radius:8px;background:var(--accent);display:grid;place-items:center;flex:none}
+.brand-mark svg{display:block}
+.brand b{font-family:"Archivo",sans-serif;font-size:16.5px;font-weight:800;letter-spacing:-.02em}
+.brand small{display:block;font-size:10.5px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.navsec{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:14px 10px 5px}
+.navitem{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;color:var(--ink2);cursor:pointer;border:none;background:none;width:100%;text-align:left;font-weight:500}
+.navitem svg{flex:none;opacity:.75}
+.navitem:hover{background:var(--surface2);color:var(--ink)}
+.navitem.active{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.navitem.active svg{opacity:1}
+#main{min-width:0;display:flex;flex-direction:column}
+#topbar{display:flex;align-items:center;gap:14px;padding:14px 26px;border-bottom:1px solid var(--line);background:var(--surface);position:sticky;top:0;z-index:40}
+#viewtitle{font-size:17px;font-weight:700}
+#topbar .spacer{flex:1}
+.chip{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink2);background:var(--surface2);border:1px solid var(--line);border-radius:999px;padding:5px 12px;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.dot.ok{background:var(--ok)} .dot.warn{background:var(--warn)} .dot.crit{background:var(--crit)}
+#content{padding:24px 26px 60px;max-width:1340px;width:100%;margin:0 auto}
+.view{display:none}
+.view.active{display:block}
+/* ================= COMPONENTS ================= */
+.grid{display:grid;gap:16px}
+.cols2{grid-template-columns:1fr 1fr}.cols3{grid-template-columns:repeat(3,1fr)}.cols4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:1100px){.cols4{grid-template-columns:1fr 1fr}.cols3{grid-template-columns:1fr 1fr}}
+@media(max-width:760px){#app{grid-template-columns:1fr}#rail{position:static;height:auto;flex-direction:row;flex-wrap:wrap}.cols2,.cols3,.cols4{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px}
+.card h3{font-size:14.5px;margin-bottom:4px}
+.card .sub{font-size:12.5px;color:var(--muted);margin:0 0 12px}
+.tile .k{font-size:12px;font-weight:600;color:var(--ink2);letter-spacing:.02em}
+.tile .v{font-family:"Archivo",sans-serif;font-size:30px;font-weight:700;letter-spacing:-.02em;margin:2px 0 0}
+.tile .d{font-size:12px;color:var(--muted)}
+.tile .d .up{color:var(--ok-text);font-weight:600}
+.tile .d .down{color:var(--crit);font-weight:600}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;border-radius:999px;padding:2px 9px;letter-spacing:.02em}
+.pill.ok{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok-text)}
+.pill.warn{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--ink)}
+.pill.crit{background:color-mix(in srgb,var(--crit) 14%,transparent);color:var(--crit)}
+.pill.info{background:var(--accent-soft);color:var(--accent)}
+.pill.neutral{background:var(--surface2);color:var(--ink2)}
+table.data{width:100%;border-collapse:collapse;font-size:13px}
+table.data th{text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:7px 10px;border-bottom:1px solid var(--line)}
+table.data td{padding:8px 10px;border-bottom:1px solid var(--line)}
+table.data tr:last-child td{border-bottom:none}
+table.data tr.rowlink{cursor:pointer}
+table.data tr.rowlink:hover td{background:var(--surface2)}
+.scrollx{overflow-x:auto}
+.tag{display:inline-block;font-size:11px;font-weight:600;color:var(--ink2);background:var(--surface2);border:1px solid var(--line);border-radius:6px;padding:1px 7px;margin:2px 3px 2px 0}
+.empty{color:var(--muted);font-size:13px;padding:18px;text-align:center;border:1px dashed var(--line2);border-radius:10px}
+.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.toolbar .spacer{flex:1}
+/* charts */
+.chart-wrap{position:relative}
+.chart-wrap svg{display:block;width:100%;height:auto}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink2);margin:8px 0 2px}
+.legend .sw{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+#tip{position:fixed;z-index:200;pointer-events:none;background:var(--raise);border:1px solid var(--line2);box-shadow:var(--shadow);border-radius:8px;padding:7px 10px;font-size:12px;display:none;max-width:260px}
+#tip b{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-bottom:2px}
+.tbl-toggle{font-size:11.5px;color:var(--muted);background:none;border:none;padding:2px 0;text-decoration:underline;cursor:pointer}
+.tbl-toggle:hover{color:var(--ink);background:none}
+/* modal + drawer */
+#overlay{position:fixed;inset:0;background:rgba(10,13,18,.5);z-index:90;display:none}
+#overlay.show{display:block}
+.modal{position:fixed;z-index:100;top:50%;left:50%;transform:translate(-50%,-50%);width:min(680px,94vw);max-height:86vh;overflow:auto;background:var(--surface);border:1px solid var(--line2);border-radius:14px;box-shadow:var(--shadow);padding:22px}
+.drawer{position:fixed;z-index:100;top:0;right:0;height:100vh;width:min(560px,95vw);background:var(--surface);border-left:1px solid var(--line2);box-shadow:var(--shadow);overflow:auto;padding:22px;display:flex;flex-direction:column}
+.modal h3,.drawer h3{font-size:16px}
+.modal .x,.drawer .x{position:absolute;top:14px;right:14px}
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:300;background:var(--ink);color:var(--bg);padding:9px 18px;border-radius:10px;font-size:13px;font-weight:500;display:none;box-shadow:var(--shadow)}
+/* ================= STUDIO ================= */
+#studio-frame{display:grid;grid-template-columns:210px 1fr 300px;gap:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface);min-height:600px}
+@media(max-width:1100px){#studio-frame{grid-template-columns:180px 1fr}#propspanel{display:none}}
+#palette{border-right:1px solid var(--line);padding:12px;overflow:auto;max-height:78vh}
+#palette h4{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:12px 0 6px}
+.pal-item{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:500;padding:7px 9px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;cursor:pointer;background:var(--surface);user-select:none}
+.pal-item:hover{border-color:var(--accent-line);background:var(--accent-soft)}
+.pal-item .nd{width:9px;height:9px;border-radius:3px;flex:none}
+#canvas-holder{position:relative;overflow:auto;background:var(--bg);background-image:radial-gradient(var(--line2) 1px,transparent 1px);background-size:22px 22px;max-height:78vh}
+#canvas{position:relative;width:1600px;height:1100px}
+#edgelayer{position:absolute;inset:0;width:1600px;height:1100px;pointer-events:none}
+.node{position:absolute;width:196px;background:var(--raise);border:1.5px solid var(--line2);border-radius:10px;box-shadow:var(--shadow);cursor:grab;user-select:none}
+.node.selected{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft),var(--shadow)}
+.node header{display:flex;align-items:center;gap:7px;padding:8px 10px;border-bottom:1px solid var(--line);font-weight:600;font-size:12.5px;border-radius:10px 10px 0 0}
+.node header .nd{width:9px;height:9px;border-radius:3px;flex:none}
+.node .body{padding:8px 10px;font-size:11.5px;color:var(--ink2);min-height:20px;word-break:break-word}
+.node .port{position:absolute;width:14px;height:14px;border-radius:50%;background:var(--surface);border:2.5px solid var(--muted);top:50%;transform:translateY(-50%);cursor:crosshair}
+.node .port:hover{border-color:var(--accent);background:var(--accent-soft)}
+.node .port.in{left:-8px}
+.node .port.out{right:-8px}
+#propspanel{border-left:1px solid var(--line);padding:16px;overflow:auto;max-height:78vh}
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+#propspanel input,#propspanel select,#propspanel textarea{width:100%}
+/* run console */
+.runlog{background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:12px;font-family:"IBM Plex Mono",monospace;font-size:12px;max-height:340px;overflow:auto}
+.runlog .ln{padding:3px 0;border-bottom:1px dashed var(--line);display:flex;gap:8px}
+.runlog .ln:last-child{border-bottom:none}
+.runlog .t{color:var(--muted);flex:none}
+.runlog .k{font-weight:700;flex:none;width:100px;overflow:hidden;text-overflow:ellipsis}
+.runlog .k.plan{color:var(--c7)} .runlog .k.tool{color:var(--c1)} .runlog .k.llm{color:var(--c2)} .runlog .k.mem{color:var(--c3)} .runlog .k.guard{color:var(--warn)} .runlog .k.done{color:var(--ok-text)} .runlog .k.msg{color:var(--ink2)}
+/* library */
+.agent-card{display:flex;flex-direction:column;gap:10px}
+.agent-card .head{display:flex;align-items:flex-start;gap:12px}
+.agent-avatar{width:42px;height:42px;border-radius:10px;display:grid;place-items:center;flex:none;font-family:"Archivo",sans-serif;font-weight:800;font-size:16px;color:#fff}
+.agent-card .kpis{display:flex;gap:16px;font-size:12px;color:var(--ink2);flex-wrap:wrap}
+.agent-card .kpis b{display:block;font-family:"Archivo",sans-serif;font-size:16px;color:var(--ink)}
+.agent-card .actions{display:flex;gap:8px;margin-top:auto;flex-wrap:wrap}
+/* orchestration */
+.orch-board{display:flex;gap:20px;align-items:stretch;flex-wrap:wrap}
+.orch-diagram{flex:1 1 380px;min-width:320px}
+.orch-log{flex:1 1 340px;min-width:300px}
+/* prompts */
+.prompt-card pre{white-space:pre-wrap;background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:10px;font-size:12px;font-family:"IBM Plex Mono",monospace;max-height:150px;overflow:auto;margin:8px 0}
+/* gateway */
+.provider{display:flex;align-items:flex-start;gap:14px}
+.provider .logo{width:38px;height:38px;border-radius:9px;display:grid;place-items:center;font-family:"Archivo",sans-serif;font-weight:800;color:#fff;flex:none}
+.switch{position:relative;width:38px;height:22px;flex:none;cursor:pointer}
+.switch input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer}
+.switch .tr{position:absolute;inset:0;background:var(--line2);border-radius:999px;transition:background .15s}
+.switch .th{position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.switch input:checked ~ .tr{background:var(--ok)}
+.switch input:checked ~ .th{left:19px}
+.switch input:focus-visible ~ .tr{outline:2px solid var(--accent);outline-offset:2px}
+/* learn */
+.learn-prose{max-width:70ch}
+.learn-prose h3{font-size:16px;margin:26px 0 8px}
+.learn-prose p,.learn-prose li{font-size:14px;color:var(--ink2)}
+.learn-prose li{margin:5px 0}
+.dodont{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:760px){.dodont{grid-template-columns:1fr}}
+.dodont .card{border-top:3px solid var(--ok)}
+.dodont .card.dont{border-top-color:var(--crit)}
+.range-row{display:flex;align-items:center;gap:12px}
+input[type=range]{accent-color:var(--accent);flex:1}
+.budgetbar{height:8px;border-radius:999px;background:var(--surface2);overflow:hidden;margin-top:6px}
+.budgetbar i{display:block;height:100%;border-radius:999px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+<div id="app">
+  <nav id="rail" aria-label="Main">
+    <div class="brand">
+      <span class="brand-mark"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#fff" stroke-width="1.8"><circle cx="4" cy="4" r="2.2"/><circle cx="14" cy="4" r="2.2"/><circle cx="9" cy="14" r="2.2"/><path d="M5.8 5.4 8 11.8M12.2 5.4 10 11.8M6.2 4h5.6"/></svg></span>
+      <span><b>Trellis</b><small>Agentic Harness</small></span>
+    </div>
+    <div class="navsec">Build</div>
+    <button class="navitem" data-view="overview"><svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1.5" y="1.5" width="6" height="6" rx="1.5"/><rect x="9.5" y="1.5" width="6" height="6" rx="1.5"/><rect x="1.5" y="9.5" width="6" height="6" rx="1.5"/><rect x="9.5" y="9.5" width="6" height="6" rx="1.5"/></svg>Overview</button>
+    <button class="navitem" data-view="studio"><svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="3.5" cy="8.5" r="2"/><circle cx="13.5" cy="3.5" r="2"/><circle cx="13.5" cy="13.5" r="2"/><path d="M5.4 7.6 11.6 4.3M5.4 9.4l6.2 3.3"/></svg>Agent Studio</button>
+    <button class="navitem" data-view="library"><svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 3.5h4.5v10H2zM8 3.5h4.5v10H8z"/><path d="M13.6 4.1l2 9.6"/></svg>Agent Library</button>
+    <button class="navitem" data-view="orchestration"><svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8.5" cy="3" r="1.8"/><circle cx="3" cy="13" r="1.8"/><circle cx="8.5" cy="13" r="1.8"/><circle cx="14" cy="13" r="1.8"/><path d="M8.5 5v3M8.5 8H3v3M8.5 8v3M8.5 8h5.5v3"/></svg>Orchestration</button>
+    <button class="navitem" data-view="prompts"><svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2.5 2.5h12v9h-7l-3 3v-3h-2z"/><path d="M5.5 6h6M5.5 8.5h4"/></svg>Prompts &amp; Scenarios</button>
+    <div class="navsec">Operate</div>
+    <button class="navitem" data-view="observability"><svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M1.5 8.5S4 3.5 8.5 3.5 15.5 8.5 15.5 8.5 13 13.5 8.5 13.5 1.5 8.5 1.5 8.5z"/><circle cx="8.5" cy="8.5" r="2.2"/></svg>Observability</button>
+    <button class="navitem" data-view="finops"><svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8.5" cy="8.5" r="6.5"/><path d="M8.5 4.5v8M11 6.2c-.5-1-4.4-1.4-4.4.6 0 2.2 4.6 1 4.6 3.2 0 2-4 1.8-4.8.6"/></svg>FinOps</button>
+    <button class="navitem" data-view="gateway"><svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="2" width="13" height="4.5" rx="1.5"/><rect x="2" y="10.5" width="13" height="4.5" rx="1.5"/><circle cx="4.8" cy="4.2" r=".9" fill="currentColor"/><circle cx="4.8" cy="12.8" r=".9" fill="currentColor"/></svg>Model Gateway</button>
+    <div class="navsec">Grow</div>
+    <button class="navitem" data-view="learn"><svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8.5 3 1.5 6l7 3 7-3z"/><path d="M4 7.2v4.3c0 1 2 2 4.5 2s4.5-1 4.5-2V7.2"/></svg>Learn Agents</button>
+  </nav>
+  <div id="main">
+    <div id="topbar">
+      <span id="viewtitle">Overview</span>
+      <span class="spacer"></span>
+      <span class="chip" id="gw-chip"><span class="dot ok"></span>Gateway healthy · <span class="mono" id="gw-default">llama-3.1-70b</span></span>
+      <span class="chip"><span class="dot ok"></span><span id="agents-live" class="num">0</span> agents live</span>
+    </div>
+    <div id="content">
+      <div class="view" id="view-overview"></div>
+      <div class="view" id="view-studio"></div>
+      <div class="view" id="view-library"></div>
+      <div class="view" id="view-orchestration"></div>
+      <div class="view" id="view-prompts"></div>
+      <div class="view" id="view-observability"></div>
+      <div class="view" id="view-finops"></div>
+      <div class="view" id="view-gateway"></div>
+      <div class="view" id="view-learn"></div>
+    </div>
+  </div>
+</div>
+<div id="overlay"></div>
+<div id="modal-root"></div>
+<div id="tip" role="status"></div>
+<div id="toast"></div>
+<script>
+/* ================= CORE UTILITIES ================= */
+const $=(s,el=document)=>el.querySelector(s), $$=(s,el=document)=>[...el.querySelectorAll(s)];
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt$=v=>v>=1000?'$'+(v/1000).toFixed(1)+'k':v>=1?'$'+v.toFixed(2):v>=0.01?'$'+v.toFixed(3):'$'+v.toFixed(4);
+const fmtN=v=>v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(1)+'k':String(Math.round(v));
+const uid=p=>(p||'id')+'-'+Math.random().toString(36).slice(2,8);
+function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const rng=mulberry(20260830);
+function toast(msg){const t=$('#toast');t.textContent=msg;t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',2600)}
+function store(k,v){try{localStorage.setItem('trellis.'+k,JSON.stringify(v))}catch(e){}}
+function load(k,d){try{const v=localStorage.getItem('trellis.'+k);return v?JSON.parse(v):d}catch(e){return d}}
+/* tooltip */
+const tip=$('#tip');
+function tipShow(html,x,y){tip.innerHTML=html;tip.style.display='block';const w=tip.offsetWidth,h=tip.offsetHeight;let L=x+14,T=y-h-10;if(L+w>innerWidth-8)L=x-w-14;if(T<8)T=y+14;tip.style.left=L+'px';tip.style.top=T+'px'}
+function tipHide(){tip.style.display='none'}
+/* modal / drawer */
+function openModal(html,cls){closeModal();$('#overlay').classList.add('show');const d=document.createElement('div');d.className=cls||'modal';d.innerHTML='<button class="x ghost" aria-label="Close" onclick="closeModal()">✕</button>'+html;$('#modal-root').appendChild(d);return d}
+function closeModal(){$('#overlay').classList.remove('show');$('#modal-root').innerHTML=''}
+$('#overlay').addEventListener('click',closeModal);
+addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+
+/* ================= MODEL CATALOG ================= */
+const MODELS=[
+ {id:'llama-3.1-70b', name:'Llama 3.1 70B', provider:'vLLM cluster', open:true,  inP:0.60, outP:0.80},
+ {id:'llama-3.1-8b',  name:'Llama 3.1 8B',  provider:'Ollama',       open:true,  inP:0.05, outP:0.08},
+ {id:'qwen2.5-72b',   name:'Qwen 2.5 72B',  provider:'vLLM cluster', open:true,  inP:0.55, outP:0.75},
+ {id:'mixtral-8x22b', name:'Mixtral 8x22B', provider:'HF TGI',       open:true,  inP:0.90, outP:1.10},
+ {id:'claude-sonnet', name:'Claude Sonnet', provider:'Anthropic',    open:false, inP:3.00, outP:15.00},
+ {id:'claude-haiku',  name:'Claude Haiku',  provider:'Anthropic',    open:false, inP:0.80, outP:4.00},
+ {id:'gpt-4.1',       name:'GPT-4.1',       provider:'OpenAI',       open:false, inP:2.00, outP:8.00},
+ {id:'gemini-2.5-pro',name:'Gemini 2.5 Pro',provider:'Google',       open:false, inP:1.25, outP:10.00},
+];
+const modelById=id=>MODELS.find(m=>m.id===id)||MODELS[0];
+const runCost=(m,ti,to)=>(ti*m.inP+to*m.outP)/1e6;
+
+/* ================= NODE TYPE CATALOG (Studio) ================= */
+const NODETYPES={
+ goal:      {label:'Goal & Instructions', color:'var(--c7)', hint:'What the agent must achieve, its persona and boundaries.'},
+ model:     {label:'Model',               color:'var(--c2)', hint:'The LLM that powers reasoning. Route via the gateway.'},
+ skill:     {label:'Skill',               color:'var(--c5)', hint:'A reusable packaged capability (playbook + prompts + code).'},
+ tool:      {label:'Tool',                color:'var(--c1)', hint:'A typed function the agent can call: APIs, actions.'},
+ mcp:       {label:'MCP Server',          color:'var(--c4)', hint:'Model Context Protocol server exposing tools & resources.'},
+ memory:    {label:'Memory',              color:'var(--c3)', hint:'Short-term scratchpad or long-term vector memory.'},
+ knowledge: {label:'Knowledge Graph / RAG',color:'var(--c6)',hint:'Grounding: documents, KG entities, telco data products.'},
+ guardrail: {label:'Guardrail',           color:'var(--warn)',hint:'Policy checks on inputs/outputs: PII, tone, compliance.'},
+ handoff:   {label:'Human Handoff',       color:'var(--c8)', hint:'Escalate to a human queue with full context.'},
+ subagent:  {label:'Sub-agent Router',    color:'var(--c7)', hint:'Delegate to specialist agents and merge results.'},
+};
+
+/* ================= PREBUILT TELCO AGENT TEMPLATES ================= */
+function graph(nodes,edges){let i=0;const ids=[];const N=nodes.map(n=>{const id='n'+(++i);ids.push(id);return{id,type:n[0],x:n[1],y:n[2],cfg:{name:n[3],detail:n[4]||''}}});return{nodes:N,edges:edges.map(e=>({from:'n'+e[0],to:'n'+e[1]}))}}
+const TEMPLATES=[
+ {id:'churn-shield',initials:'CS',color:'var(--c1)',name:'Churn Shield',cat:'Retention',model:'llama-3.1-70b',
+  desc:'Predict-and-save agent for a Vi (Vodafone Idea) consumer base: scores churn risk from recharge lapses, network complaints and competitor port-out signals, then runs personalised win-back journeys (recharge offers, plan right-sizing, priority resolution).',
+  kpis:[['Churn saves / wk','412'],['Save rate','31%'],['ARPU protected','₹1.9M']],
+  tags:['Prepaid churn','Win-back','MNP defence','Hindi + English'],
+  graph:graph([
+   ['goal',60,40,'Reduce prepaid churn','Identify at-risk Vi subscribers and execute the cheapest journey that retains them. Never over-discount; respect DND & TRAI norms.'],
+   ['model',60,190,'llama-3.1-70b','Gateway route: retention class'],
+   ['knowledge',60,340,'Subscriber 360 KG','Recharge history, circle, handset, network QoE, complaints'],
+   ['skill',330,40,'Churn scoring','Gradient-risk playbook on lapse + QoE signals'],
+   ['skill',330,150,'Offer selection','Next-best-offer under margin guardrails'],
+   ['tool',330,260,'CVM offer API','POST /offers/provision'],
+   ['tool',330,370,'SMS / WhatsApp send','Journey messaging with language pick'],
+   ['mcp',600,150,'BSS/OSS MCP','Billing, recharge, ticket resources'],
+   ['memory',600,40,'Long-term memory','Per-subscriber journey history, 90-day TTL'],
+   ['guardrail',600,260,'Offer & DND policy','Max discount 20%, DND scrub, tone check'],
+   ['handoff',600,370,'Retention desk','High-value accounts → human RM'],
+  ],[[0,3],[0,4],[1,0],[2,3],[3,4],[4,5],[5,6],[4,7],[8,4],[6,9],[9,10]])},
+ {id:'procure-pilot',initials:'PP',color:'var(--c7)',name:'Procure Pilot',cat:'Commercial',model:'qwen2.5-72b',
+  desc:'Negotiation co-pilot for purchases: benchmarks vendor quotes against market and historical POs, drafts counter-proposals, simulates concession ladders and flags contract risk — targeting commercial savings on network, IT and AMC spend.',
+  kpis:[['Savings YTD','$2.4M'],['Avg. discount won','11.8%'],['Cycle time','−38%']],
+  tags:['Vendor negotiation','Should-cost','AMC renewals','Contract risk'],
+  graph:graph([
+   ['goal',60,40,'Maximise commercial savings','Prepare, simulate and support supplier negotiations. Every claim must cite a benchmark or PO.'],
+   ['model',60,190,'qwen2.5-72b','Gateway route: analysis class'],
+   ['knowledge',60,340,'Spend cube + contracts','3yr POs, rate cards, market indices'],
+   ['skill',330,40,'Should-cost modelling','Bottom-up cost build for network gear'],
+   ['skill',330,150,'Concession ladder','BATNA, anchors, trade variables'],
+   ['tool',330,260,'ERP lookup','SAP PO & vendor master read'],
+   ['tool',330,370,'Draft counter-offer','Generates negotiation letter + terms'],
+   ['mcp',600,150,'Market-intel MCP','Benchmark & index resources'],
+   ['guardrail',600,260,'Legal & policy check','Delegation-of-authority limits'],
+   ['handoff',600,370,'Category manager','Final approval always human'],
+  ],[[0,3],[0,4],[1,0],[2,3],[3,4],[7,4],[4,5],[5,6],[6,8],[8,9]])},
+ {id:'voice-care',initials:'VC',color:'var(--c3)',name:'VoiceCare',cat:'Contact centre',model:'llama-3.1-8b',
+  desc:'Inbound/outbound voice agent for the call centre: answers billing and network queries, makes proactive service calls, books recharges and payments, and hands off emotionally-charged or complex calls to human advisors with a live summary.',
+  kpis:[['Calls handled / day','9.4k'],['Containment','72%'],['CSAT','4.4 / 5']],
+  tags:['Voice / IVR','Billing queries','Proactive outreach','Live handoff'],
+  graph:graph([
+   ['goal',60,40,'Resolve calls first-time','Warm, concise voice persona. Detect frustration early; never argue; offer callback when queues spike.'],
+   ['model',60,190,'llama-3.1-8b','Low-latency route, streaming'],
+   ['tool',330,40,'Telephony (SIP)','ASR + TTS duplex stream'],
+   ['tool',330,150,'Billing API','Balance, invoice, payment link'],
+   ['tool',330,260,'Network diagnostics','Cell-site status by subscriber location'],
+   ['memory',60,340,'Session memory','Call context + last 5 interactions'],
+   ['guardrail',600,150,'Compliance script','Mandatory disclosures, PII masking'],
+   ['handoff',600,260,'Advisor transfer','Sentiment < −0.4 or 2 failed resolutions'],
+  ],[[1,0],[0,2],[0,3],[0,4],[5,0],[3,6],[6,7]])},
+ {id:'campaign-craft',initials:'CC',color:'var(--c5)',name:'CampaignCraft',cat:'Marketing',model:'llama-3.1-70b',
+  desc:'Marketing agent that plans and runs segment-of-one campaigns: builds audiences from the subscriber graph, generates copy variants in 8 languages, schedules sends against quiet-hours, and closes the loop on conversion uplift.',
+  kpis:[['Campaigns live','23'],['Conv. uplift','+2.7pp'],['Copy variants / wk','1.8k']],
+  tags:['Segmentation','Multilingual copy','A/B testing','Uplift'],
+  graph:graph([
+   ['goal',60,40,'Grow ARPU via campaigns','Design compliant, personalised campaigns; every send needs a holdout and an uplift readout.'],
+   ['model',60,190,'llama-3.1-70b','Creative class route'],
+   ['knowledge',60,340,'Audience graph','Segments, propensities, language pref'],
+   ['skill',330,40,'Audience builder','Rules + propensity blends'],
+   ['skill',330,150,'Copy studio','Tone-of-voice kit, 8 languages'],
+   ['tool',330,260,'Campaign manager API','Create, schedule, holdout'],
+   ['guardrail',600,150,'Brand & TRAI check','Claims, quiet hours, opt-out'],
+   ['memory',600,40,'Campaign memory','What worked per segment'],
+  ],[[1,0],[2,3],[0,3],[3,4],[4,5],[5,6],[7,4]])},
+ {id:'sales-edge',initials:'SE',color:'var(--c2)',name:'SalesEdge',cat:'Sales',model:'qwen2.5-72b',
+  desc:'B2B/SME sales agent: qualifies inbound leads, researches the account, drafts tailored proposals for leased lines, SD-WAN and IoT bundles, and keeps CRM hygiene — nudging reps with next-best-actions.',
+  kpis:[['Leads qualified / wk','640'],['Meetings booked','118'],['Proposal time','8 min']],
+  tags:['Lead qualification','Account research','Proposals','CRM hygiene'],
+  graph:graph([
+   ['goal',60,40,'Qualify & progress pipeline','BANT-qualify leads, personalise outreach, never contact opt-outs.'],
+   ['model',60,190,'qwen2.5-72b','Analysis class route'],
+   ['tool',330,40,'CRM (read/write)','Leads, notes, tasks'],
+   ['tool',330,150,'Company research','Firmographics + news'],
+   ['skill',330,260,'Proposal builder','Product bundles + pricing rules'],
+   ['mcp',600,40,'Email/Calendar MCP','Draft, schedule meetings'],
+   ['guardrail',600,150,'Pricing floor','Discounts above 15% escalate'],
+   ['handoff',600,260,'Account executive','Qualified opps handed with brief'],
+  ],[[1,0],[0,2],[0,3],[3,4],[2,5],[4,6],[6,7]])},
+ {id:'network-sentinel',initials:'NS',color:'var(--c4)',name:'Network Sentinel',cat:'Operations',model:'llama-3.1-70b',
+  desc:'NOC co-pilot: watches alarms and QoE feeds, correlates incidents across circles, drafts RCA timelines, and proactively messages affected subscribers before complaint volume spikes.',
+  kpis:[['MTTR','−24%'],['Proactive notices / wk','96k'],['Complaint deflection','18%']],
+  tags:['Alarm correlation','RCA drafts','Proactive comms'],
+  graph:graph([
+   ['goal',60,40,'Cut MTTR & complaints','Correlate, summarise, notify. Never act on the network itself.'],
+   ['model',60,190,'llama-3.1-70b','Analysis route'],
+   ['mcp',330,40,'OSS alarms MCP','Fault & performance resources'],
+   ['skill',330,150,'Incident correlation','Topology-aware clustering'],
+   ['tool',330,260,'Subscriber notify','Cell-level outage SMS'],
+   ['handoff',600,150,'NOC engineer','All remediation is human-run'],
+  ],[[1,0],[2,3],[0,3],[3,4],[3,5]])},
+];
+const tplById=id=>TEMPLATES.find(t=>t.id===id);
+
+/* ================= STATE + SEED ================= */
+const DAYS=[...Array(14)].map((_,i)=>{const d=new Date(Date.now()-(13-i)*864e5);return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})});
+let S=null;
+function seed(){
+  const agents=TEMPLATES.slice(0,5).map((t,i)=>({id:'ag-'+t.id,tplId:t.id,name:t.name,model:t.model,status:i<4?'live':'paused',createdAt:Date.now()-(30-i)*864e5,graph:JSON.parse(JSON.stringify(t.graph))}));
+  const runs=[];
+  const traces=[];
+  agents.forEach((a,ai)=>{
+    const base=[420,60,3200,510,240][ai]||150;
+    DAYS.forEach((d,di)=>{
+      const n=Math.max(1,Math.round(base*(0.75+rng()*0.5)*(a.status==='paused'&&di>9?0.15:1)));
+      const m=modelById(a.model);
+      const ti=n*(900+Math.round(rng()*700)), to=n*(350+Math.round(rng()*450));
+      runs.push({agentId:a.id,day:di,count:n,tokensIn:ti,tokensOut:to,cost:runCost(m,ti,to),errors:Math.round(n*rng()*0.02),p95:600+Math.round(rng()*900)});
+    });
+  });
+  for(let i=0;i<9;i++){
+    const a=agents[i%5], m=modelById(a.model);
+    const ti=800+Math.round(rng()*1500), to=300+Math.round(rng()*900);
+    traces.push({id:'tr-'+(1000+i),agentId:a.id,ts:Date.now()-Math.round(rng()*2*864e5),status:rng()>0.12?'ok':'error',latency:900+Math.round(rng()*2400),tokensIn:ti,tokensOut:to,model:m.id,cost:runCost(m,ti,to),evals:{grounded:(0.82+rng()*0.16),helpful:(0.8+rng()*0.18),guardrail:rng()>0.9?1:0}});
+  }
+  return {agents,runs,traces,
+    prompts:[
+      {id:uid('p'),title:'Prepaid win-back (recharge lapse)',cat:'Retention',lang:'Hinglish',shares:34,body:'You are a retention specialist for an Indian prepaid subscriber whose recharge lapsed {{days_lapsed}} days ago.\nContext: plan ₹{{last_plan}}, circle {{circle}}, network complaints: {{complaints}}.\nGoal: win them back with at most ONE offer, warm Hinglish tone, ≤ 2 SMS-length messages.\nNever mention competitor names. Respect DND. End with a clear recharge CTA.'},
+      {id:uid('p'),title:'MNP port-out save call script',cat:'Retention',lang:'Hindi/English',shares:21,body:'Subscriber {{name}} has requested an MNP port-out code.\nDiagnose the real reason in ≤ 3 questions (price / network / service).\nCounter with the single best lever: network fix ETA, plan right-size, or loyalty benefit.\nIf sentiment stays negative after 2 attempts, thank them genuinely and close warmly — no begging.'},
+      {id:uid('p'),title:'Vendor counter-offer letter',cat:'Procurement',lang:'English',shares:17,body:'Draft a counter-offer for {{vendor}} quote {{quote_ref}}.\nAnchor at benchmark P25 from {{benchmark_source}}. Concede in this order: payment terms → volume commit → price.\nEvery number must cite a PO or index. Tone: firm, partnership-oriented. Include a BATNA line internally (not in the letter).'},
+      {id:uid('p'),title:'AMC renewal should-cost brief',cat:'Procurement',lang:'English',shares:9,body:'Build a should-cost model for the {{equipment}} AMC renewal: labour hours × loaded rate + spares consumption (3yr history) + margin 12%.\nCompare with the quoted {{quoted_amount}} and produce a 1-page negotiation brief with 3 concession asks.'},
+      {id:uid('p'),title:'Billing dispute — voice, empathetic',cat:'Contact centre',lang:'8 languages',shares:41,body:'Caller disputes a charge of {{amount}} on {{date}}.\nAcknowledge feeling first, verify identity, then explain the charge from the invoice line items.\nIf our error: apologise once, reverse instantly, confirm SMS. If valid: explain kindly, offer plan advice.\nSpeak in the caller\'s language. Sentences ≤ 15 words for voice clarity.'},
+      {id:uid('p'),title:'Data-pack upsell (segment-of-one)',cat:'Marketing',lang:'Regional',shares:28,body:'Write 3 copy variants for subscriber segment {{segment}} who exhaust data by day {{exhaust_day}}.\nHook with their actual usage pattern, offer {{offer}}, one emoji max, 160 chars, in {{language}}.\nVariant A: value framing. B: convenience. C: social/FOMO. Include holdout note.'},
+      {id:uid('p'),title:'SME leased-line proposal',cat:'Sales',lang:'English',shares:12,body:'Draft a 1-page proposal for {{company}} ({{industry}}, {{sites}} sites): recommend bandwidth per site from stated usage, include SLA table, price with {{discount}}% partner discount, and a 30-day pilot close.'},
+    ],
+    scenarios:[
+      {id:uid('s'),name:'Prepaid churn wave — Maharashtra circle',cat:'Retention',desc:'Competitor launches ₹199 unlimited; simulate 50k at-risk prepaid subs with lapse + QoE features. Tests offer selection under margin caps.',agents:['churn-shield'],runs:128},
+      {id:uid('s'),name:'Tower AMC renegotiation',cat:'Procurement',desc:'3-vendor AMC renewal, quotes 8–14% above index. Tests should-cost + concession ladder against scripted vendor personas.',agents:['procure-pilot'],runs:46},
+      {id:uid('s'),name:'Bill-shock spike after price revision',cat:'Contact centre',desc:'Replay of 2.4k anonymised billing-dispute calls post plan revision. Tests containment, empathy scoring, handoff triggers.',agents:['voice-care'],runs:2400},
+      {id:uid('s'),name:'Festive recharge push — Diwali',cat:'Marketing',desc:'Segment-of-one recharge campaign across 6 languages with quiet-hours and DND constraints. Tests copy quality + uplift design.',agents:['campaign-craft'],runs:310},
+      {id:uid('s'),name:'5G FWA cross-sell to SME base',cat:'Sales',desc:'640 SME leads with firmographics. Tests qualification accuracy and proposal factuality against ground truth.',agents:['sales-edge'],runs:640},
+    ],
+    providers:{ollama:{on:true},vllm:{on:true},hf:{on:false},anthropic:{on:true,key:''},openai:{on:false,key:''},google:{on:false,key:''}},
+    routing:[{cls:'Voice / low-latency',model:'llama-3.1-8b',fallback:'claude-haiku'},{cls:'Retention journeys',model:'llama-3.1-70b',fallback:'claude-sonnet'},{cls:'Analysis / negotiation',model:'qwen2.5-72b',fallback:'gpt-4.1'},{cls:'Creative / multilingual',model:'llama-3.1-70b',fallback:'gemini-2.5-pro'},{cls:'High-stakes reasoning',model:'claude-sonnet',fallback:'gpt-4.1'}],
+    budget:{monthly:600},
+    openPct:78};
+}
+function saveState(){store('state',{prompts:S.prompts,providers:S.providers,routing:S.routing,budget:S.budget,openPct:S.openPct})}
+function initState(){S=seed();const saved=load('state',null);if(saved){Object.assign(S,saved)}}
+
+/* ================= CHART ENGINE ================= */
+function chartFrame(cont,svg,legendHTML,tableHTML,capId){
+  cont.classList.add('chart-wrap');
+  cont.innerHTML=(legendHTML||'')+svg+
+    '<button class="tbl-toggle" data-t="'+capId+'">View data table</button>'+
+    '<div class="scrollx" id="'+capId+'" hidden>'+tableHTML+'</div>';
+  const btn=$('[data-t="'+capId+'"]',cont), tb=$('#'+capId,cont);
+  btn.addEventListener('click',()=>{tb.hidden=!tb.hidden;btn.textContent=tb.hidden?'View data table':'Hide data table'});
+}
+function legendFor(series){return '<div class="legend">'+series.map(s=>'<span><span class="sw" style="background:'+s.color+'"></span>'+esc(s.name)+'</span>').join('')+'</div>'}
+function lineChart(cont,{series,labels,yfmt=fmtN,h=210}){
+  const W=640,P={l:44,r:14,t:12,b:24},iw=W-P.l-P.r,ih=h-P.t-P.b;
+  const all=series.flatMap(s=>s.values),max=Math.max(...all)*1.12||1;
+  const X=i=>P.l+iw*i/(labels.length-1), Y=v=>P.t+ih*(1-v/max);
+  let g='';for(let i=0;i<=3;i++){const y=P.t+ih*i/3;g+='<line x1="'+P.l+'" y1="'+y+'" x2="'+(W-P.r)+'" y2="'+y+'" stroke="var(--grid)" stroke-width="1"/><text x="'+(P.l-8)+'" y="'+(y+4)+'" text-anchor="end" font-size="10" fill="var(--muted)">'+yfmt(max*(1-i/3))+'</text>'}
+  labels.forEach((L,i)=>{if(i%Math.ceil(labels.length/7)===0)g+='<text x="'+X(i)+'" y="'+(h-6)+'" text-anchor="middle" font-size="10" fill="var(--muted)">'+esc(L)+'</text>'});
+  let paths='';series.forEach(s=>{
+    const pts=s.values.map((v,i)=>X(i).toFixed(1)+','+Y(v).toFixed(1)).join(' ');
+    paths+='<polyline points="'+pts+'" fill="none" stroke="'+s.color+'" stroke-width="2" stroke-linejoin="round"/>';
+    if(s.fill)paths+='<polygon points="'+P.l+','+(P.t+ih)+' '+pts+' '+(W-P.r)+','+(P.t+ih)+'" fill="'+s.color+'" opacity="0.08"/>';
+    const li=s.values.length-1;
+    paths+='<circle cx="'+X(li)+'" cy="'+Y(s.values[li])+'" r="4" fill="'+s.color+'" stroke="var(--chart-surface)" stroke-width="2"/>'+
+      '<text x="'+(X(li)-6)+'" y="'+(Y(s.values[li])-9)+'" text-anchor="end" font-size="10.5" font-weight="600" fill="var(--ink2)">'+yfmt(s.values[li])+'</text>';
+  });
+  const cid=uid('ch');
+  const svg='<svg viewBox="0 0 '+W+' '+h+'" role="img" aria-label="line chart" data-ch="'+cid+'">'+g+'<line x1="'+P.l+'" y1="'+(P.t+ih)+'" x2="'+(W-P.r)+'" y2="'+(P.t+ih)+'" stroke="var(--axis)"/>'+paths+'<line id="xh-'+cid+'" y1="'+P.t+'" y2="'+(P.t+ih)+'" stroke="var(--axis)" stroke-dasharray="3 3" style="display:none"/><rect x="'+P.l+'" y="'+P.t+'" width="'+iw+'" height="'+ih+'" fill="transparent"/></svg>';
+  const tbl='<table class="data"><tr><th>Day</th>'+series.map(s=>'<th>'+esc(s.name)+'</th>').join('')+'</tr>'+labels.map((L,i)=>'<tr><td>'+esc(L)+'</td>'+series.map(s=>'<td class="num">'+yfmt(s.values[i])+'</td>').join('')+'</tr>').join('')+'</table>';
+  chartFrame(cont,svg,series.length>1?legendFor(series):'',tbl,cid);
+  const el=$('svg[data-ch="'+cid+'"]',cont), xh=$('#xh-'+cid,el);
+  el.addEventListener('mousemove',e=>{
+    const r=el.getBoundingClientRect(),sx=W/r.width;
+    const mx=(e.clientX-r.left)*sx;if(mx<P.l||mx>W-P.r){xh.style.display='none';tipHide();return}
+    const i=Math.max(0,Math.min(labels.length-1,Math.round((mx-P.l)/iw*(labels.length-1))));
+    xh.setAttribute('x1',X(i));xh.setAttribute('x2',X(i));xh.style.display='block';
+    tipShow('<b>'+esc(labels[i])+'</b>'+series.map(s=>'<span style="color:var(--ink2)"><span class="sw" style="background:'+s.color+';display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px"></span>'+esc(s.name)+': <span class="num" style="color:var(--ink);font-weight:600">'+yfmt(s.values[i])+'</span></span><br>').join(''),e.clientX,e.clientY);
+  });
+  el.addEventListener('mouseleave',()=>{xh.style.display='none';tipHide()});
+}
+function barChart(cont,{items,yfmt=fmtN,h=null}){
+  const W=640,rowH=34,P={l:150,r:70,t:6,b:6};h=h||P.t+P.b+items.length*rowH;
+  const max=Math.max(...items.map(i=>i.value))||1,iw=W-P.l-P.r;
+  let b='';items.forEach((it,i)=>{
+    const y=P.t+i*rowH+7,bw=Math.max(3,iw*it.value/max);
+    b+='<text x="'+(P.l-10)+'" y="'+(y+13)+'" text-anchor="end" font-size="11.5" fill="var(--ink2)">'+esc(it.label)+'</text>'+
+       '<rect data-i="'+i+'" x="'+P.l+'" y="'+y+'" width="'+bw.toFixed(1)+'" height="19" rx="4" fill="'+it.color+'"/>'+
+       '<text x="'+(P.l+bw+8)+'" y="'+(y+13.5)+'" font-size="11" font-weight="600" fill="var(--ink2)" class="num">'+yfmt(it.value)+'</text>';
+  });
+  const cid=uid('ch');
+  const svg='<svg viewBox="0 0 '+W+' '+h+'" role="img" aria-label="bar chart" data-ch="'+cid+'"><line x1="'+P.l+'" y1="'+P.t+'" x2="'+P.l+'" y2="'+(h-P.b)+'" stroke="var(--axis)"/>'+b+'</svg>';
+  const tbl='<table class="data"><tr><th>Item</th><th>Value</th></tr>'+items.map(it=>'<tr><td>'+esc(it.label)+'</td><td class="num">'+yfmt(it.value)+'</td></tr>').join('')+'</table>';
+  chartFrame(cont,svg,'',tbl,cid);
+  const el=$('svg[data-ch="'+cid+'"]',cont);
+  el.addEventListener('mousemove',e=>{const t=e.target.closest('rect[data-i]');if(!t){tipHide();return}const it=items[+t.dataset.i];tipShow('<b>'+esc(it.label)+'</b><span class="num" style="font-weight:600">'+yfmt(it.value)+'</span>'+(it.note?'<br><span style="color:var(--muted)">'+esc(it.note)+'</span>':''),e.clientX,e.clientY)});
+  el.addEventListener('mouseleave',tipHide);
+}
+function stackedBar(cont,{labels,series,yfmt=fmtN,h=220}){
+  const W=640,P={l:44,r:14,t:12,b:24},iw=W-P.l-P.r,ih=h-P.t-P.b;
+  const totals=labels.map((_,i)=>series.reduce((a,s)=>a+s.values[i],0));
+  const max=Math.max(...totals)*1.08||1,bw=Math.min(30,iw/labels.length*0.62);
+  let g='';for(let i=0;i<=3;i++){const y=P.t+ih*i/3;g+='<line x1="'+P.l+'" y1="'+y+'" x2="'+(W-P.r)+'" y2="'+y+'" stroke="var(--grid)"/><text x="'+(P.l-8)+'" y="'+(y+4)+'" text-anchor="end" font-size="10" fill="var(--muted)">'+yfmt(max*(1-i/3))+'</text>'}
+  let b='';labels.forEach((L,i)=>{
+    const x=P.l+iw*(i+0.5)/labels.length-bw/2;let acc=0;
+    series.forEach((s,si)=>{const v=s.values[i];if(v<=0)return;const hh=ih*v/max;acc+=hh;
+      b+='<rect data-i="'+i+'" data-s="'+si+'" x="'+x.toFixed(1)+'" y="'+(P.t+ih-acc).toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+Math.max(1,hh-2).toFixed(1)+'" rx="'+(si===series.length-1?4:2)+'" fill="'+s.color+'"/>'});
+    if(i%Math.ceil(labels.length/7)===0)b+='<text x="'+(x+bw/2)+'" y="'+(h-6)+'" text-anchor="middle" font-size="10" fill="var(--muted)">'+esc(L)+'</text>';
+  });
+  const cid=uid('ch');
+  const svg='<svg viewBox="0 0 '+W+' '+h+'" role="img" aria-label="stacked bar chart" data-ch="'+cid+'">'+g+'<line x1="'+P.l+'" y1="'+(P.t+ih)+'" x2="'+(W-P.r)+'" y2="'+(P.t+ih)+'" stroke="var(--axis)"/>'+b+'</svg>';
+  const tbl='<table class="data"><tr><th>Day</th>'+series.map(s=>'<th>'+esc(s.name)+'</th>').join('')+'</tr>'+labels.map((L,i)=>'<tr><td>'+esc(L)+'</td>'+series.map(s=>'<td class="num">'+yfmt(s.values[i])+'</td>').join('')+'</tr>').join('')+'</table>';
+  chartFrame(cont,svg,legendFor(series),tbl,cid);
+  const el=$('svg[data-ch="'+cid+'"]',cont);
+  el.addEventListener('mousemove',e=>{const t=e.target.closest('rect[data-i]');if(!t){tipHide();return}const i=+t.dataset.i,s=series[+t.dataset.s];tipShow('<b>'+esc(labels[i])+' · '+esc(s.name)+'</b><span class="num" style="font-weight:600">'+yfmt(s.values[i])+'</span><br><span style="color:var(--muted)">day total '+yfmt(totals[i])+'</span>',e.clientX,e.clientY)});
+  el.addEventListener('mouseleave',tipHide);
+}
+
+/* ================= ROUTER ================= */
+const VIEWS={overview:'Overview',studio:'Agent Studio',library:'Agent Library',orchestration:'Orchestration',prompts:'Prompts & Scenarios',observability:'Observability',finops:'FinOps',gateway:'Model Gateway',learn:'Learn Agents'};
+function nav(v){location.hash=v}
+function route(){
+  let v=location.hash.replace('#','')||'overview';
+  if(!VIEWS[v])v='overview';
+  $$('.navitem').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
+  $$('.view').forEach(el=>el.classList.remove('active'));
+  $('#view-'+v).classList.add('active');
+  $('#viewtitle').textContent=VIEWS[v];
+  ({overview:renderOverview,studio:renderStudio,library:renderLibrary,orchestration:renderOrch,prompts:renderPrompts,observability:renderObs,finops:renderFinops,gateway:renderGateway,learn:renderLearn})[v]();
+  $('#content').scrollTop=0;window.scrollTo(0,0);
+}
+$$('.navitem').forEach(b=>b.addEventListener('click',()=>nav(b.dataset.view)));
+addEventListener('hashchange',route);
+</script>
+<script>
+/* ================= AGGREGATIONS ================= */
+function agg(){
+  const byDay=DAYS.map((_,i)=>({runs:0,cost:0,tokens:0,errors:0}));
+  const byAgent={};
+  S.runs.forEach(r=>{
+    byDay[r.day].runs+=r.count;byDay[r.day].cost+=r.cost;byDay[r.day].tokens+=r.tokensIn+r.tokensOut;byDay[r.day].errors+=r.errors;
+    const a=byAgent[r.agentId]||(byAgent[r.agentId]={runs:0,cost:0,tokens:0,p95:[]});
+    a.runs+=r.count;a.cost+=r.cost;a.tokens+=r.tokensIn+r.tokensOut;a.p95.push(r.p95);
+  });
+  return {byDay,byAgent};
+}
+const agentById=id=>S.agents.find(a=>a.id===id);
+const agentColor=a=>{const t=tplById(a.tplId);return t?t.color:'var(--c1)'};
+
+/* ================= OVERVIEW ================= */
+function renderOverview(){
+  const {byDay,byAgent}=agg();
+  const totRuns=byDay.reduce((a,d)=>a+d.runs,0), totCost=byDay.reduce((a,d)=>a+d.cost,0);
+  const live=S.agents.filter(a=>a.status==='live').length;
+  $('#agents-live').textContent=live;
+  const today=byDay[13],yest=byDay[12];
+  const dR=((today.runs-yest.runs)/Math.max(1,yest.runs)*100);
+  $('#view-overview').innerHTML=`
+   <div class="grid cols4" style="margin-bottom:16px">
+     <div class="card tile"><div class="k">Agents live</div><div class="v num">${live}<span style="font-size:15px;color:var(--muted)"> / ${S.agents.length}</span></div><div class="d">${TEMPLATES.length} templates ready to deploy</div></div>
+     <div class="card tile"><div class="k">Runs today</div><div class="v num">${fmtN(today.runs)}</div><div class="d"><span class="${dR>=0?'up':'down'}">${dR>=0?'▲':'▼'} ${Math.abs(dR).toFixed(1)}%</span> vs yesterday</div></div>
+     <div class="card tile"><div class="k">Cost today</div><div class="v num">${fmt$(today.cost)}</div><div class="d num">${fmt$(totCost)} over 14 days</div></div>
+     <div class="card tile"><div class="k">Open-source traffic</div><div class="v num">${S.openPct}%</div><div class="d">of tokens served by open models</div></div>
+   </div>
+   <div class="grid cols2" style="margin-bottom:16px">
+     <div class="card"><h3>Runs per day</h3><p class="sub">All agents, last 14 days</p><div id="ov-runs"></div></div>
+     <div class="card"><h3>Spend per day</h3><p class="sub">Gateway-metered LLM cost</p><div id="ov-cost"></div></div>
+   </div>
+   <div class="grid cols2">
+     <div class="card"><h3>Fleet</h3><p class="sub">Deployed agents and 14-day activity</p><div class="scrollx"><table class="data"><tr><th>Agent</th><th>Status</th><th>Model</th><th>Runs</th><th>Cost</th></tr>
+       ${S.agents.map(a=>{const st=byAgent[a.id]||{runs:0,cost:0};return `<tr class="rowlink" onclick="openAgentInStudio('${a.tplId}')"><td><span class="sw" style="display:inline-block;width:9px;height:9px;border-radius:3px;background:${agentColor(a)};margin-right:7px"></span><b>${esc(a.name)}</b></td><td>${a.status==='live'?'<span class="pill ok">● live</span>':'<span class="pill neutral">paused</span>'}</td><td class="mono" style="font-size:11.5px">${esc(a.model)}</td><td class="num">${fmtN(st.runs)}</td><td class="num">${fmt$(st.cost)}</td></tr>`}).join('')}
+     </table></div></div>
+     <div class="card"><h3>Start something</h3><p class="sub">Four fast paths into the platform</p>
+       <div style="display:flex;flex-direction:column;gap:9px">
+        <button onclick="nav('studio')" style="text-align:left;padding:11px 14px"><b>Build an agent from scratch</b><br><span style="font-size:12px;color:var(--muted)">Drag goals, skills, tools, MCP servers, memory onto the canvas</span></button>
+        <button onclick="nav('library')" style="text-align:left;padding:11px 14px"><b>Deploy a prebuilt telco agent</b><br><span style="font-size:12px;color:var(--muted)">Churn Shield, Procure Pilot, VoiceCare, CampaignCraft, SalesEdge</span></button>
+        <button onclick="nav('orchestration')" style="text-align:left;padding:11px 14px"><b>Orchestrate multiple agents</b><br><span style="font-size:12px;color:var(--muted)">Supervisor, pipeline and council patterns over your fleet</span></button>
+        <button onclick="nav('prompts')" style="text-align:left;padding:11px 14px"><b>Browse telco prompts &amp; scenarios</b><br><span style="font-size:12px;color:var(--muted)">Shareable prompt packs and replayable scenario suites</span></button>
+       </div></div>
+   </div>`;
+  lineChart($('#ov-runs'),{series:[{name:'Runs',color:'var(--c1)',values:byDay.map(d=>d.runs),fill:true}],labels:DAYS});
+  lineChart($('#ov-cost'),{series:[{name:'Cost',color:'var(--c2)',values:byDay.map(d=>+d.cost.toFixed(2)),fill:true}],labels:DAYS,yfmt:fmt$});
+}
+
+/* ================= OBSERVABILITY ================= */
+function renderObs(){
+  const {byDay,byAgent}=agg();
+  const errRate=byDay.reduce((a,d)=>a+d.errors,0)/Math.max(1,byDay.reduce((a,d)=>a+d.runs,0))*100;
+  const agents=S.agents.slice(0,5);
+  $('#view-observability').innerHTML=`
+   <div class="grid cols4" style="margin-bottom:16px">
+     <div class="card tile"><div class="k">Traces (14d)</div><div class="v num">${fmtN(byDay.reduce((a,d)=>a+d.runs,0))}</div><div class="d">1 trace per agent run</div></div>
+     <div class="card tile"><div class="k">Error rate</div><div class="v num">${errRate.toFixed(2)}%</div><div class="d">${errRate<1.5?'<span class="up">within SLO (2%)</span>':'<span class="down">above SLO</span>'}</div></div>
+     <div class="card tile"><div class="k">p95 latency</div><div class="v num">1.42s</div><div class="d">across all live agents</div></div>
+     <div class="card tile"><div class="k">Guardrail triggers</div><div class="v num">0.6%</div><div class="d">of runs flagged &amp; contained</div></div>
+   </div>
+   <div class="grid cols2" style="margin-bottom:16px">
+     <div class="card"><h3>Token usage by agent</h3><p class="sub">Daily total tokens (in + out), stacked</p><div id="obs-tokens"></div></div>
+     <div class="card"><h3>Eval scores</h3><p class="sub">Automated LLM-as-judge on sampled runs, mean of last 500</p><div id="obs-evals"></div></div>
+   </div>
+   <div class="card"><h3>Recent traces</h3><p class="sub">Click a trace for the span waterfall</p>
+    <div class="scrollx"><table class="data"><tr><th>Trace</th><th>Agent</th><th>Status</th><th>Latency</th><th>Tokens</th><th>Model</th><th>Cost</th></tr>
+    ${S.traces.sort((a,b)=>b.ts-a.ts).map(t=>{const a=agentById(t.agentId);return `<tr class="rowlink" onclick="openTrace('${t.id}')"><td class="mono">${t.id}</td><td>${esc(a?a.name:'—')}</td><td>${t.status==='ok'?'<span class="pill ok">✓ ok</span>':'<span class="pill crit">✕ error</span>'}</td><td class="num">${(t.latency/1000).toFixed(2)}s</td><td class="num">${fmtN(t.tokensIn+t.tokensOut)}</td><td class="mono" style="font-size:11.5px">${esc(t.model)}</td><td class="num">${fmt$(t.cost)}</td></tr>`}).join('')}
+    </table></div></div>`;
+  stackedBar($('#obs-tokens'),{labels:DAYS,series:agents.map(a=>({name:a.name,color:agentColor(a),values:DAYS.map((_,di)=>{const r=S.runs.find(x=>x.agentId===a.id&&x.day===di);return r?r.tokensIn+r.tokensOut:0})}))});
+  barChart($('#obs-evals'),{items:[
+    {label:'Groundedness',value:0.91,color:'var(--c1)',note:'claims supported by retrieved context'},
+    {label:'Helpfulness',value:0.88,color:'var(--c1)',note:'task resolved as user intended'},
+    {label:'Tone & brand fit',value:0.93,color:'var(--c1)',note:'style-guide adherence'},
+    {label:'Instruction following',value:0.90,color:'var(--c1)',note:'goal & constraint compliance'},
+    {label:'Safety / policy',value:0.99,color:'var(--c1)',note:'guardrail pass rate'},
+  ],yfmt:v=>(v*100).toFixed(0)+'%'});
+}
+function openTrace(id){
+  const t=S.traces.find(x=>x.id===id);if(!t)return;
+  const a=agentById(t.agentId);
+  const spans=[
+    {n:'agent.run',d:t.latency,off:0,c:'var(--c7)'},
+    {n:'context.assemble (memory + KG)',d:t.latency*0.14,off:t.latency*0.02,c:'var(--c3)'},
+    {n:'llm.call · plan',d:t.latency*0.26,off:t.latency*0.17,c:'var(--c2)'},
+    {n:'tool.call · '+(a&&a.tplId==='voice-care'?'billing.lookup':'crm.fetch'),d:t.latency*0.18,off:t.latency*0.45,c:'var(--c1)'},
+    {n:'llm.call · respond',d:t.latency*0.24,off:t.latency*0.65,c:'var(--c2)'},
+    {n:'guardrail.check',d:t.latency*0.05,off:t.latency*0.9,c:'var(--c4)'},
+    {n:'memory.write',d:t.latency*0.04,off:t.latency*0.95,c:'var(--c3)'},
+  ];
+  const W=560;
+  openModal(`<h3 class="mono">${t.id}</h3>
+   <p class="sub" style="font-size:12.5px;color:var(--muted)">${esc(a?a.name:'')} · ${esc(t.model)} · ${new Date(t.ts).toLocaleString()} · ${t.status==='ok'?'<span class="pill ok">ok</span>':'<span class="pill crit">error</span>'}</p>
+   <div style="display:flex;gap:20px;font-size:12.5px;color:var(--ink2);margin:10px 0 16px" class="num">
+     <span>tokens in <b>${fmtN(t.tokensIn)}</b></span><span>tokens out <b>${fmtN(t.tokensOut)}</b></span><span>latency <b>${(t.latency/1000).toFixed(2)}s</b></span><span>cost <b>${fmt$(t.cost)}</b></span>
+   </div>
+   <h3 style="font-size:13px;margin-bottom:8px">Span waterfall</h3>
+   <svg viewBox="0 0 ${W} ${spans.length*30+10}" style="width:100%;height:auto">
+    ${spans.map((s,i)=>{const x=8+ s.off/t.latency*(W-190), w=Math.max(4,s.d/t.latency*(W-190));
+      return `<text x="8" y="${i*30+18}" font-size="10.5" fill="var(--ink2)">${esc(s.n)}</text><rect x="${(x+178).toFixed(0)}" y="${i*30+8}" width="${w.toFixed(0)}" height="13" rx="3.5" fill="${s.c}"/><text x="${Math.min(W-4,(x+182+w))}" y="${i*30+18}" font-size="9.5" fill="var(--muted)" class="num">${(s.d/1000).toFixed(2)}s</text>`}).join('')}
+   </svg>
+   <h3 style="font-size:13px;margin:14px 0 8px">Evals on this run</h3>
+   <div style="display:flex;gap:10px;flex-wrap:wrap">
+     <span class="pill ${t.evals.grounded>0.85?'ok':'warn'}">grounded ${(t.evals.grounded*100).toFixed(0)}%</span>
+     <span class="pill ${t.evals.helpful>0.85?'ok':'warn'}">helpful ${(t.evals.helpful*100).toFixed(0)}%</span>
+     <span class="pill ${t.evals.guardrail?'warn':'ok'}">${t.evals.guardrail?'⚑ guardrail triggered — contained':'no guardrail events'}</span>
+   </div>`);
+}
+
+/* ================= FINOPS ================= */
+function renderFinops(){
+  const {byDay,byAgent}=agg();
+  const totCost=byDay.reduce((a,d)=>a+d.cost,0);
+  const mtd=totCost*2.05, forecast=mtd*30/27;
+  const pctBudget=mtd/S.budget.monthly*100;
+  const byModel={};
+  S.runs.forEach(r=>{const a=agentById(r.agentId);if(!a)return;const m=byModel[a.model]||(byModel[a.model]={cost:0,tokens:0});m.cost+=r.cost;m.tokens+=r.tokensIn+r.tokensOut});
+  const closedEquiv=S.runs.reduce((acc,r)=>{const a=agentById(r.agentId);if(!a)return acc;const m=modelById(a.model);return acc+(m.open?runCost(modelById('claude-sonnet'),r.tokensIn,r.tokensOut):r.cost)},0);
+  const saved=closedEquiv-totCost;
+  $('#view-finops').innerHTML=`
+   <div class="grid cols4" style="margin-bottom:16px">
+     <div class="card tile"><div class="k">Spend MTD</div><div class="v num">${fmt$(mtd)}</div><div class="d num">forecast ${fmt$(forecast)} for the month</div></div>
+     <div class="card tile"><div class="k">Budget consumed</div><div class="v num">${pctBudget.toFixed(0)}%</div><div class="d num">of ${fmt$(S.budget.monthly)} monthly cap</div><div class="budgetbar"><i style="width:${Math.min(100,pctBudget)}%;background:${pctBudget>90?'var(--crit)':pctBudget>70?'var(--warn)':'var(--ok)'}"></i></div></div>
+     <div class="card tile"><div class="k">Cost / run (avg)</div><div class="v num">${fmt$(totCost/Math.max(1,byDay.reduce((a,d)=>a+d.runs,0)))}</div><div class="d">across the whole fleet</div></div>
+     <div class="card tile"><div class="k">Open-source savings</div><div class="v num">${fmt$(saved*2.05)}</div><div class="d">MTD vs all-closed routing <span class="up">▲ ${((saved/closedEquiv)*100).toFixed(0)}%</span></div></div>
+   </div>
+   <div class="grid cols2" style="margin-bottom:16px">
+     <div class="card"><h3>Cost by model</h3><p class="sub">14-day gateway-metered spend</p><div id="fin-model"></div></div>
+     <div class="card"><h3>Cost by agent</h3><p class="sub">14-day spend attribution</p><div id="fin-agent"></div></div>
+   </div>
+   <div class="grid cols2">
+     <div class="card"><h3>Open-source routing simulator</h3><p class="sub">Slide the share of eligible traffic served by open models</p>
+       <div class="range-row"><input type="range" id="fin-slider" min="0" max="100" value="${S.openPct}" aria-label="open-source traffic percent"><b class="num" id="fin-pct" style="width:44px">${S.openPct}%</b></div>
+       <div style="display:flex;gap:26px;margin-top:14px" class="num">
+         <div><div style="font-size:11.5px;color:var(--muted)">Projected monthly spend</div><div id="fin-proj" style="font-family:Archivo,sans-serif;font-size:24px;font-weight:700"></div></div>
+         <div><div style="font-size:11.5px;color:var(--muted)">Monthly savings vs all-closed</div><div id="fin-save" style="font-family:Archivo,sans-serif;font-size:24px;font-weight:700;color:var(--ok-text)"></div></div>
+       </div>
+       <p style="font-size:12px;color:var(--muted);margin-bottom:0">High-stakes reasoning stays on closed frontier models via routing rules; quality-gated by evals before any shift.</p></div>
+     <div class="card"><h3>Budgets &amp; alerts</h3><p class="sub">Alerts post to Slack #ai-finops and can auto-throttle non-critical agents</p>
+       <table class="data"><tr><th>Scope</th><th>Cap / mo</th><th>Used</th><th>Policy</th></tr>
+        <tr><td>Whole platform</td><td class="num">${fmt$(S.budget.monthly)}</td><td class="num">${pctBudget.toFixed(0)}%</td><td><span class="pill ${pctBudget>90?'crit':'ok'}">${pctBudget>90?'alert at 90% — firing':'alert at 90%'}</span></td></tr>
+        <tr><td>VoiceCare (per-run cap)</td><td class="num">$0.004</td><td class="num">—</td><td><span class="pill ok">hard cap per call</span></td></tr>
+        <tr><td>Closed-model spend</td><td class="num">$150</td><td class="num">21%</td><td><span class="pill ok">degrade to fallback</span></td></tr>
+        <tr><td>Experiments / scenarios</td><td class="num">$60</td><td class="num">44%</td><td><span class="pill ok">block at cap</span></td></tr>
+       </table>
+       <div style="margin-top:10px"><button class="small" onclick="editBudget()">Edit platform cap</button></div></div>
+   </div>`;
+  barChart($('#fin-model'),{items:Object.entries(byModel).sort((a,b)=>b[1].cost-a[1].cost).map(([id,v])=>{const m=modelById(id);return{label:m.name,value:+v.cost.toFixed(2),color:m.open?'var(--c3)':'var(--c7)',note:(m.open?'open-source · ':'closed · ')+fmtN(v.tokens)+' tokens'}}),yfmt:fmt$});
+  barChart($('#fin-agent'),{items:S.agents.map(a=>({label:a.name,value:+((byAgent[a.id]||{cost:0}).cost).toFixed(2),color:agentColor(a),note:fmtN((byAgent[a.id]||{runs:0}).runs)+' runs'})).sort((a,b)=>b.value-a.value),yfmt:fmt$});
+  const sl=$('#fin-slider');
+  const upd=()=>{const p=+sl.value;$('#fin-pct').textContent=p+'%';
+    const allClosed=closedEquiv*2.05*30/27, allOpen=allClosed*0.11;
+    const proj=allClosed-(allClosed-allOpen)*p/100;
+    $('#fin-proj').textContent=fmt$(proj);$('#fin-save').textContent=fmt$(allClosed-proj);
+    S.openPct=p;saveState()};
+  sl.addEventListener('input',upd);upd();
+}
+function editBudget(){
+  const d=openModal(`<h3>Platform monthly cap</h3><p class="sub" style="color:var(--muted);font-size:12.5px">Alerts fire at 90%; auto-throttle at 100%.</p>
+   <div class="field" style="margin:14px 0"><label for="bud-in">Cap (USD)</label><input id="bud-in" type="number" min="100" step="50" value="${S.budget.monthly}"></div>
+   <button class="primary" id="bud-save">Save cap</button>`);
+  $('#bud-save',d).addEventListener('click',()=>{S.budget.monthly=Math.max(100,+$('#bud-in',d).value||6000);saveState();closeModal();renderFinops();toast('Budget updated')});
+}
+</script>
+<script>
+/* ================= AGENT STUDIO ================= */
+let ST=null; /* studio working copy */
+function newBlank(){return{name:'Untitled agent',tplId:null,model:'llama-3.1-70b',nodes:[{id:'n1',type:'goal',x:80,y:60,cfg:{name:'Define the goal',detail:'Click this node and write what the agent must achieve.'}},{id:'n2',type:'model',x:80,y:210,cfg:{name:'llama-3.1-70b',detail:'Gateway default route'}}],edges:[{from:'n2',to:'n1'}]}}
+function openAgentInStudio(tplId){const t=tplById(tplId);if(t){ST={name:t.name,tplId:t.id,model:t.model,nodes:JSON.parse(JSON.stringify(t.graph.nodes)),edges:JSON.parse(JSON.stringify(t.graph.edges))}}else{ST=newBlank()}ST.sel=null;nav('studio');if(location.hash==='#studio')route()}
+function renderStudio(){
+  if(!ST){ST=newBlank();ST.sel=null}
+  $('#view-studio').innerHTML=`
+   <div class="toolbar">
+     <input id="st-name" value="${esc(ST.name)}" aria-label="Agent name" style="font-weight:600;width:230px">
+     <select id="st-tpl" aria-label="Load template"><option value="">Start from template…</option>${TEMPLATES.map(t=>`<option value="${t.id}">${esc(t.name)} — ${esc(t.cat)}</option>`).join('')}</select>
+     <span class="spacer"></span>
+     <button id="st-validate">Validate</button>
+     <button id="st-test">▶ Test run</button>
+     <button class="primary" id="st-deploy">Deploy agent</button>
+   </div>
+   <div id="studio-frame">
+     <div id="palette" aria-label="Component palette">
+       <h4>Add components</h4>
+       ${Object.entries(NODETYPES).map(([k,v])=>`<div class="pal-item" data-add="${k}" role="button" tabindex="0"><span class="nd" style="background:${v.color}"></span>${esc(v.label)}</div>`).join('')}
+       <p style="font-size:11px;color:var(--muted);line-height:1.5;margin-top:12px">Click to add a component, drag cards to arrange, drag from a card's right port onto another card to connect. Select a card to configure it.</p>
+     </div>
+     <div id="canvas-holder"><div id="canvas"><svg id="edgelayer"></svg></div></div>
+     <div id="propspanel"><h4 style="font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">Properties</h4><div id="props-body"></div></div>
+   </div>`;
+  $('#st-name').addEventListener('input',e=>ST.name=e.target.value);
+  $('#st-tpl').addEventListener('change',e=>{if(e.target.value)openAgentInStudio(e.target.value)});
+  $$('#palette .pal-item').forEach(el=>{const add=()=>{addNode(el.dataset.add)};el.addEventListener('click',add);el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();add()}})});
+  $('#st-validate').addEventListener('click',validateGraph);
+  $('#st-test').addEventListener('click',testRun);
+  $('#st-deploy').addEventListener('click',deployFromStudio);
+  drawCanvas();renderProps();
+}
+function addNode(type){
+  const t=NODETYPES[type];
+  const n={id:uid('n'),type,x:340+Math.round(Math.random()*160),y:60+Math.round(Math.random()*300),cfg:{name:t.label,detail:''}};
+  if(type==='model'){n.cfg.name=ST.model;n.cfg.detail='Gateway route'}
+  ST.nodes.push(n);ST.sel=n.id;drawCanvas();renderProps();
+}
+function drawCanvas(){
+  const cv=$('#canvas');
+  $$('.node',cv).forEach(e=>e.remove());
+  ST.nodes.forEach(n=>{
+    const t=NODETYPES[n.type];
+    const el=document.createElement('div');
+    el.className='node'+(ST.sel===n.id?' selected':'');
+    el.style.left=n.x+'px';el.style.top=n.y+'px';el.dataset.id=n.id;
+    el.innerHTML=`<header><span class="nd" style="background:${t.color}"></span>${esc(n.cfg.name||t.label)}<span style="margin-left:auto;font-size:10px;color:var(--muted);font-weight:500">${esc(t.label.split(' ')[0])}</span></header><div class="body">${esc(n.cfg.detail||t.hint)}</div><span class="port in" data-port="in" title="input"></span><span class="port out" data-port="out" title="drag to connect"></span>`;
+    cv.appendChild(el);
+    el.addEventListener('pointerdown',e=>{
+      if(e.target.dataset.port==='out'){startWire(n,e);return}
+      if(e.target.dataset.port==='in')return;
+      ST.sel=n.id;$$('.node',cv).forEach(x=>x.classList.toggle('selected',x.dataset.id===n.id));renderProps();
+      const sx=e.clientX,sy=e.clientY,ox=n.x,oy=n.y;
+      el.setPointerCapture(e.pointerId);el.style.cursor='grabbing';
+      const mv=ev=>{n.x=Math.max(0,ox+ev.clientX-sx);n.y=Math.max(0,oy+ev.clientY-sy);el.style.left=n.x+'px';el.style.top=n.y+'px';drawEdges()};
+      const up=()=>{el.removeEventListener('pointermove',mv);el.removeEventListener('pointerup',up);el.style.cursor='grab'};
+      el.addEventListener('pointermove',mv);el.addEventListener('pointerup',up);
+    });
+  });
+  drawEdges();
+}
+function portPos(id,side){const n=ST.nodes.find(x=>x.id===id);if(!n)return{x:0,y:0};const el=$('.node[data-id="'+id+'"]');const h=el?el.offsetHeight:70;return{x:n.x+(side==='out'?196:0),y:n.y+h/2}}
+function edgePath(a,b){const dx=Math.max(40,Math.abs(b.x-a.x)/2);return `M${a.x},${a.y} C${a.x+dx},${a.y} ${b.x-dx},${b.y} ${b.x},${b.y}`}
+function drawEdges(temp){
+  const sv=$('#edgelayer');
+  sv.innerHTML=ST.edges.map((e,i)=>{const a=portPos(e.from,'out'),b=portPos(e.to,'in');return `<path d="${edgePath(a,b)}" fill="none" stroke="var(--line2)" stroke-width="2"/><circle cx="${b.x}" cy="${b.y}" r="3" fill="var(--muted)"/>`}).join('')+(temp||'');
+}
+function startWire(n,e){
+  e.preventDefault();
+  const holder=$('#canvas-holder');
+  const toLocal=ev=>{const r=$('#canvas').getBoundingClientRect();return{x:ev.clientX-r.left,y:ev.clientY-r.top}};
+  const mv=ev=>{const a=portPos(n.id,'out'),b=toLocal(ev);drawEdges(`<path d="${edgePath(a,b)}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-dasharray="5 4"/>`)};
+  const up=ev=>{
+    removeEventListener('pointermove',mv);removeEventListener('pointerup',up);
+    const tgt=document.elementFromPoint(ev.clientX,ev.clientY);
+    const nodeEl=tgt&&tgt.closest('.node');
+    if(nodeEl&&nodeEl.dataset.id!==n.id&&!ST.edges.some(x=>x.from===n.id&&x.to===nodeEl.dataset.id)){
+      ST.edges.push({from:n.id,to:nodeEl.dataset.id});toast('Connected')
+    }
+    drawEdges();
+  };
+  addEventListener('pointermove',mv);addEventListener('pointerup',up);
+}
+function renderProps(){
+  const box=$('#props-body');if(!box)return;
+  const n=ST.nodes.find(x=>x.id===ST.sel);
+  if(!n){box.innerHTML='<p style="font-size:12.5px;color:var(--muted)">Select a component on the canvas to configure it — or add one from the palette.</p><div class="field"><label>Agent-level model</label><select id="st-model">'+MODELS.map(m=>`<option value="${m.id}" ${m.id===ST.model?'selected':''}>${esc(m.name)} ${m.open?'· open':'· closed'}</option>`).join('')+'</select></div>';
+    const sm=$('#st-model',box);if(sm)sm.addEventListener('change',e=>{ST.model=e.target.value});return}
+  const t=NODETYPES[n.type];
+  let extra='';
+  if(n.type==='model')extra=`<div class="field"><label>Model (via gateway)</label><select data-f="name">${MODELS.map(m=>`<option value="${m.id}" ${m.id===n.cfg.name?'selected':''}>${esc(m.name)} ${m.open?'· open':'· closed'}</option>`).join('')}</select></div>`;
+  if(n.type==='memory')extra=`<div class="field"><label>Kind</label><select data-f="detail"><option>Session scratchpad</option><option ${/long/i.test(n.cfg.detail)?'selected':''}>Long-term vector memory (90-day TTL)</option><option>Entity memory (per subscriber)</option></select></div>`;
+  if(n.type==='guardrail')extra=`<div class="field"><label>Checks</label><select data-f="detail" multiple size="4"><option selected>PII masking</option><option selected>DND / quiet hours</option><option>Max discount policy</option><option>Tone &amp; brand</option></select></div>`;
+  box.innerHTML=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span class="nd" style="width:10px;height:10px;border-radius:3px;background:${t.color};display:inline-block"></span><b style="font-size:13px">${esc(t.label)}</b></div>
+   <p style="font-size:11.5px;color:var(--muted);margin-top:0">${esc(t.hint)}</p>
+   <div class="field"><label>Name</label><input data-f="name" value="${esc(n.cfg.name)}"></div>
+   ${n.type==='model'?'':`<div class="field"><label>${n.type==='goal'?'Instructions & goal':'Configuration'}</label><textarea data-f="detail" rows="${n.type==='goal'?7:4}">${esc(n.cfg.detail)}</textarea></div>`}
+   ${extra}
+   <button class="small danger" id="prop-del">Remove component</button>`;
+  $$('[data-f]',box).forEach(inp=>inp.addEventListener('input',()=>{n.cfg[inp.dataset.f]=inp.value;const el=$('.node[data-id="'+n.id+'"]');if(el){$('header',el).childNodes[1].textContent=n.cfg.name;$('.body',el).textContent=n.cfg.detail||t.hint;drawEdges()}}));
+  $('#prop-del',box).addEventListener('click',()=>{ST.nodes=ST.nodes.filter(x=>x.id!==n.id);ST.edges=ST.edges.filter(e=>e.from!==n.id&&e.to!==n.id);ST.sel=null;drawCanvas();renderProps()});
+}
+function validateGraph(){
+  const has=t=>ST.nodes.some(n=>n.type===t);
+  const issues=[];
+  if(!has('goal'))issues.push(['crit','No Goal & Instructions node — the agent has no objective.']);
+  if(!has('model'))issues.push(['crit','No Model node — add one and pick a gateway route.']);
+  if(!has('guardrail'))issues.push(['warn','No Guardrail — recommended before production for policy & PII checks.']);
+  if(!has('memory'))issues.push(['warn','No Memory — the agent will not remember context across turns.']);
+  if(!has('tool')&&!has('mcp'))issues.push(['warn','No Tools or MCP servers — the agent can only talk, not act.']);
+  const orphans=ST.nodes.filter(n=>!ST.edges.some(e=>e.from===n.id||e.to===n.id));
+  orphans.forEach(o=>issues.push(['warn','"'+o.cfg.name+'" is not connected to anything.']));
+  if(!issues.length)issues.push(['ok','Graph is valid: goal, model and capabilities are wired. Ready to test.']);
+  openModal('<h3>Validation</h3><div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">'+issues.map(([lv,m])=>`<div class="pill ${lv}" style="justify-content:flex-start;padding:8px 12px;font-size:12.5px;border-radius:9px">${lv==='ok'?'✓':lv==='crit'?'✕':'⚠'} ${esc(m)}</div>`).join('')+'</div>');
+}
+function testRun(){
+  const modelNode=ST.nodes.find(n=>n.type==='model');
+  const m=modelById(modelNode?modelNode.cfg.name:ST.model);
+  const tools=ST.nodes.filter(n=>n.type==='tool'||n.type==='mcp');
+  const d=openModal(`<h3>Test run — ${esc(ST.name)}</h3>
+    <div class="field" style="margin:12px 0"><label for="tr-input">Scenario input</label><textarea id="tr-input" rows="2">Subscriber 98xxxxxx21, prepaid ₹239 plan, recharge lapsed 6 days, 2 network complaints this month in Pune. Decide the win-back action.</textarea></div>
+    <button class="primary" id="tr-go">Run</button>
+    <div class="runlog" id="tr-log" style="margin-top:14px" aria-live="polite"><div class="ln"><span class="t">—</span><span class="k msg">ready</span><span>Model: ${esc(m.name)} (${m.open?'open-source':'closed'}) via gateway</span></div></div>`,'drawer');
+  $('#tr-go',d).addEventListener('click',()=>{
+    const log=$('#tr-log',d);log.innerHTML='';
+    const t0=Date.now();
+    const line=(k,cls,txt)=>{const dv=document.createElement('div');dv.className='ln';dv.innerHTML=`<span class="t num">${((Date.now()-t0)/1000).toFixed(1)}s</span><span class="k ${cls}">${k}</span><span>${esc(txt)}</span>`;log.appendChild(dv);log.scrollTop=log.scrollHeight};
+    const steps=[
+      ()=>line('CONTEXT','mem','Assembled context: memory hits (2) + knowledge graph entities (subscriber, plan, circle QoE)'),
+      ()=>line('PLAN','plan','Goal decomposed → score churn risk → pick cheapest saving lever → execute journey → verify guardrails'),
+      ()=>line('LLM','llm',m.name+' · plan pass · 1,120 tokens in / 240 out'),
+      ()=>line('TOOL','tool',(tools[0]?tools[0].cfg.name:'lookup')+' → risk 0.81 (high): lapse 6d + QoE degradation on serving cell'),
+      ()=>line('TOOL','tool',(tools[1]?tools[1].cfg.name:'action api')+' → selected ₹239→₹199 bridge offer + priority network ticket (margin-safe)'),
+      ()=>line('GUARD','guard','Policy check passed: discount 16.7% ≤ 20% cap · DND clear · tone OK'),
+      ()=>line('LLM','llm',m.name+' · respond pass · 890 tokens in / 310 out'),
+      ()=>line('MEMORY','mem','Journey written to long-term memory (subscriber timeline)'),
+      ()=>line('DONE','done','Win-back SMS queued in Marathi + priority ticket NOC-88123 raised · est. cost '+fmt$(runCost(m,2010,550))),
+    ];
+    steps.forEach((f,i)=>setTimeout(f,350+i*520));
+    setTimeout(()=>{
+      const tr={id:'tr-'+(1000+S.traces.length+1),agentId:'studio',ts:Date.now(),status:'ok',latency:1900+Math.round(Math.random()*900),tokensIn:2010,tokensOut:550,model:m.id,cost:runCost(m,2010,550),evals:{grounded:.94,helpful:.9,guardrail:0}};
+      S.traces.unshift(tr);toast('Test complete — trace '+tr.id+' captured in Observability');
+    },350+steps.length*520);
+  });
+}
+function deployFromStudio(){
+  const a={id:uid('ag'),tplId:ST.tplId,name:ST.name,model:(ST.nodes.find(n=>n.type==='model')||{cfg:{name:ST.model}}).cfg.name,status:'live',createdAt:Date.now(),graph:{nodes:ST.nodes,edges:ST.edges}};
+  S.agents.push(a);
+  DAYS.forEach((_,di)=>{if(di===13){const m=modelById(a.model);S.runs.push({agentId:a.id,day:di,count:1,tokensIn:1200,tokensOut:400,cost:runCost(m,1200,400),errors:0,p95:800})}});
+  toast('"'+a.name+'" deployed live behind the gateway');
+  nav('overview');
+}
+</script>
+<script>
+/* ================= AGENT LIBRARY ================= */
+function renderLibrary(){
+  $('#view-library').innerHTML=`
+   <div class="toolbar"><p style="margin:0;color:var(--ink2);font-size:13.5px">Prebuilt, telco-tuned agents. Deploy as-is, or open in the Studio and adapt the graph — every card is a full working blueprint (goal, model route, skills, tools, MCP, memory, guardrails).</p></div>
+   <div class="grid cols3">
+    ${TEMPLATES.map(t=>`
+     <div class="card agent-card">
+       <div class="head"><span class="agent-avatar" style="background:${t.color}">${t.initials}</span>
+         <div><h3>${esc(t.name)}</h3><span class="pill info">${esc(t.cat)}</span> <span class="pill neutral mono" style="font-size:10px">${esc(t.model)}</span></div></div>
+       <p style="font-size:12.5px;color:var(--ink2);margin:0">${esc(t.desc)}</p>
+       <div class="kpis">${t.kpis.map(k=>`<span>${esc(k[0])}<b class="num">${esc(k[1])}</b></span>`).join('')}</div>
+       <div>${t.tags.map(x=>'<span class="tag">'+esc(x)+'</span>').join('')}</div>
+       <div class="actions">
+         <button class="primary small" onclick="deployTpl('${t.id}')">Deploy</button>
+         <button class="small" onclick="openAgentInStudio('${t.id}')">Open in Studio</button>
+         <button class="small ghost" onclick="openAgentInStudio('${t.id}');setTimeout(testRun,150)">▶ Demo run</button>
+       </div>
+     </div>`).join('')}
+   </div>`;
+}
+function deployTpl(id){
+  const t=tplById(id);
+  const a={id:uid('ag'),tplId:t.id,name:t.name+' '+(S.agents.filter(x=>x.tplId===t.id).length+1),model:t.model,status:'live',createdAt:Date.now(),graph:JSON.parse(JSON.stringify(t.graph))};
+  S.agents.push(a);
+  const m=modelById(a.model);
+  S.runs.push({agentId:a.id,day:13,count:2,tokensIn:2400,tokensOut:800,cost:runCost(m,2400,800),errors:0,p95:820});
+  toast('"'+a.name+'" deployed — see it on the Overview fleet');
+}
+
+/* ================= ORCHESTRATION ================= */
+const PATTERNS=[
+ {id:'supervisor',name:'Supervisor',desc:'A router agent decomposes the goal and delegates to specialists, then merges results. Best default for cross-domain telco journeys.'},
+ {id:'pipeline',name:'Pipeline',desc:'Agents run in a fixed sequence, each consuming the previous output. Best for research → draft → review flows like proposals.'},
+ {id:'council',name:'Council / Debate',desc:'Several agents answer independently, then critique and vote. Best for high-stakes calls like negotiation strategy.'},
+];
+let ORCH={pattern:'supervisor',members:['ag-churn-shield','ag-voice-care','ag-campaign-craft']};
+function renderOrch(){
+  $('#view-orchestration').innerHTML=`
+   <div class="grid cols3" style="margin-bottom:16px">
+    ${PATTERNS.map(p=>`<div class="card" style="cursor:pointer;${ORCH.pattern===p.id?'border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)':''}" onclick="ORCH.pattern='${p.id}';renderOrch()">
+      <h3>${esc(p.name)} ${ORCH.pattern===p.id?'<span class="pill info">selected</span>':''}</h3><p style="font-size:12.5px;color:var(--ink2);margin:6px 0 0">${esc(p.desc)}</p></div>`).join('')}
+   </div>
+   <div class="card" style="margin-bottom:16px"><h3>Team</h3><p class="sub">Pick which deployed agents join this orchestration</p>
+     <div style="display:flex;gap:8px;flex-wrap:wrap">
+      ${S.agents.map(a=>`<button class="small" style="${ORCH.members.includes(a.id)?'border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:600':''}" onclick="toggleMember('${a.id}')">${ORCH.members.includes(a.id)?'✓ ':''}${esc(a.name)}</button>`).join('')}
+     </div></div>
+   <div class="orch-board">
+     <div class="card orch-diagram"><h3>Topology</h3><p class="sub">${esc(PATTERNS.find(p=>p.id===ORCH.pattern).name)} over ${ORCH.members.length} agents</p><div id="orch-svg"></div>
+       <button class="primary" style="margin-top:12px" id="orch-run">▶ Run orchestration</button></div>
+     <div class="card orch-log"><h3>Event stream</h3><p class="sub">Inter-agent messages, live</p><div class="runlog" id="orch-log" style="max-height:420px"><div class="ln"><span class="k msg">idle</span><span>Run the orchestration to watch agents coordinate.</span></div></div></div>
+   </div>`;
+  drawOrchDiagram();
+  $('#orch-run').addEventListener('click',runOrch);
+}
+function toggleMember(id){const i=ORCH.members.indexOf(id);if(i>=0)ORCH.members.splice(i,1);else ORCH.members.push(id);renderOrch()}
+function drawOrchDiagram(){
+  const box=$('#orch-svg');const mem=ORCH.members.map(agentById).filter(Boolean);
+  const W=520,H=ORCH.pattern==='pipeline'?90+mem.length*64:300;
+  const nodeR=(x,y,w,label,color,idx)=>`<g><rect x="${x-w/2}" y="${y-17}" width="${w}" height="34" rx="9" fill="var(--raise)" stroke="${color}" stroke-width="1.6" data-orch="${idx}"/><text x="${x}" y="${y+4}" text-anchor="middle" font-size="11.5" font-weight="600" fill="var(--ink)">${esc(label)}</text></g>`;
+  let s='';
+  if(ORCH.pattern==='pipeline'){
+    s=mem.map((a,i)=>{const y=40+i*64;return (i?`<line x1="${W/2}" y1="${y-30}" x2="${W/2}" y2="${y-18}" stroke="var(--line2)" stroke-width="2" marker-end="url(#arr)"/>`:'')+nodeR(W/2,y,220,a.name,agentColor(a),i)}).join('');
+  }else{
+    const supY=44,rowY=ORCH.pattern==='council'?190:170;
+    s=nodeR(W/2,supY,200,ORCH.pattern==='council'?'Moderator':'Supervisor','var(--accent)','sup');
+    s+=mem.map((a,i)=>{const x=(i+0.5)*W/Math.max(1,mem.length);return `<path d="M${W/2},${supY+17} C${W/2},${supY+70} ${x},${rowY-70} ${x},${rowY-18}" fill="none" stroke="var(--line2)" stroke-width="1.8"/>`+nodeR(x,rowY,Math.min(150,W/mem.length-14),a.name,agentColor(a),i)}).join('');
+    if(ORCH.pattern==='council')s+=`<text x="${W/2}" y="${rowY+52}" text-anchor="middle" font-size="10.5" fill="var(--muted)">independent answers → cross-critique → weighted vote</text>`;
+  }
+  box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto"><defs><marker id="arr" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L8,4L0,8z" fill="var(--line2)"/></marker></defs>${s}</svg>`;
+}
+function runOrch(){
+  const mem=ORCH.members.map(agentById).filter(Boolean);
+  if(!mem.length){toast('Pick at least one agent');return}
+  const log=$('#orch-log');log.innerHTML='';const t0=Date.now();
+  const line=(k,cls,txt)=>{const dv=document.createElement('div');dv.className='ln';dv.innerHTML=`<span class="t num">${((Date.now()-t0)/1000).toFixed(1)}s</span><span class="k ${cls}">${k}</span><span>${esc(txt)}</span>`;log.appendChild(dv);log.scrollTop=log.scrollHeight};
+  const task='High-value postpaid customer threatening to port after bill shock + 3 dropped calls.';
+  let steps=[];
+  if(ORCH.pattern==='supervisor'){
+    steps=[['GOAL','msg',task],['SUPERVISOR','plan','Decomposed into: diagnose network → resolve billing empathy call → retention offer → follow-up campaign'],
+      ...mem.slice(0,4).map((a,i)=>[a.name.split(' ')[0].toUpperCase(),'tool',['diagnosed serving-cell congestion, ticket raised (ETA 48h)','handled the call: bill explained, ₹180 goodwill credit, sentiment −0.6 → +0.3','matched loyalty offer: 3-mo OTT bundle at margin-safe cost','queued a 7-day check-in journey with holdout'][i]||'completed subtask']),
+      ['SUPERVISOR','plan','Merged results; verified guardrails (credit ≤ policy, DND clear)'],['DONE','done','Customer retained · full trace tr-'+(1100+S.traces.length)+' in Observability · cost $0.011']];
+  }else if(ORCH.pattern==='pipeline'){
+    steps=[['GOAL','msg','Draft an SME SD-WAN proposal for a 14-site retailer.'],
+      ...mem.map((a,i)=>[a.name.split(' ')[0].toUpperCase(),'tool','stage '+(i+1)+' complete → handed '+(i<mem.length-1?'to next stage':'final artifact')]),
+      ['DONE','done','Pipeline complete in '+(mem.length*0.9).toFixed(1)+'s simulated · artifact stored']];
+  }else{
+    steps=[['GOAL','msg','Should we accept the vendor\'s revised AMC quote (−7%) or push for −12%?'],
+      ...mem.map(a=>[a.name.split(' ')[0].toUpperCase(),'llm','independent position drafted with cited benchmarks']),
+      ['COUNCIL','plan','Cross-critique round: 2 positions revised after should-cost challenge'],
+      ['VOTE','guard','Weighted vote 2–1 → counter at −11% with payment-term concession'],['DONE','done','Recommendation delivered with dissent noted']];
+  }
+  steps.forEach((s,i)=>setTimeout(()=>line(s[0],s[1],s[2]),300+i*600));
+}
+
+/* ================= PROMPTS & SCENARIOS ================= */
+let promptFilter='All';
+function renderPrompts(){
+  const cats=['All',...new Set(S.prompts.map(p=>p.cat))];
+  const list=S.prompts.filter(p=>promptFilter==='All'||p.cat===promptFilter);
+  $('#view-prompts').innerHTML=`
+   <div class="toolbar">
+     ${cats.map(c=>`<button class="small" style="${promptFilter===c?'border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:600':''}" onclick="promptFilter='${c}';renderPrompts()">${esc(c)}</button>`).join('')}
+     <span class="spacer"></span>
+     <button class="primary" onclick="newPrompt()">＋ New prompt</button>
+   </div>
+   <div class="grid cols2" style="margin-bottom:22px">
+    ${list.map(p=>`<div class="card prompt-card">
+      <h3>${esc(p.title)}</h3>
+      <div style="margin:4px 0"><span class="pill info">${esc(p.cat)}</span> <span class="pill neutral">${esc(p.lang)}</span> <span class="pill neutral num">↗ shared ${p.shares}×</span></div>
+      <pre>${esc(p.body)}</pre>
+      <div style="display:flex;gap:8px">
+        <button class="small" onclick="copyPrompt('${p.id}')">Copy</button>
+        <button class="small" onclick="sharePrompt('${p.id}')">Share</button>
+        <button class="small ghost" onclick="usePrompt('${p.id}')">Use in Studio</button>
+      </div></div>`).join('')}
+   </div>
+   <div class="card"><h3>Scenario packs</h3><p class="sub">Replayable, telco-specific test suites. Runs land in Observability with eval scores, so changes are compared apples-to-apples.</p>
+    <div class="scrollx"><table class="data"><tr><th>Scenario</th><th>Category</th><th>Cases</th><th>Targets</th><th></th></tr>
+     ${S.scenarios.map(s=>`<tr><td><b>${esc(s.name)}</b><br><span style="font-size:12px;color:var(--muted)">${esc(s.desc)}</span></td><td><span class="pill neutral">${esc(s.cat)}</span></td><td class="num">${s.runs}</td><td>${s.agents.map(a=>{const t=tplById(a);return t?'<span class="tag">'+esc(t.name)+'</span>':''}).join('')}</td><td><button class="small" onclick="runScenario('${s.id}')">▶ Run</button></td></tr>`).join('')}
+    </table></div></div>`;
+}
+function copyPrompt(id){const p=S.prompts.find(x=>x.id===id);if(!p)return;try{navigator.clipboard.writeText(p.body)}catch(e){}toast('Prompt copied to clipboard')}
+function sharePrompt(id){const p=S.prompts.find(x=>x.id===id);if(!p)return;p.shares++;saveState();try{navigator.clipboard.writeText('['+p.cat+'] '+p.title+'\n\n'+p.body)}catch(e){}renderPrompts();toast('Share link copied — teammates with workspace access can open it')}
+function usePrompt(id){const p=S.prompts.find(x=>x.id===id);if(!p)return;if(!ST){ST=newBlank();ST.sel=null}const g=ST.nodes.find(n=>n.type==='goal');if(g){g.cfg.detail=p.body}toast('Prompt loaded into the Goal node');nav('studio')}
+function newPrompt(){
+  const d=openModal(`<h3>New shared prompt</h3>
+   <div class="field" style="margin-top:12px"><label>Title</label><input id="np-title" placeholder="e.g. Postpaid bill-shock recovery"></div>
+   <div class="field"><label>Category</label><select id="np-cat"><option>Retention</option><option>Procurement</option><option>Contact centre</option><option>Marketing</option><option>Sales</option><option>Operations</option></select></div>
+   <div class="field"><label>Prompt (use {{variables}} for slots)</label><textarea id="np-body" rows="7" placeholder="You are a …"></textarea></div>
+   <button class="primary" id="np-save">Save to library</button>`);
+  $('#np-save',d).addEventListener('click',()=>{
+    const t=$('#np-title',d).value.trim(),b=$('#np-body',d).value.trim();
+    if(!t||!b){toast('Give the prompt a title and a body');return}
+    S.prompts.unshift({id:uid('p'),title:t,cat:$('#np-cat',d).value,lang:'—',shares:0,body:b});saveState();closeModal();renderPrompts();toast('Prompt saved & shareable');
+  });
+}
+function runScenario(id){
+  const s=S.scenarios.find(x=>x.id===id);if(!s)return;
+  toast('Running "'+s.name+'" — '+s.runs+' cases queued');
+  setTimeout(()=>{
+    s.agents.forEach(tid=>{const a=S.agents.find(x=>x.tplId===tid);if(!a)return;const m=modelById(a.model);
+      const ti=1000+Math.round(Math.random()*800),to=380+Math.round(Math.random()*300);
+      S.traces.unshift({id:'tr-'+(1000+S.traces.length+1),agentId:a.id,ts:Date.now(),status:'ok',latency:1000+Math.round(Math.random()*1500),tokensIn:ti,tokensOut:to,model:m.id,cost:runCost(m,ti,to),evals:{grounded:.86+Math.random()*.1,helpful:.85+Math.random()*.12,guardrail:0}})});
+    toast('Scenario complete — pass rate 94.2% · traces in Observability');
+  },2200);
+}
+
+/* ================= MODEL GATEWAY ================= */
+function renderGateway(){
+  const P=S.providers;
+  const provCard=(key,name,initial,color,kind,models,keyed)=>`
+   <div class="card"><div class="provider">
+     <span class="logo" style="background:${color}">${initial}</span>
+     <div style="flex:1;min-width:0">
+       <h3>${esc(name)} <span class="pill ${kind==='open'?'ok':'neutral'}" style="margin-left:4px">${kind==='open'?'open-source':'closed / API'}</span></h3>
+       <p style="font-size:12px;color:var(--muted);margin:3px 0 8px">${esc(models)}</p>
+       ${keyed?`<div style="display:flex;gap:8px;align-items:center"><input type="password" placeholder="API key (stored only in this browser)" id="key-${key}" value="${esc(P[key].key||'')}" style="flex:1;font-size:12px"><button class="small" onclick="saveKey('${key}')">Save</button></div>`:''}
+     </div>
+     <label class="switch"><input type="checkbox" ${P[key].on?'checked':''} onchange="toggleProv('${key}',this.checked)" aria-label="enable ${esc(name)}"><span class="tr"></span><span class="th"></span></label>
+   </div></div>`;
+  $('#view-gateway').innerHTML=`
+   <div class="toolbar"><p style="margin:0;color:var(--ink2);font-size:13.5px">One gateway in front of every model. Open-source models serve the default routes; closed frontier models handle high-stakes classes and act as fallbacks. Keys never leave your browser in this demo deployment.</p></div>
+   <h3 style="font-size:13px;margin:4px 0 10px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase">Open-source backends</h3>
+   <div class="grid cols3" style="margin-bottom:20px">
+     ${provCard('ollama','Ollama (local)','O','var(--c3)','open','llama-3.1-8b · phi-4 · gemma — on-prem GPU box',false)}
+     ${provCard('vllm','vLLM cluster','V','var(--c3)','open','llama-3.1-70b · qwen2.5-72b — autoscaling K8s pool',false)}
+     ${provCard('hf','Hugging Face TGI','H','var(--c3)','open','mixtral-8x22b + any HF hub model',false)}
+   </div>
+   <h3 style="font-size:13px;margin:4px 0 10px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase">Closed model providers</h3>
+   <div class="grid cols3" style="margin-bottom:20px">
+     ${provCard('anthropic','Anthropic','A','var(--c7)','closed','Claude Sonnet · Claude Haiku',true)}
+     ${provCard('openai','OpenAI','G','var(--c7)','closed','GPT-4.1 family',true)}
+     ${provCard('google','Google','⟡','var(--c7)','closed','Gemini 2.5 Pro / Flash',true)}
+   </div>
+   <div class="grid cols2">
+     <div class="card"><h3>Routing rules</h3><p class="sub">Task class → primary model, with automatic fallback on error or budget breach</p>
+      <div class="scrollx"><table class="data"><tr><th>Task class</th><th>Primary</th><th>Fallback</th></tr>
+       ${S.routing.map((r,i)=>`<tr><td>${esc(r.cls)}</td>
+         <td><select onchange="setRoute(${i},'model',this.value)" style="font-size:12px;padding:4px 8px">${MODELS.map(m=>`<option value="${m.id}" ${m.id===r.model?'selected':''}>${esc(m.name)}</option>`).join('')}</select></td>
+         <td><select onchange="setRoute(${i},'fallback',this.value)" style="font-size:12px;padding:4px 8px">${MODELS.map(m=>`<option value="${m.id}" ${m.id===r.fallback?'selected':''}>${esc(m.name)}</option>`).join('')}</select></td></tr>`).join('')}
+      </table></div></div>
+     <div class="card"><h3>Model catalog &amp; pricing</h3><p class="sub">Per 1M tokens, as metered by the gateway</p>
+      <div class="scrollx"><table class="data"><tr><th>Model</th><th>Backend</th><th>Input</th><th>Output</th></tr>
+       ${MODELS.map(m=>`<tr><td><span class="sw" style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${m.open?'var(--c3)':'var(--c7)'};margin-right:6px"></span>${esc(m.name)}</td><td style="font-size:12px;color:var(--ink2)">${esc(m.provider)}</td><td class="num">$${m.inP.toFixed(2)}</td><td class="num">$${m.outP.toFixed(2)}</td></tr>`).join('')}
+      </table></div></div>
+   </div>`;
+}
+function toggleProv(k,on){S.providers[k].on=on;saveState();toast((on?'Enabled ':'Disabled ')+k)}
+function saveKey(k){const v=$('#key-'+k).value;S.providers[k].key=v;saveState();toast('Key saved locally for '+k)}
+function setRoute(i,f,v){S.routing[i][f]=v;saveState();if(i===1&&f==='model')$('#gw-default').textContent=v;toast('Routing updated')}
+
+/* ================= LEARN ================= */
+function renderLearn(){
+  $('#view-learn').innerHTML=`
+  <div class="learn-prose">
+   <h2 style="font-size:22px">Build agents that think, act, and create real impact</h2>
+   <p>Everything on this page maps to a part of the platform — learn the idea, then click through and use it hands-on.</p>
+
+   <h3>The anatomy of an agent</h3>
+   <p>An agent is an LLM running in a loop with six things around it. In Trellis each is a node you drop on the <a href="#studio" style="color:var(--accent)">Studio</a> canvas:</p>
+   <ul>
+    <li><b>Goal &amp; instructions</b> — the objective, persona and hard boundaries. The single highest-leverage artifact you'll write.</li>
+    <li><b>Model</b> — reasoning power, chosen per task class through the <a href="#gateway" style="color:var(--accent)">gateway</a> (open-source by default, frontier where the stakes demand it).</li>
+    <li><b>Skills</b> — reusable packaged playbooks (prompts + procedures + code) the agent loads when relevant.</li>
+    <li><b>Tools &amp; MCP</b> — typed functions and Model Context Protocol servers that let the agent <i>act</i>: query billing, raise tickets, send offers.</li>
+    <li><b>Memory &amp; knowledge</b> — session scratchpads, long-term vector memory, and a knowledge graph that grounds every claim in your data.</li>
+    <li><b>Guardrails &amp; handoff</b> — policy checks on every output and a dignified path to a human when confidence drops.</li>
+   </ul>
+
+   <h3>Designing effective agent workflows</h3>
+   <ul>
+    <li><b>Start with a workflow, graduate to an agent.</b> A fixed pipeline (retrieve → draft → check) is cheaper and more reliable than an open loop; add autonomy only where the task genuinely branches.</li>
+    <li><b>One agent, one job.</b> Compose specialists in <a href="#orchestration" style="color:var(--accent)">Orchestration</a> (supervisor, pipeline, council) rather than building a do-everything monolith.</li>
+    <li><b>Design the tool contract first.</b> Great agents are mostly great tool design: crisp names, typed inputs, meaningful errors the model can recover from.</li>
+    <li><b>Make evals your steering wheel.</b> Replay <a href="#prompts" style="color:var(--accent)">scenario packs</a> on every change; watch groundedness and containment in <a href="#observability" style="color:var(--accent)">Observability</a> — never ship on vibes.</li>
+    <li><b>Meter everything.</b> Cost per run is a design input, not an afterthought — set budgets and per-run caps in <a href="#finops" style="color:var(--accent)">FinOps</a>.</li>
+   </ul>
+
+   <h3>Do's &amp; don'ts</h3>
+  </div>
+  <div class="dodont" style="max-width:860px;margin-top:10px">
+   <div class="card"><h3 style="color:var(--ok-text)">Do</h3><ul style="font-size:13px;color:var(--ink2);padding-left:18px;margin:8px 0 0">
+     <li>Write the eval before the agent — define "good" first</li>
+     <li>Ground every claim: RAG / knowledge-graph over model memory</li>
+     <li>Keep humans in the loop for irreversible actions (offers, payments, contracts)</li>
+     <li>Log full traces from day one — debugging agents is reading traces</li>
+     <li>Start on small open models; escalate model size only when evals demand it</li>
+     <li>Version prompts like code, and share them in the library</li></ul></div>
+   <div class="card dont"><h3 style="color:var(--crit)">Don't</h3><ul style="font-size:13px;color:var(--ink2);padding-left:18px;margin:8px 0 0">
+     <li>Don't give an agent ten tools when three well-named ones will do</li>
+     <li>Don't let agents loop unbounded — cap steps, tokens and spend per run</li>
+     <li>Don't stuff the context window — retrieve, summarise, forget</li>
+     <li>Don't demo the happy path only; scenario packs exist for the ugly ones</li>
+     <li>Don't skip guardrails because "it's internal" — PII leaks are PII leaks</li>
+     <li>Don't anthropomorphise reliability: measure it</li></ul></div>
+  </div>
+  <div class="learn-prose">
+   <h3>Picking the right problem (hackathon-ready)</h3>
+   <p>Score candidate ideas on four axes — the sweet spot is high on all four:</p>
+   <ul>
+    <li><b>Painful &amp; frequent:</b> happens daily, someone owns the KPI (churn, AHT, savings %).</li>
+    <li><b>Language-heavy:</b> the core work is reading, judging and writing — that's where LLMs shine.</li>
+    <li><b>Verifiable:</b> you can tell, cheaply, whether the output was right.</li>
+    <li><b>Bounded blast radius:</b> a wrong answer is recoverable (draft, recommendation, flagged action).</li>
+   </ul>
+   <p>Then build in this order — problem → eval set → workflow → tools → <i>only then</i> autonomy. A demo that moves a real KPI on a replayed scenario beats a general assistant every time.</p>
+   <p style="margin-top:18px"><button class="primary" onclick="nav('studio')">Open the Studio and build your first agent →</button></p>
+  </div>`;
+}
+
+/* ================= INIT ================= */
+initState();
+$('#gw-default').textContent=S.routing[1].model;
+route();
+</script>
