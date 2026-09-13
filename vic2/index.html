@@ -1,0 +1,1042 @@
+<title>Vic2</title>
+<style>
+/* ===== Tokens ===== */
+:root{
+  --bg:#FAF6FC; --surface:#FFFFFF; --surface-2:#F3ECFA; --surface-3:#ECE1F6;
+  --ink:#201331; --ink-soft:#5E5270; --ink-faint:#8B7E9E; --line:#E6DCEF;
+  --red:#E11F4C; --red-ink:#B8143C; --purple:#7A2E9E; --purple-ink:#5E2279;
+  --grad:linear-gradient(135deg,#E11F4C 0%,#9A2A93 55%,#7A2E9E 100%);
+  --gold:#F2A71B; --gold-ink:#9C6400;
+  --success:#17915B; --success-bg:#E7F7EF; --warn:#B4650B; --warn-bg:#FDF1DF;
+  --danger:#D23C3C; --danger-bg:#FCEAEA;
+  --shadow:0 10px 30px -12px rgba(122,46,158,.28), 0 2px 8px -2px rgba(32,19,49,.12);
+  --shadow-sm:0 1px 2px rgba(32,19,49,.08);
+  --radius-lg:22px; --radius-md:16px; --radius-sm:11px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#120A1C; --surface:#1C1228; --surface-2:#251832; --surface-3:#2E1F3D;
+    --ink:#F4ECFB; --ink-soft:#C7B9DA; --ink-faint:#8B7D9F; --line:#372647;
+    --red:#FF4D78; --red-ink:#FF7A9B; --purple:#C073E8; --purple-ink:#D79CF2;
+    --grad:linear-gradient(135deg,#FF4D78 0%,#C458C8 55%,#A85CEF 100%);
+    --gold:#FFC94D; --gold-ink:#FFD77A;
+    --success:#3FD492; --success-bg:#123626; --warn:#FFB35C; --warn-bg:#3A2B13;
+    --danger:#FF6E6E; --danger-bg:#3A1818;
+    --shadow:0 10px 30px -10px rgba(0,0,0,.55), 0 2px 8px -2px rgba(0,0,0,.4);
+    --shadow-sm:0 1px 2px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#120A1C; --surface:#1C1228; --surface-2:#251832; --surface-3:#2E1F3D;
+  --ink:#F4ECFB; --ink-soft:#C7B9DA; --ink-faint:#8B7D9F; --line:#372647;
+  --red:#FF4D78; --red-ink:#FF7A9B; --purple:#C073E8; --purple-ink:#D79CF2;
+  --grad:linear-gradient(135deg,#FF4D78 0%,#C458C8 55%,#A85CEF 100%);
+  --gold:#FFC94D; --gold-ink:#FFD77A;
+  --success:#3FD492; --success-bg:#123626; --warn:#FFB35C; --warn-bg:#3A2B13;
+  --danger:#FF6E6E; --danger-bg:#3A1818;
+  --shadow:0 10px 30px -10px rgba(0,0,0,.55), 0 2px 8px -2px rgba(0,0,0,.4);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.4);
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Noto+Sans+Tamil:wght@400;500;600;700&family=Noto+Sans+Telugu:wght@400;500;600;700&family=Noto+Sans+Kannada:wght@400;500;600;700&family=Noto+Sans+Malayalam:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&family=Noto+Sans+Gujarati:wght@400;500;600;700&family=Noto+Sans+Gurmukhi:wght@400;500;600;700&display=swap');
+
+*{box-sizing:border-box;}
+html,body{margin:0;}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:'Inter','Noto Sans Devanagari','Noto Sans Tamil','Noto Sans Telugu','Noto Sans Kannada','Noto Sans Malayalam','Noto Sans Bengali','Noto Sans Gujarati','Noto Sans Gurmukhi',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  padding:0 16px;
+}
+h1,h2,h3,.disp{font-family:'Baloo 2','Noto Sans Devanagari',system-ui,sans-serif; text-wrap:balance;}
+button{font-family:inherit;}
+::selection{background:var(--purple); color:#fff;}
+@media (prefers-reduced-motion: reduce){ *{animation-duration:.001ms !important; transition-duration:.001ms !important;} }
+
+/* ===== Shell ===== */
+.shell{max-width:760px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding-block:14px 90px;}
+
+/* Header */
+.topbar{display:flex;align-items:center;gap:12px;padding:10px 4px 14px;position:sticky;top:0;background:linear-gradient(var(--bg) 80%, transparent); z-index:30;}
+.mark{width:46px;height:46px;flex:none;border-radius:16px;background:var(--grad);display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-sm);}
+.brandline{display:flex;flex-direction:column;gap:1px;min-width:0;}
+.brandline .name{font-family:'Baloo 2',sans-serif;font-weight:800;font-size:19px;letter-spacing:.2px;}
+.brandline .status{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-soft);}
+.dot-live{width:7px;height:7px;border-radius:50%;background:var(--success);box-shadow:0 0 0 3px var(--success-bg);flex:none;}
+.topbar-actions{margin-left:auto;display:flex;gap:6px;}
+.iconbtn{width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink-soft);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .15s,border-color .15s;}
+.iconbtn:hover{border-color:var(--purple);color:var(--purple);transform:translateY(-1px);}
+.iconbtn svg{width:18px;height:18px;}
+
+/* Hero / greeting */
+.hero{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:20px 20px 18px;box-shadow:var(--shadow-sm);margin-bottom:14px;}
+.hero h1{margin:0 0 6px;font-size:22px;}
+.hero p{margin:0;color:var(--ink-soft);font-size:14.5px;line-height:1.5;}
+.hero .persona-chip{display:inline-flex;align-items:center;gap:6px;margin-top:12px;padding:6px 10px 6px 6px;border-radius:999px;background:var(--surface-2);font-size:12.5px;color:var(--ink-soft);}
+.hero .persona-chip b{color:var(--ink);font-weight:700;}
+.persona-avatar{width:20px;height:20px;border-radius:50%;background:var(--grad);flex:none;}
+
+/* Section labels */
+.section-label{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);font-weight:700;margin:18px 2px 8px;}
+
+/* Chip rail */
+.chiprail{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 6px;scrollbar-width:none;}
+.chiprail::-webkit-scrollbar{display:none;}
+.chip{flex:none;display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap;transition:border-color .15s, background .15s, transform .1s;}
+.chip:hover{border-color:var(--purple);background:var(--surface-2);}
+.chip:active{transform:scale(.97);}
+.chip .emo{font-size:15px;line-height:1;}
+
+/* Category grid */
+.catgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+@media (min-width:480px){.catgrid{grid-template-columns:repeat(4,1fr);}}
+.catcard{border:1px solid var(--line);background:var(--surface);border-radius:var(--radius-md);padding:14px 12px;cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:8px;transition:transform .15s,border-color .15s,box-shadow .15s;}
+.catcard:hover{transform:translateY(-2px);border-color:transparent;box-shadow:var(--shadow);}
+.catcard .ic{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;}
+.catcard .ic svg{width:18px;height:18px;}
+.catcard .lbl{font-size:13.5px;font-weight:700;line-height:1.25;}
+.catcard .sub{font-size:11.5px;color:var(--ink-faint);}
+
+/* Delighter strip */
+.strip-link{display:flex;align-items:center;gap:10px;justify-content:space-between;margin-top:16px;padding:12px 14px;border-radius:var(--radius-md);border:1px dashed var(--line);background:var(--surface-2);cursor:pointer;font-size:13px;color:var(--ink-soft);}
+.strip-link b{color:var(--ink);}
+.strip-link .go{color:var(--purple);font-weight:700;display:flex;align-items:center;gap:4px;}
+
+/* Chat */
+.feed{display:flex;flex-direction:column;gap:14px;margin-top:8px;}
+.msg{display:flex;gap:10px;max-width:100%;}
+.msg.user{flex-direction:row-reverse;}
+.avatar-sm{width:30px;height:30px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;}
+.avatar-sm.bot{background:var(--grad);color:#fff;}
+.avatar-sm.bot svg{width:15px;height:15px;}
+.avatar-sm.user{background:var(--surface-3);color:var(--ink-soft);font-weight:700;font-size:12px;}
+.bubble-wrap{display:flex;flex-direction:column;gap:6px;max-width:86%;}
+.msg.user .bubble-wrap{align-items:flex-end;}
+.bubble{padding:11px 14px;border-radius:16px;font-size:14.5px;line-height:1.55;box-shadow:var(--shadow-sm);}
+.msg.bot .bubble{background:var(--surface);border:1px solid var(--line);border-top-left-radius:5px;}
+.msg.user .bubble{background:var(--grad);color:#fff;border-top-right-radius:5px;}
+.bubble p{margin:0 0 6px;}
+.bubble p:last-child{margin-bottom:0;}
+.meta-row{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--ink-faint);padding:0 2px;}
+.mood-tag{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;}
+.mood-tag.empathy{background:var(--warn-bg);color:var(--warn);}
+.mood-tag.happy{background:var(--success-bg);color:var(--success);}
+.fb-btns{display:flex;gap:4px;}
+.fb-btn{width:24px;height:24px;border-radius:8px;border:1px solid var(--line);background:var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink-faint);}
+.fb-btn svg{width:12px;height:12px;}
+.fb-btn.active{background:var(--purple);border-color:var(--purple);color:#fff;}
+.typing{display:flex;gap:4px;padding:13px 16px;}
+.typing span{width:6px;height:6px;border-radius:50%;background:var(--ink-faint);animation:bounce 1.2s infinite;}
+.typing span:nth-child(2){animation-delay:.15s;}
+.typing span:nth-child(3){animation-delay:.3s;}
+@keyframes bounce{0%,60%,100%{transform:translateY(0);opacity:.5;}30%{transform:translateY(-4px);opacity:1;}}
+
+/* Cards inside chat */
+.cards{display:flex;flex-direction:column;gap:8px;width:100%;}
+.vcard{border:1px solid var(--line);background:var(--surface);border-radius:var(--radius-md);padding:13px 14px;box-shadow:var(--shadow-sm);}
+.vcard .vhead{display:flex;align-items:flex-start;gap:10px;}
+.vcard .vic{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;flex:none;}
+.vcard .vic svg{width:16px;height:16px;}
+.vcard .vtitle{font-weight:700;font-size:14px;}
+.vcard .vsub{font-size:12.5px;color:var(--ink-soft);margin-top:1px;}
+.vcard ul{margin:9px 0 0;padding-left:18px;font-size:13px;color:var(--ink-soft);}
+.vcard ul li{margin-bottom:3px;}
+.vcard .vctas{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px;}
+.btn{border:none;border-radius:11px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+.btn-primary{background:var(--grad);color:#fff;}
+.btn-ghost{background:var(--surface-2);color:var(--ink);border:1px solid var(--line);}
+.btn-link{background:transparent;color:var(--purple);padding:9px 4px;}
+.btn:active{transform:scale(.97);}
+.vcard.action .vic{background:var(--grad);}
+.vcard.escalate{border-color:var(--warn);background:var(--warn-bg);}
+.vcard.escalate .vic{background:var(--warn);}
+.vcard.upsell{background:linear-gradient(180deg,var(--surface),var(--surface-2));}
+.vcard.upsell .vic{background:var(--gold);}
+.vcard .stepline{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-soft);margin-top:8px;}
+.spinner{width:13px;height:13px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--purple);animation:spin .7s linear infinite;flex:none;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.progress-ok{color:var(--success);font-weight:700;}
+
+/* Quick replies under a bot turn */
+.qr-row{display:flex;gap:7px;flex-wrap:wrap;}
+.qr{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 12px;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--purple-ink);}
+.qr:hover{background:var(--surface-2);}
+
+/* CSAT */
+.csat{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--ink-soft);margin-top:2px;}
+.csat .opts{display:flex;gap:6px;}
+.csat button{border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:5px 10px;font-size:12px;cursor:pointer;color:var(--ink);}
+.csat button:hover{border-color:var(--success);}
+
+/* Proactive banner */
+.nudge{position:fixed;left:16px;right:16px;bottom:92px;max-width:728px;margin:0 auto;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:16px;padding:12px 14px;display:flex;gap:10px;align-items:center;z-index:45;animation:slideup .35s ease;}
+@keyframes slideup{from{transform:translateY(16px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.nudge .txt{flex:1;font-size:13px;color:var(--ink);}
+.nudge .txt b{display:block;font-size:12px;color:var(--purple);margin-bottom:1px;}
+.nudge .x{background:none;border:none;color:var(--ink-faint);cursor:pointer;font-size:16px;padding:4px;}
+
+/* Mood meter (live, while typing) */
+.mood-live{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ink-faint);padding:0 4px 6px;min-height:16px;}
+.mood-live.show b{color:var(--warn);}
+
+/* Composer */
+.composer-wrap{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(transparent, var(--bg) 35%);padding:10px 16px 14px;z-index:40;}
+.composer{max-width:760px;margin:0 auto;}
+.composer-bar{display:flex;align-items:flex-end;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:7px 7px 7px 14px;box-shadow:var(--shadow);}
+.composer-bar textarea{flex:1;border:none;background:transparent;resize:none;outline:none;font-size:14.5px;color:var(--ink);font-family:inherit;max-height:90px;padding:8px 0;}
+.composer-bar textarea::placeholder{color:var(--ink-faint);}
+.round-btn{width:40px;height:40px;border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;}
+.round-btn.send{background:var(--grad);color:#fff;}
+.round-btn.send svg{width:17px;height:17px;}
+.round-btn.mic{background:var(--surface-2);color:var(--purple);}
+.round-btn.mic.listening{background:var(--red);color:#fff;animation:pulse 1.4s infinite;}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(225,31,76,.45);}70%{box-shadow:0 0 0 12px rgba(225,31,76,0);}100%{box-shadow:0 0 0 0 rgba(225,31,76,0);}}
+.round-btn.mic svg{width:17px;height:17px;}
+.round-btn:disabled{opacity:.4;cursor:not-allowed;}
+.disclaimer{text-align:center;font-size:10.5px;color:var(--ink-faint);margin-top:7px;}
+
+/* Sheet (slide-up) */
+.sheet-backdrop{position:fixed;inset:0;background:rgba(18,10,28,.45);backdrop-filter:blur(2px);z-index:60;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
+.sheet-backdrop.open{opacity:1;pointer-events:auto;}
+.sheet{width:100%;max-width:760px;max-height:86vh;overflow-y:auto;background:var(--surface);border-radius:22px 22px 0 0;padding:10px 18px 26px;transform:translateY(100%);transition:transform .25s cubic-bezier(.32,.72,0,1);box-shadow:0 -10px 40px rgba(0,0,0,.25);}
+.sheet-backdrop.open .sheet{transform:translateY(0);}
+.sheet-handle{width:38px;height:4px;border-radius:99px;background:var(--line);margin:6px auto 14px;}
+.sheet h3{margin:0 0 3px;font-size:17px;}
+.sheet .sub{color:var(--ink-soft);font-size:12.5px;margin-bottom:12px;}
+.tabs{display:flex;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--line);}
+.tab{padding:9px 4px;margin-right:14px;font-size:13px;font-weight:700;color:var(--ink-faint);cursor:pointer;border-bottom:2px solid transparent;}
+.tab.active{color:var(--purple);border-color:var(--purple);}
+.tabpanel{display:none;}
+.tabpanel.active{display:block;}
+
+.langgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+@media (min-width:420px){.langgrid{grid-template-columns:repeat(3,1fr);}}
+.langcard{border:1px solid var(--line);border-radius:13px;padding:10px 11px;cursor:pointer;}
+.langcard.active{border-color:var(--purple);background:var(--surface-2);}
+.langcard .native{font-weight:700;font-size:14px;}
+.langcard .eng{font-size:11px;color:var(--ink-faint);}
+
+.personalist{display:flex;flex-direction:column;gap:8px;}
+.personacard{display:flex;gap:11px;align-items:flex-start;border:1px solid var(--line);border-radius:14px;padding:11px 12px;cursor:pointer;}
+.personacard.active{border-color:var(--purple);background:var(--surface-2);}
+.personacard .pav{width:38px;height:38px;border-radius:50%;background:var(--grad);flex:none;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-family:'Baloo 2',sans-serif;}
+.personacard .pname{font-weight:700;font-size:13.5px;}
+.personacard .pmeta{font-size:12px;color:var(--ink-soft);margin-top:1px;}
+.personacard .ptag{display:inline-block;margin-top:5px;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:999px;background:var(--surface-3);color:var(--ink-soft);}
+
+.delight{border:1px solid var(--line);border-radius:14px;padding:12px 13px;margin-bottom:9px;}
+.delight .dind{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--purple);margin-bottom:5px;}
+.delight .dtitle{font-weight:700;font-size:13.5px;margin-bottom:3px;}
+.delight .dbody{font-size:12.5px;color:var(--ink-soft);line-height:1.5;}
+
+.statrow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+.stat{background:var(--surface-2);border-radius:13px;padding:11px 10px;text-align:center;}
+.stat .num{font-family:'Baloo 2',sans-serif;font-weight:800;font-size:20px;font-variant-numeric:tabular-nums;}
+.stat .lbl{font-size:10.5px;color:var(--ink-faint);margin-top:2px;}
+.learnlist{display:flex;flex-direction:column;gap:7px;}
+.learnitem{display:flex;gap:9px;align-items:flex-start;font-size:12.5px;color:var(--ink-soft);}
+.learnitem .b{width:6px;height:6px;border-radius:50%;background:var(--gold);margin-top:6px;flex:none;}
+
+.toast{position:fixed;bottom:92px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:99px;font-size:12.5px;z-index:80;box-shadow:var(--shadow);opacity:0;transition:opacity .2s, transform .2s;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(-4px);}
+
+.close-x{position:absolute;right:14px;top:10px;background:var(--surface-2);border:none;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink-soft);}
+
+[hidden]{display:none !important;}
+</style>
+
+<div class="shell">
+  <div class="topbar">
+    <div class="mark" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="26" height="26" fill="none"><path d="M12 3c-5 0-8.6 3.4-8.6 7.7 0 2 .8 3.8 2.2 5.2-.2 1.3-.7 2.6-1.5 3.7 1.6.2 3.2-.2 4.6-1 1 .3 2.1.5 3.3.5 5 0 8.6-3.4 8.6-7.7S17 3 12 3z" fill="white" opacity=".95"/><circle cx="9.3" cy="10.6" r="1.25" fill="#7A2E9E"/><circle cx="14.7" cy="10.6" r="1.25" fill="#7A2E9E"/><path d="M9 14.2c1.8 1.3 4.2 1.3 6 0" stroke="#7A2E9E" stroke-width="1.3" stroke-linecap="round"/></svg>
+    </div>
+    <div class="brandline">
+      <span class="name">Vic2</span>
+      <span class="status"><span class="dot-live"></span><span id="statusText">Online · here for you</span></span>
+    </div>
+    <div class="topbar-actions">
+      <button class="iconbtn" id="btnSound" title="Voice replies" aria-label="Toggle voice replies">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5 6 9H3v6h3l5 4V5z"/><path d="M16 8a5 5 0 0 1 0 8"/></svg>
+      </button>
+      <button class="iconbtn" id="btnSheet" title="Languages, persona & about Vic2" aria-label="Open Vic2 settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9c.2.6.7 1 1.5 1.1h.2a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div id="hero" class="hero">
+    <h1 id="heroTitle">Hi, I'm Vic2 — your Vi companion</h1>
+    <p id="heroSub">Plans, bills, roaming, network, SIM, entertainment, utilities and care — ask me anything, tap a topic, or just speak. I'll never guess a balance or price; I'll always point you to what's live on myvi.in.</p>
+    <div class="persona-chip" id="personaChipHero">
+      <span class="persona-avatar"></span>
+      Talking to you as <b id="personaChipName">Rohit</b> · <span id="personaChipMeta">Postpaid · frequent traveller</span>
+    </div>
+  </div>
+
+  <div class="section-label" id="lblPopular">Popular right now</div>
+  <div class="chiprail" id="popularRail"></div>
+
+  <div class="section-label" id="lblBrowse">Browse topics</div>
+  <div class="catgrid" id="catGrid"></div>
+
+  <div class="strip-link" id="delightStrip">
+    <span><b id="delightStripTitle">Why Vic2 feels different</b> — delighters borrowed from the world's best airline, bank, healthcare &amp; streaming bots.</span>
+    <span class="go">See how →</span>
+  </div>
+
+  <div class="feed" id="feed"></div>
+  <div id="nudgeHost"></div>
+</div>
+
+<div class="composer-wrap">
+  <div class="composer">
+    <div class="mood-live" id="moodLive"></div>
+    <div class="composer-bar">
+      <textarea id="textInput" rows="1" placeholder="Type your question… e.g. 'why is my roaming bill so high'"></textarea>
+      <button class="round-btn mic" id="btnMic" title="Speak to Vic2" aria-label="Voice input">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 11a7 7 0 0 1-14 0"/><path d="M12 18v4"/></svg>
+      </button>
+      <button class="round-btn send" id="btnSend" title="Send" aria-label="Send message">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 11.5 20 3l-6 18-3.2-7.1L3 11.5z"/></svg>
+      </button>
+    </div>
+    <div class="disclaimer" id="disclaimerTxt">Vic2 gives guidance &amp; next steps — live balances, bills &amp; prices always come straight from myvi.in.</div>
+  </div>
+</div>
+
+<div class="sheet-backdrop" id="sheetBackdrop">
+  <div class="sheet">
+    <button class="close-x" id="sheetClose" aria-label="Close">✕</button>
+    <div class="sheet-handle"></div>
+    <div class="tabs">
+      <div class="tab active" data-tab="lang">Language</div>
+      <div class="tab" data-tab="persona">Persona demo</div>
+      <div class="tab" data-tab="learn">How Vic2 learns</div>
+      <div class="tab" data-tab="about">World-class delighters</div>
+    </div>
+
+    <div class="tabpanel active" data-panel="lang">
+      <h3>भाषा चुनें · Choose your language</h3>
+      <div class="sub">Vic2 replies natively in 10 Indian languages, grounded in the same Vi facts. Coverage is deepest in English &amp; Hindi and improving fast — tell us if a translation feels off.</div>
+      <div class="langgrid" id="langGrid"></div>
+    </div>
+
+    <div class="tabpanel" data-panel="persona">
+      <h3>See Vic2 personalise itself</h3>
+      <div class="sub">Real Vic2 reads your actual account. For this demo, switch personas to see how the same question gets a tailored, not generic, answer.</div>
+      <div class="personalist" id="personaList"></div>
+    </div>
+
+    <div class="tabpanel" data-panel="learn">
+      <h3>How Vic2 learns</h3>
+      <div class="sub">A transparent look at what's real learning today vs. the roadmap to full self-learning at Vi scale.</div>
+      <div class="statrow" id="learnStats"></div>
+      <div class="learnlist" id="learnList"></div>
+    </div>
+
+    <div class="tabpanel" data-panel="about">
+      <h3>Built from the world's best conversational experiences</h3>
+      <div class="sub">Every pattern below is a deliberate borrow — adapted to Vi, not copy-pasted.</div>
+      <div id="delightList"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================= ICONS ============================= */
+const ICONS = {
+  recharge:'<path d="M13 2 3 14h6l-1 8 10-12h-6l1-8z"/>',
+  bills:'<path d="M6 2h12v20l-3-2-3 2-3-2-3 2V2z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8.5 7h7M8.5 10.5h7M8.5 14h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
+  roaming:'<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M3 12h18M12 3c2.5 2.6 3.8 6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-6-3.8-9s1.3-6.4 3.8-9z" fill="none" stroke="currentColor" stroke-width="1.4"/>',
+  network:'<path d="M4 20h2v-4H4v4zM9 20h2v-8H9v8zM14 20h2v-12h-2v12zM19 20h2v-16h-2v16z"/>',
+  utilities:'<path d="M12 2 3 9v12h6v-6h6v6h6V9L12 2z"/>',
+  entertainment:'<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10 8.5 16 12l-6 3.5v-7z"/>',
+  account:'<circle cx="12" cy="7.5" r="3.4" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M4.5 20c1-4 4-5.8 7.5-5.8s6.5 1.8 7.5 5.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
+  quick:'<path d="M20 6 9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>',
+  bot:'<path d="M5 8a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v6a4 4 0 0 1-4 4H9l-4 3v-3a4 4 0 0 1-0-0V8z"/><circle cx="9.3" cy="10.8" r="1" fill="white"/><circle cx="14.7" cy="10.8" r="1" fill="white"/>',
+  thumbup:'<path d="M2 10h3v10H2zM7 10l1.5-6A2 2 0 0 1 10.4 2.6 1.6 1.6 0 0 1 12 4.4V9h6.2a2 2 0 0 1 2 2.4l-1.4 7A2 2 0 0 1 16.8 20H7z"/>',
+  thumbdown:'<path d="M22 14h-3V4h3zM17 14l-1.5 6A2 2 0 0 1 13.6 21.4 1.6 1.6 0 0 1 12 19.6V15H5.8a2 2 0 0 1-2-2.4l1.4-7A2 2 0 0 1 7.2 4H17z"/>',
+};
+const catColor = {recharge:'var(--red)',bills:'var(--purple)',roaming:'#1C8FB0',network:'#2E8B57',utilities:'var(--gold-ink)',entertainment:'#C0348C',account:'var(--purple-ink)',quick:'var(--red-ink)'};
+function svgIcon(key,color){return '<svg viewBox="0 0 24 24" fill="'+(key==='network'?'currentColor':'currentColor')+'">'+ICONS[key]+'</svg>';}
+
+/* ============================= i18n ============================= */
+const LANGS = [
+  {id:'en',native:'English',eng:'English',speech:'en-IN'},
+  {id:'hi',native:'हिन्दी',eng:'Hindi',speech:'hi-IN'},
+  {id:'ta',native:'தமிழ்',eng:'Tamil',speech:'ta-IN'},
+  {id:'te',native:'తెలుగు',eng:'Telugu',speech:'te-IN'},
+  {id:'kn',native:'ಕನ್ನಡ',eng:'Kannada',speech:'kn-IN'},
+  {id:'ml',native:'മലയാളം',eng:'Malayalam',speech:'ml-IN'},
+  {id:'bn',native:'বাংলা',eng:'Bengali',speech:'bn-IN'},
+  {id:'mr',native:'मराठी',eng:'Marathi',speech:'mr-IN'},
+  {id:'gu',native:'ગુજરાતી',eng:'Gujarati',speech:'gu-IN'},
+  {id:'pa',native:'ਪੰਜਾਬੀ',eng:'Punjabi',speech:'pa-IN'},
+];
+const STRINGS = {
+  en:{heroTitle:"Hi, I'm Vic2 — your Vi companion",heroSub:"Plans, bills, roaming, network, SIM, entertainment, utilities and care — ask me anything, tap a topic, or just speak. I'll never guess a balance or price; I'll always point you to what's live on myvi.in.",popular:"Popular right now",browse:"Browse topics",placeholder:"Type your question… e.g. 'why is my roaming bill so high'",disclaimer:"Vic2 gives guidance & next steps — live balances, bills & prices always come straight from myvi.in.",delightStrip:"Why Vic2 feels different",talkingAs:"Talking to you as",thinking:"Vic2 is thinking…",escalate:"Talk to a specialist",csat:"Did that solve it?",csatYes:"Yes, thanks!",csatNo:"Not quite",statusOnline:"Online · here for you",statusListening:"Listening…",feedbackThanks:"Thanks — noted for next time.",offline:"Running on quick reference mode — full AI understanding needs Claude access in this view.",heardYou:"Heard you — sending…"},
+  hi:{heroTitle:"नमस्ते, मैं Vic2 हूँ — आपका Vi साथी",heroSub:"प्लान, बिल, रोमिंग, नेटवर्क, सिम, एंटरटेनमेंट, यूटिलिटीज़ और सहायता — कुछ भी पूछें, टॉपिक टैप करें या बोलकर बताएं। मैं कभी बैलेंस या कीमत का अंदाज़ा नहीं लगाऊंगा — हमेशा myvi.in पर लाइव जानकारी दिखाऊंगा।",popular:"अभी लोकप्रिय",browse:"टॉपिक देखें",placeholder:"अपना सवाल लिखें… जैसे 'मेरा रोमिंग बिल इतना ज़्यादा क्यों है'",disclaimer:"Vic2 मार्गदर्शन व अगला कदम बताता है — लाइव बैलेंस, बिल व कीमतें हमेशा myvi.in से।",delightStrip:"Vic2 अलग कैसे है",talkingAs:"आप इस रूप में बात कर रहे हैं",thinking:"Vic2 सोच रहा है…",escalate:"स्पेशलिस्ट से बात करें",csat:"क्या इससे समस्या हल हुई?",csatYes:"हाँ, धन्यवाद!",csatNo:"पूरी तरह नहीं",statusOnline:"ऑनलाइन · आपके लिए यहाँ",statusListening:"सुन रहा हूँ…",feedbackThanks:"धन्यवाद — अगली बार के लिए नोट कर लिया।",offline:"क्विक रेफरेंस मोड चल रहा है — पूरी समझ के लिए इस व्यू में Claude एक्सेस चाहिए।",heardYou:"सुन लिया — भेज रहा हूँ…"},
+  ta:{heroTitle:"வணக்கம், நான் Vic2 — உங்கள் Vi துணை",heroSub:"திட்டங்கள், பில், ரோமிங், நெட்வொர்க், சிம், என்டர்டெயின்மென்ட், யூட்டிலிட்டி மற்றும் உதவி — எதையும் கேளுங்கள், தொடவும் அல்லது பேசவும். நான் ஒரு போதும் பாலன்ஸ் அல்லது விலையை ஊகிக்க மாட்டேன் — எப்போதும் myvi.in-இல் உள்ள நேரடித் தகவலைக் காட்டுவேன்.",popular:"இப்போது பிரபலமானவை",browse:"தலைப்புகளைப் பார்க்க",placeholder:"உங்கள் கேள்வியை தட்டச்சு செய்யவும்… எ.கா. 'எனது ரோமிங் பில் ஏன் அதிகமாக உள்ளது'",disclaimer:"Vic2 வழிகாட்டுதல் தரும் — நேரடி பாலன்ஸ், பில் மற்றும் விலைகள் myvi.in-இல் இருந்தே.",delightStrip:"Vic2 ஏன் வேறுபட்டது",talkingAs:"நீங்கள் பேசுவது",thinking:"Vic2 யோசிக்கிறது…",escalate:"நிபுணருடன் பேசவும்",csat:"இது பிரச்சனையைத் தீர்த்ததா?",csatYes:"ஆம், நன்றி!",csatNo:"இல்லை",statusOnline:"ஆன்லைன் · உங்களுக்காக",statusListening:"கேட்கிறேன்…",feedbackThanks:"நன்றி — குறிப்பு செய்யப்பட்டது.",offline:"விரைவு தகவல் பயன்முறை — முழு புரிதலுக்கு Claude அணுகல் தேவை.",heardYou:"கேட்டேன் — அனுப்புகிறேன்…"},
+  te:{heroTitle:"హాయ్, నేను Vic2 — మీ Vi సహచరుడు",heroSub:"ప్లాన్లు, బిల్లులు, రోమింగ్, నెట్‌వర్క్, సిమ్, వినోదం, యూటిలిటీలు, సహాయం — ఏదైనా అడగండి, టాపిక్ నొక్కండి లేదా మాట్లాడండి. నేను బ్యాలెన్స్ లేదా ధరను ఎప్పుడూ అంచనా వేయను — ఎల్లప్పుడూ myvi.in లైవ్ సమాచారం చూపిస్తాను.",popular:"ఇప్పుడు ట్రెండింగ్",browse:"టాపిక్స్ చూడండి",placeholder:"మీ ప్రశ్న టైప్ చేయండి… ఉదా. 'నా రోమింగ్ బిల్ ఎందుకు ఎక్కువగా ఉంది'",disclaimer:"Vic2 మార్గదర్శనం ఇస్తుంది — లైవ్ బ్యాలెన్స్, బిల్లులు, ధరలు ఎప్పుడూ myvi.in నుండే.",delightStrip:"Vic2 ఎందుకు వేరు",talkingAs:"మీరు మాట్లాడుతున్నది",thinking:"Vic2 ఆలోచిస్తోంది…",escalate:"స్పెషలిస్ట్‌తో మాట్లాడండి",csat:"ఇది పరిష్కారమైందా?",csatYes:"అవును, థాంక్స్!",csatNo:"పూర్తిగా కాదు",statusOnline:"ఆన్‌లైన్ · మీ కోసం",statusListening:"వింటున్నాను…",feedbackThanks:"థాంక్స் — నోట్ చేసుకున్నాను.",offline:"క్విక్ రెఫరెన్స్ మోడ్ — పూర్తి అవగాహనకు Claude యాక్సెస్ కావాలి.",heardYou:"విన్నాను — పంపుతున్నాను…"},
+  kn:{heroTitle:"ಹಾಯ್, ನಾನು Vic2 — ನಿಮ್ಮ Vi ಸಂಗಾತಿ",heroSub:"ಪ್ಲಾನ್‌ಗಳು, ಬಿಲ್‌ಗಳು, ರೋಮಿಂಗ್, ನೆಟ್‌ವರ್ಕ್, ಸಿಮ್, ಮನರಂಜನೆ, ಯೂಟಿಲಿಟಿ ಮತ್ತು ಕೇರ್ — ಏನು ಬೇಕಾದರೂ ಕೇಳಿ, ಟಾಪಿಕ್ ಟ್ಯಾಪ್ ಮಾಡಿ ಅಥವಾ ಮಾತನಾಡಿ. ನಾನು ಬ್ಯಾಲೆನ್ಸ್ ಅಥವಾ ಬೆಲೆಯನ್ನು ಎಂದಿಗೂ ಊಹಿಸುವುದಿಲ್ಲ — ಯಾವಾಗಲೂ myvi.in ನಲ್ಲಿ ಲೈವ್ ಮಾಹಿತಿ ತೋರಿಸುತ್ತೇನೆ.",popular:"ಈಗ ಜನಪ್ರಿಯ",browse:"ವಿಷಯಗಳನ್ನು ನೋಡಿ",placeholder:"ನಿಮ್ಮ ಪ್ರಶ್ನೆ ಟೈಪ್ ಮಾಡಿ… ಉದಾ. 'ನನ್ನ ರೋಮಿಂಗ್ ಬಿಲ್ ಏಕೆ ಹೆಚ್ಚಿದೆ'",disclaimer:"Vic2 ಮಾರ್ಗದರ್ಶನ ನೀಡುತ್ತದೆ — ಲೈವ್ ಬ್ಯಾಲೆನ್ಸ್, ಬಿಲ್ ಮತ್ತು ಬೆಲೆಗಳು ಯಾವಾಗಲೂ myvi.in ನಿಂದ.",delightStrip:"Vic2 ಏಕೆ ಭಿನ್ನ",talkingAs:"ನೀವು ಮಾತನಾಡುತ್ತಿರುವುದು",thinking:"Vic2 ಯೋಚಿಸುತ್ತಿದೆ…",escalate:"ಸ್ಪೆಷಲಿಸ್ಟ್ ಜೊತೆ ಮಾತನಾಡಿ",csat:"ಇದು ಸಮಸ್ಯೆ ಬಗೆಹರಿಸಿತೆ?",csatYes:"ಹೌದು, ಧನ್ಯವಾದ!",csatNo:"ಪೂರ್ತಿಯಾಗಿಲ್ಲ",statusOnline:"ಆನ್‌ಲೈನ್ · ನಿಮಗಾಗಿ",statusListening:"ಕೇಳುತ್ತಿದ್ದೇನೆ…",feedbackThanks:"ಧನ್ಯವಾದ — ಗಮನಿಸಿದೆ.",offline:"ಕ್ವಿಕ್ ರೆಫರೆನ್ಸ್ ಮೋಡ್ — ಪೂರ್ಣ ತಿಳುವಳಿಕೆಗೆ Claude ಅಗತ್ಯ.",heardYou:"ಕೇಳಿದೆ — ಕಳುಹಿಸುತ್ತಿದ್ದೇನೆ…"},
+  ml:{heroTitle:"ഹായ്, ഞാൻ Vic2 — നിങ്ങളുടെ Vi കൂട്ടുകാരൻ",heroSub:"പ്ലാനുകൾ, ബില്ലുകൾ, റോമിംഗ്, നെറ്റ്‌വർക്ക്, സിം, വിനോദം, യൂട്ടിലിറ്റികൾ, കെയർ — എന്തും ചോദിക്കൂ, ടോപ്പിക് ടാപ്പ് ചെയ്യൂ അല്ലെങ്കിൽ സംസാരിക്കൂ. ഞാൻ ഒരിക്കലും ബാലൻസോ വിലയോ ഊഹിക്കില്ല — എപ്പോഴും myvi.in-ലെ തത്സമയ വിവരം കാണിക്കും.",popular:"ഇപ്പോൾ പ്രചാരത്തിൽ",browse:"വിഷയങ്ങൾ കാണുക",placeholder:"നിങ്ങളുടെ ചോദ്യം ടൈപ്പ് ചെയ്യൂ… ഉദാ. 'എന്റെ റോമിംഗ് ബിൽ എന്തുകൊണ്ട് കൂടുതലാണ്'",disclaimer:"Vic2 മാർഗനിർദേശം നൽകുന്നു — തത്സമയ ബാലൻസ്, ബിൽ, വില myvi.in-ൽ നിന്ന് മാത്രം.",delightStrip:"Vic2 വ്യത്യസ്തമാകുന്നത് എങ്ങനെ",talkingAs:"നിങ്ങൾ സംസാരിക്കുന്നത്",thinking:"Vic2 ചിന്തിക്കുന്നു…",escalate:"സ്പെഷ്യലിസ്റ്റുമായി സംസാരിക്കൂ",csat:"ഇത് പരിഹരിച്ചോ?",csatYes:"അതെ, നന്ദി!",csatNo:"പൂർണമായും അല്ല",statusOnline:"ഓൺലൈൻ · നിങ്ങൾക്കായി",statusListening:"കേൾക്കുന്നു…",feedbackThanks:"നന്ദി — അടുത്ത തവണ ഓർക്കും.",offline:"ക്വിക്ക് റെഫറൻസ് മോഡ് — പൂർണ ധാരണയ്ക്ക് Claude ആക്സസ് വേണം.",heardYou:"കേട്ടു — അയക്കുന്നു…"},
+  bn:{heroTitle:"হ্যালো, আমি Vic2 — আপনার Vi সঙ্গী",heroSub:"প্ল্যান, বিল, রোমিং, নেটওয়ার্ক, সিম, বিনোদন, ইউটিলিটি আর কেয়ার — যা খুশি জিজ্ঞাসা করুন, টপিক ট্যাপ করুন বা কথা বলুন। আমি কখনও ব্যালেন্স বা দাম আন্দাজ করব না — সবসময় myvi.in-এর লাইভ তথ্য দেখাব।",popular:"এখন জনপ্রিয়",browse:"টপিক দেখুন",placeholder:"আপনার প্রশ্ন লিখুন… যেমন 'আমার রোমিং বিল কেন এত বেশি'",disclaimer:"Vic2 গাইডেন্স দেয় — লাইভ ব্যালেন্স, বিল আর দাম সবসময় myvi.in থেকে।",delightStrip:"Vic2 কেন আলাদা",talkingAs:"আপনি কথা বলছেন",thinking:"Vic2 ভাবছে…",escalate:"স্পেশালিস্টের সাথে কথা বলুন",csat:"এটা কি সমস্যা সমাধান করেছে?",csatYes:"হ্যাঁ, ধন্যবাদ!",csatNo:"পুরোপুরি না",statusOnline:"অনলাইন · আপনার জন্য",statusListening:"শুনছি…",feedbackThanks:"ধন্যবাদ — পরের বার মনে রাখা হবে।",offline:"কুইক রেফারেন্স মোড — সম্পূর্ণ বোঝার জন্য Claude অ্যাক্সেস প্রয়োজন।",heardYou:"শুনেছি — পাঠাচ্ছি…"},
+  mr:{heroTitle:"नमस्कार, मी Vic2 — तुमचा Vi सोबती",heroSub:"प्लॅन्स, बिल, रोमिंग, नेटवर्क, सिम, एंटरटेनमेंट, युटिलिटीज आणि केअर — काहीही विचारा, टॉपिक टॅप करा किंवा बोला. मी कधीही बॅलन्स किंवा किंमतीचा अंदाज लावणार नाही — नेहमी myvi.in वरील लाइव्ह माहिती दाखवेन.",popular:"आता लोकप्रिय",browse:"विषय पहा",placeholder:"तुमचा प्रश्न टाइप करा… उदा. 'माझे रोमिंग बिल इतके जास्त का आहे'",disclaimer:"Vic2 मार्गदर्शन देतो — लाइव्ह बॅलन्स, बिल व किंमती नेहमी myvi.in वरून.",delightStrip:"Vic2 वेगळा कसा आहे",talkingAs:"तुम्ही बोलत आहात",thinking:"Vic2 विचार करत आहे…",escalate:"स्पेशालिस्टशी बोला",csat:"यामुळे समस्या सुटली का?",csatYes:"हो, धन्यवाद!",csatNo:"पूर्ण नाही",statusOnline:"ऑनलाइन · तुमच्यासाठी",statusListening:"ऐकत आहे…",feedbackThanks:"धन्यवाद — पुढच्या वेळी लक्षात ठेवू.",offline:"क्विक रेफरन्स मोड — पूर्ण समजण्यासाठी Claude अॅक्सेस हवा.",heardYou:"ऐकलं — पाठवत आहे…"},
+  gu:{heroTitle:"નમસ્તે, હું Vic2 — તમારો Vi સાથી",heroSub:"પ્લાન, બિલ, રોમિંગ, નેટવર્ક, સિમ, મનોરંજન, યુટિલિટી અને કેર — કંઈપણ પૂછો, ટોપિક ટેપ કરો અથવા બોલો. હું ક્યારેય બેલેન્સ કે ભાવનો અંદાજ નહીં લગાવું — હંમેશા myvi.in પરની લાઇવ માહિતી બતાવીશ.",popular:"હાલ લોકપ્રિય",browse:"વિષયો જુઓ",placeholder:"તમારો પ્રશ્ન લખો… દા.ત. 'મારું રોમિંગ બિલ આટલું વધારે કેમ છે'",disclaimer:"Vic2 માર્ગદર્શન આપે છે — લાઇવ બેલેન્સ, બિલ અને ભાવ હંમેશા myvi.in પરથી.",delightStrip:"Vic2 કેમ અલગ છે",talkingAs:"તમે આ રીતે વાત કરો છો",thinking:"Vic2 વિચારી રહ્યું છે…",escalate:"સ્પેશિયાલિસ્ટ સાથે વાત કરો",csat:"શું આનાથી સમસ્યા હલ થઈ?",csatYes:"હા, આભાર!",csatNo:"પૂરેપૂરું નહીં",statusOnline:"ઓનલાઇન · તમારા માટે",statusListening:"સાંભળી રહ્યો છું…",feedbackThanks:"આભાર — નોંધ લીધી.",offline:"ક્વિક રેફરન્સ મોડ — સંપૂર્ણ સમજ માટે Claude એક્સેસ જરૂરી.",heardYou:"સાંભળ્યું — મોકલી રહ્યો છું…"},
+  pa:{heroTitle:"ਸਤ ਸ੍ਰੀ ਅਕਾਲ, ਮੈਂ Vic2 — ਤੁਹਾਡਾ Vi ਸਾਥੀ",heroSub:"ਪਲਾਨ, ਬਿੱਲ, ਰੋਮਿੰਗ, ਨੈੱਟਵਰਕ, ਸਿਮ, ਮਨੋਰੰਜਨ, ਯੂਟਿਲਿਟੀ ਅਤੇ ਕੇਅਰ — ਕੁਝ ਵੀ ਪੁੱਛੋ, ਟੌਪਿਕ ਟੈਪ ਕਰੋ ਜਾਂ ਬੋਲੋ। ਮੈਂ ਕਦੇ ਵੀ ਬਕਾਇਆ ਜਾਂ ਕੀਮਤ ਦਾ ਅੰਦਾਜ਼ਾ ਨਹੀਂ ਲਾਵਾਂਗਾ — ਹਮੇਸ਼ਾ myvi.in ਦੀ ਲਾਈਵ ਜਾਣਕਾਰੀ ਦਿਖਾਵਾਂਗਾ।",popular:"ਹੁਣ ਪ੍ਰਸਿੱਧ",browse:"ਵਿਸ਼ੇ ਦੇਖੋ",placeholder:"ਆਪਣਾ ਸਵਾਲ ਲਿਖੋ… ਜਿਵੇਂ 'ਮੇਰਾ ਰੋਮਿੰਗ ਬਿੱਲ ਇੰਨਾ ਜ਼ਿਆਦਾ ਕਿਉਂ ਹੈ'",disclaimer:"Vic2 ਮਾਰਗਦਰਸ਼ਨ ਦਿੰਦਾ ਹੈ — ਲਾਈਵ ਬਕਾਇਆ, ਬਿੱਲ ਤੇ ਕੀਮਤਾਂ ਹਮੇਸ਼ਾ myvi.in ਤੋਂ।",delightStrip:"Vic2 ਕਿਉਂ ਵੱਖਰਾ ਹੈ",talkingAs:"ਤੁਸੀਂ ਇਸ ਰੂਪ ਵਿੱਚ ਗੱਲ ਕਰ ਰਹੇ ਹੋ",thinking:"Vic2 ਸੋਚ ਰਿਹਾ ਹੈ…",escalate:"ਸਪੈਸ਼ਲਿਸਟ ਨਾਲ ਗੱਲ ਕਰੋ",csat:"ਕੀ ਇਸ ਨਾਲ ਹੱਲ ਹੋ ਗਿਆ?",csatYes:"ਹਾਂ, ਧੰਨਵਾਦ!",csatNo:"ਪੂਰੀ ਤਰ੍ਹਾਂ ਨਹੀਂ",statusOnline:"ਆਨਲਾਈਨ · ਤੁਹਾਡੇ ਲਈ",statusListening:"ਸੁਣ ਰਿਹਾ ਹਾਂ…",feedbackThanks:"ਧੰਨਵਾਦ — ਅਗਲੀ ਵਾਰ ਲਈ ਨੋਟ ਕੀਤਾ।",offline:"ਕਵਿੱਕ ਰੈਫਰੈਂਸ ਮੋਡ — ਪੂਰੀ ਸਮਝ ਲਈ Claude ਐਕਸੈਸ ਚਾਹੀਦਾ।",heardYou:"ਸੁਣ ਲਿਆ — ਭੇਜ ਰਿਹਾ ਹਾਂ…"},
+};
+function t(key){ const l=STRINGS[state.lang]||STRINGS.en; return l[key]!==undefined?l[key]:STRINGS.en[key]; }
+
+/* ============================= Personas ============================= */
+const PERSONAS = [
+  {id:'rohit',name:'Rohit',init:'R',meta:'Postpaid · frequent traveller',tag:'High ARPU · churn-watch',plan:'postpaid ₹799 plan',context:'Rohit travels abroad for work often and was just shocked by a high roaming charge on his last bill. He is price-sensitive about surprise charges and values being warned proactively before his next trip.'},
+  {id:'aisha',name:'Aisha',init:'A',meta:'Prepaid · student, heavy data user',tag:'Price-sensitive · upsell data',plan:'prepaid ₹239 pack',context:'Aisha is a student on a tight budget who burns through data fast on streaming and social apps and always wants the best value high-data pack.'},
+  {id:'kamlesh',name:'Kamlesh ji',init:'K',meta:'Prepaid · senior citizen, first smartphone',tag:'Needs simple steps',plan:'prepaid ₹179 pack',context:'Kamlesh ji is a senior citizen, not very comfortable with apps, and needs very simple, patient, step-by-step language without jargon.'},
+  {id:'priya',name:'Priya',init:'P',meta:'Postpaid · small business owner',tag:'High value · cross-sell FASTag/DTH',plan:'postpaid ₹1199 plan',context:'Priya runs a small business, manages multiple SIMs for her team, and cares about autopay, reliability and getting everything done quickly without hand-holding.'},
+];
+
+/* ============================= Knowledge base (68 intents) ============================= */
+// cat: recharge | bills | roaming | network | utilities | entertainment | account | quick | system
+const KB = {
+ GREETING:{cat:'system',label:"Say hi",facts:["Warm, brief welcome.","Offer to help with plans, bills, roaming, network or care.","Ask what they need today."]},
+ FALLBACK:{cat:'system',label:"Didn't catch that",facts:["Admit uncertainty honestly, never bluff.","Offer the closest 2-3 likely topics as quick replies.","Offer a human specialist if repeated."]},
+ YES_AFFIRM:{cat:'system',label:"Yes",facts:["Proceed with the previously offered action."]},
+ NO_DENY:{cat:'system',label:"No",facts:["Stop the previously offered action and ask what they'd prefer instead."]},
+
+ BROWSE_PREPAID_PLANS:{cat:'recharge',label:"Browse prepaid plans",facts:["Vi prepaid plans bundle talktime, data and validity — family, data-heavy, and entertainment-bundled variants exist.","Best plan depends on monthly usage pattern, not just price.","Live prices and data caps are only accurate on myvi.in — they change with offers."],cta:[{l:'View live prepaid plans',u:'https://www.myvi.in'}]},
+ BROWSE_POSTPAID_PLANS:{cat:'recharge',label:"Browse postpaid plans",facts:["Postpaid suits multi-device or business use with monthly billing instead of recharge.","Plans vary by data rollover, international minutes and add-on family lines.","Check myvi.in for current postpaid RED plans and benefits."],cta:[{l:'View postpaid plans',u:'https://www.myvi.in'}]},
+ HOW_TO_RECHARGE:{cat:'recharge',label:"How to recharge",steps:["Open the Vi app or myvi.in and sign in with your number.","Pick a plan or enter a custom amount.","Pay via UPI, card, net-banking or wallet — recharge applies in seconds."],cta:[{l:'Recharge now',u:'https://www.myvi.in'}]},
+ RECHARGE_FAILED:{cat:'recharge',label:"Recharge failed / money debited",facts:["Most failed recharges where money left your bank are auto-reversed in 3-5 business days.","If the amount shows failed but money was deducted, it's almost always a bank-side timeout, not a lost recharge.","Keep the transaction ID/reference ready when checking status."],steps:["Check 'Recharge history' in the app for the transaction status.","If still pending after 5 working days, raise it with the transaction ID via Vi Customer Care."],cta:[{l:'Check recharge history',u:'https://www.myvi.in'},{l:'Contact customer care',u:'https://www.myvi.in'}]},
+ RECHARGE_FOR_OTHERS:{cat:'recharge',label:"Recharge another number",facts:["You can recharge any Vi (or other operator) number without logging into their account.","Just enter the number and amount/plan and pay — no OTP from the other person needed for a simple top-up."],cta:[{l:'Recharge any number',u:'https://www.myvi.in'}]},
+ RECHARGE_HISTORY:{cat:'recharge',label:"Recharge history",facts:["Full recharge and payment history is under your account / transaction history section.","Useful for tracking a disputed or failed recharge."],cta:[{l:'View history',u:'https://www.myvi.in'}]},
+ PLAN_UNDER_200:{cat:'recharge',label:"Plans under ₹200",facts:["Entry plans under ₹200 typically suit light users needing basic data + calling for a shorter validity.","Exact data/validity combinations change with offers — always confirm live."],cta:[{l:'See plans under ₹200',u:'https://www.myvi.in'}]},
+ PLAN_UNDER_500:{cat:'recharge',label:"Plans under ₹500",facts:["The ₹200-500 band is Vi's most popular everyday range, balancing data with 28-56 day validity.","Good fit for moderate daily data users."],cta:[{l:'See plans under ₹500',u:'https://www.myvi.in'}]},
+ PLAN_UNDER_1000:{cat:'recharge',label:"Plans under ₹1000",facts:["This range usually adds longer validity (up to ~84 days) or higher daily data caps.","Often the sweet spot if you're recharging less often to save time."],cta:[{l:'See plans under ₹1000',u:'https://www.myvi.in'}]},
+ PLAN_ABOVE_1000:{cat:'recharge',label:"Plans above ₹1000",facts:["Plans above ₹1000 usually bundle annual validity or multiple OTT subscriptions together.","Best value if you already pay separately for Netflix/Prime/Hotstar style bundles."],cta:[{l:'See premium plans',u:'https://www.myvi.in'}]},
+ PLAN_HIGH_DATA:{cat:'recharge',label:"High-data plans",facts:["High-data plans raise the per-day data cap rather than just total data — check the daily limit, not only the headline GB.","Heavy streamers/hotspot users should also check FUP (fair-use) speed after the cap."],cta:[{l:'See high-data plans',u:'https://www.myvi.in'}]},
+ PLAN_UNLIMITED_DATA:{cat:'recharge',label:"Unlimited data plans",facts:["'Unlimited' plans still apply a fair-usage speed cap after a daily high-speed limit — it's unlimited access, not unlimited top speed.","Great for hotspot/WFH-heavy users who mainly need always-on connectivity."],cta:[{l:'See unlimited data plans',u:'https://www.myvi.in'}]},
+ PLAN_WITH_NETFLIX:{cat:'entertainment',label:"Plans with Netflix",facts:["Select premium plans bundle a Netflix mobile/basic subscription at no extra cost over the plan price.","Availability rotates with Vi's offer calendar — confirm current bundled plans live."],cta:[{l:'See Netflix bundle plans',u:'https://www.myvi.in'}]},
+ PLAN_WITH_AMAZON_PRIME:{cat:'entertainment',label:"Plans with Amazon Prime",facts:["Some Vi plans include an Amazon Prime (video/shopping benefits) subscription bundled in.","Check the plan's fine print for mobile-only vs full Prime benefits."],cta:[{l:'See Prime bundle plans',u:'https://www.myvi.in'}]},
+ PLAN_WITH_HOTSTAR:{cat:'entertainment',label:"Plans with Hotstar",facts:["Popular for cricket/sports season — certain Vi plans bundle a Disney+ Hotstar mobile subscription.","Great upsell around IPL/World Cup windows."],cta:[{l:'See Hotstar bundle plans',u:'https://www.myvi.in'}]},
+ PLAN_WITH_SONYLIV:{cat:'entertainment',label:"Plans with SonyLIV",facts:["Certain entertainment-bundled plans include SonyLIV access alongside data benefits."],cta:[{l:'See SonyLIV bundle plans',u:'https://www.myvi.in'}]},
+ PLAN_WITH_ZEE5:{cat:'entertainment',label:"Plans with ZEE5",facts:["Certain entertainment-bundled plans include ZEE5 access alongside data benefits."],cta:[{l:'See ZEE5 bundle plans',u:'https://www.myvi.in'}]},
+ WHERE_TO_WATCH:{cat:'entertainment',label:"Where to watch bundled OTT",facts:["Bundled OTT access usually activates automatically within a few hours of a qualifying recharge and is redeemed inside the respective app using your Vi number.","If it doesn't show up, the voucher/redemption step inside the OTT app is the most common miss."],cta:[{l:'Manage VAS & OTT',u:'https://www.myvi.in'}]},
+ PREPAID_TO_POSTPAID:{cat:'recharge',label:"Switch prepaid to postpaid",facts:["Switching is usually a same-number conversion — no new SIM or number change needed in most cases.","A credit/address check may apply for postpaid eligibility.","Any prepaid balance is typically settled/adjusted as part of the switch."],steps:["Request the prepaid-to-postpaid switch from the app or nearest Vi store.","Complete the eligibility check.","Your number keeps working through the transition window."],cta:[{l:'Start the switch',u:'https://www.myvi.in'}]},
+
+ VIEW_BILL:{cat:'bills',label:"View my bill",facts:["Your latest postpaid bill — itemised usage, roaming charges, taxes — is always under 'My Bill' in the app or myvi.in, never an estimate I can give you.","Itemised roaming/STD charges are the first place to check if a bill looks unusually high."],cta:[{l:'View live bill',u:'https://www.myvi.in'}]},
+ PAY_BILL:{cat:'bills',label:"Pay my bill",steps:["Open 'Pay Bill', confirm the amount due.","Pay via UPI, card, net-banking or wallet.","Payment usually reflects within minutes."],cta:[{l:'Pay bill now',u:'https://www.myvi.in'}]},
+ BILL_DUE_DATE:{cat:'bills',label:"When's my bill due",facts:["Due date is fixed per billing cycle and shown on your latest bill — it doesn't change month to month unless your cycle is edited.","A grace period typically applies before any service impact, but late payment can still affect credit-linked services."],cta:[{l:'Check due date',u:'https://www.myvi.in'}]},
+ BILL_DISPUTE:{cat:'bills',label:"My bill looks too high",tag:'diagnostic',
+   facts:[
+     "Bill shock usually traces to one of a few specific causes, not a billing error — and it's almost always explainable from the itemised bill.",
+     "International roaming is the #1 cause: pay-per-use data/call/SMS rates apply the moment a roaming pack isn't active or has expired mid-trip — even a few hours of data roaming without a pack can add up fast.",
+     "Domestically: a data add-on running out and falling back to pay-per-use rates, premium VAS/subscription add-ons, or extra STD/ISD calls are the next most common causes.",
+     "A genuine billing error is rare but real — itemised disputes are reviewed against actual network usage logs, not assumptions."
+   ],
+   steps:[
+     "Open the itemised bill and sort by charge type — roaming, data, VAS, calls — to isolate the spike.",
+     "If it's roaming: check whether a roaming pack was active for every day you were abroad, including the day you landed and the day you returned.",
+     "If nothing explains it after that: raise a formal bill dispute with the specific line items flagged, within the dispute window on the bill.",
+     "For your next trip: activate a roaming pack before departure and set a usage alert so this can't repeat."
+   ],
+   cta:[{l:'View itemised bill',u:'https://www.myvi.in'},{l:'Raise a bill dispute',u:'https://www.myvi.in'},{l:'Roaming packs for next trip',u:'https://www.myvi.in'}]},
+ AUTOPAY_ACTIVATE:{cat:'bills',label:"Set up autopay",facts:["Autopay debits your saved UPI/card automatically on the due date — it doesn't overcharge; it pays exactly the billed amount.","You get a reminder before each auto-debit and can cancel anytime."],cta:[{l:'Set up autopay',u:'https://www.myvi.in'}]},
+ AUTOPAY_DEACTIVATE:{cat:'bills',label:"Turn off autopay",facts:["Turning off autopay just stops future auto-debits — it doesn't cancel your plan or current bill.","You'll need to pay manually each cycle afterwards."],cta:[{l:'Manage autopay',u:'https://www.myvi.in'}]},
+ SAFE_CUSTODY:{cat:'bills',label:"Safe custody (pause my number)",facts:["Safe custody temporarily suspends your number (no incoming/outgoing) while reserving it for you — useful if your SIM/phone is lost or you're travelling long-term.","A minimal charge usually applies to keep the number reserved, and there's a maximum duration before it must be reactivated."],cta:[{l:'Request safe custody',u:'https://www.myvi.in'}]},
+
+ CHECK_BALANCE:{cat:'quick',label:"Check my balance",facts:["Your live main balance is always exact on myvi.in/app — never a number I should guess."],cta:[{l:'Check balance',u:'https://www.myvi.in'}]},
+ CHECK_DATA_BALANCE:{cat:'quick',label:"Check data balance",facts:["Live remaining data (and whether you've dropped to FUP speed) shows under 'Manage Data' in the app."],cta:[{l:'Check data balance',u:'https://www.myvi.in'}]},
+ CHECK_VALIDITY:{cat:'quick',label:"Check plan validity",facts:["Your exact expiry date and days remaining are shown live — plan it around that rather than guessing."],cta:[{l:'Check validity',u:'https://www.myvi.in'}]},
+ ACTIVE_PACKS:{cat:'quick',label:"My active packs",facts:["All currently active packs (data, roaming, VAS, OTT) and their individual expiry are listed together — the fastest way to see what's actually switched on.","This is the first place to check before assuming a pack 'didn't work'."],cta:[{l:'View active packs',u:'https://www.myvi.in'}]},
+ DATA_MANAGEMENT:{cat:'quick',label:"Manage my data",facts:["You can track daily usage, set low-data alerts, and buy top-up data packs without touching your main plan."],cta:[{l:'Manage data',u:'https://www.myvi.in'}]},
+ DND_ACTIVATE:{cat:'quick',label:"Turn on Do Not Disturb",facts:["DND blocks promotional calls/SMS; it usually takes up to a few hours to fully apply and doesn't block transactional/OTP messages."],cta:[{l:'Activate DND',u:'https://www.myvi.in'}]},
+ DND_DEACTIVATE:{cat:'quick',label:"Turn off Do Not Disturb",facts:["Turning off DND resumes promotional communication — useful if you want to see offers again."],cta:[{l:'Deactivate DND',u:'https://www.myvi.in'}]},
+ VAS_MANAGE:{cat:'quick',label:"Manage subscriptions (VAS)",facts:["VAS covers caller tunes, content subscriptions and similar add-ons that can silently renew and add small recurring charges.","Reviewing this list is a quick way to stop a charge you didn't notice."],cta:[{l:'Manage subscriptions',u:'https://www.myvi.in'}]},
+
+ ACTIVATE_ROAMING:{cat:'roaming',label:"Activate international roaming",tag:'action',facts:["International roaming itself (the ability to connect abroad) is usually free to switch on — the roaming PACK is what covers usage cost.","Activate it before you land; mid-trip activation can mean the first hours are charged at pay-per-use rates."],cta:[{l:'Activate roaming',u:'https://www.myvi.in'},{l:'Browse roaming packs',u:'https://www.myvi.in'}]},
+ DEACTIVATE_ROAMING:{cat:'roaming',label:"Deactivate international roaming",facts:["Deactivating roaming once you're back home prevents accidental pay-per-use charges if your phone briefly latches onto a foreign/border network."],cta:[{l:'Deactivate roaming',u:'https://www.myvi.in'}]},
+ ROAMING_STATUS:{cat:'roaming',label:"Is my roaming active?",facts:["Roaming status and any active roaming pack + its expiry are both shown live — check both together, since roaming can be 'on' with no pack active underneath it (the expensive combination)."],cta:[{l:'Check roaming status',u:'https://www.myvi.in'}]},
+ ROAMING_USA:{cat:'roaming',label:"Roaming in USA",facts:["USA roaming packs typically bundle data + local/India calling + SMS for a fixed trip duration.","US networks used are usually major partner carriers — coverage is generally strong in cities."],cta:[{l:'USA roaming packs',u:'https://www.myvi.in'}]},
+ ROAMING_UK:{cat:'roaming',label:"Roaming in UK",facts:["UK roaming packs bundle data and calling for the trip; Europe multi-country packs may also cover UK separately post-Brexit — check which pack applies to UK specifically."],cta:[{l:'UK roaming packs',u:'https://www.myvi.in'}]},
+ ROAMING_EUROPE:{cat:'roaming',label:"Roaming in Europe",facts:["Europe packs are usually multi-country, handy if you're hopping between Schengen countries on one trip.","Confirm which specific countries are included — not all European countries are always in one pack."],cta:[{l:'Europe roaming packs',u:'https://www.myvi.in'}]},
+ ROAMING_UAE:{cat:'roaming',label:"Roaming in UAE",facts:["UAE is one of the most-travelled Vi roaming corridors — short-duration packs are common for quick business trips."],cta:[{l:'UAE roaming packs',u:'https://www.myvi.in'}]},
+ ROAMING_SAUDI:{cat:'roaming',label:"Roaming in Saudi Arabia",facts:["Saudi Arabia packs often bundle generous calling minutes given the large resident Indian community travelling for work."],cta:[{l:'Saudi roaming packs',u:'https://www.myvi.in'}]},
+ ROAMING_SINGAPORE:{cat:'roaming',label:"Roaming in Singapore",facts:["Singapore has strong partner network coverage; short business-trip packs are popular here."],cta:[{l:'Singapore roaming packs',u:'https://www.myvi.in'}]},
+ ROAMING_THAILAND:{cat:'roaming',label:"Roaming in Thailand",facts:["Thailand is a high-traffic leisure corridor — data-heavy packs (for maps/social/photos) tend to be the best value."],cta:[{l:'Thailand roaming packs',u:'https://www.myvi.in'}]},
+ ROAMING_AUSTRALIA:{cat:'roaming',label:"Roaming in Australia",facts:["Australia trips are usually longer (study/visit) — check multi-week pack options, not just short trip packs."],cta:[{l:'Australia roaming packs',u:'https://www.myvi.in'}]},
+ ROAMING_CANADA:{cat:'roaming',label:"Roaming in Canada",facts:["Canada packs are popular for study/visit trips — similar considerations to the US in terms of duration options."],cta:[{l:'Canada roaming packs',u:'https://www.myvi.in'}]},
+ ROAMING_NEPAL:{cat:'roaming',label:"Roaming in Nepal",facts:["Nepal, as a neighbouring country, often has more affordable short-duration roaming packs given the short typical trip length."],cta:[{l:'Nepal roaming packs',u:'https://www.myvi.in'}]},
+ ROAMING_OTHER_COUNTRY:{cat:'roaming',label:"Roaming — another country",facts:["Vi covers roaming in a wide range of countries through partner networks — tell me the country and I'll point you to the right live pack list."],cta:[{l:'See all roaming destinations',u:'https://www.myvi.in'}]},
+
+ NETWORK_SETTINGS:{cat:'network',label:"Fix network/APN settings",steps:["Toggle Airplane mode on/off to force a network refresh.","Check APN settings match Vi's — resetting to default APN fixes most data issues.","Ensure you're not still on an old operator's saved network profile after porting."],cta:[{l:'Network settings help',u:'https://www.myvi.in'}]},
+ NETWORK_TROUBLE:{cat:'network',label:"No network / call drops",tag:'diagnostic',facts:["Most network complaints are either a very local/temporary coverage dip or a device-side setting, not an area-wide outage.","Indoor signal issues are often building-material related (steel/concrete blocks signal) rather than network strength."],steps:["Check for any known outage/maintenance in your area first.","Restart the device and toggle Airplane mode.","Try a different spot (near a window) to rule out indoor signal blocking.","If it persists beyond a few hours in the same spot, report it with your exact location for a network-side check."],cta:[{l:'Report network issue',u:'https://www.myvi.in'},{l:'Check network status',u:'https://www.myvi.in'}]},
+ SIM_ISSUE:{cat:'network',label:"SIM not working / damaged",steps:["Re-seat the SIM and restart the phone.","Try the SIM in another phone to isolate SIM vs device.","If confirmed faulty/damaged, request a SIM replacement — your number and balance carry over."],cta:[{l:'Request SIM replacement',u:'https://www.myvi.in'}]},
+ PUK_CODE:{cat:'network',label:"SIM locked / need PUK",facts:["A SIM locks after too many wrong PIN attempts — this is a safety feature, not a fault.","Entering the wrong PUK too many times can permanently block the SIM, so get the correct PUK first rather than guessing."],steps:["Find your PUK via the app/customer care (tied to your registered number/ID).","Enter it carefully on the device's PUK prompt."],cta:[{l:'Get my PUK code',u:'https://www.myvi.in'}]},
+ NUMBER_PORT:{cat:'network',label:"Port my number out",facts:["Porting out needs a UPC (Unique Porting Code) generated via SMS, and a brief process that keeps your number intact with the new operator.","Outstanding dues must typically be cleared before porting completes."],cta:[{l:'Porting process & UPC',u:'https://www.myvi.in'}]},
+ PORT_TO_VI:{cat:'network',label:"Port into Vi",facts:["Porting into Vi keeps your existing number — you'll need the UPC from your current operator and a new Vi SIM.","The process usually completes within a few days with minimal service interruption."],cta:[{l:'Port to Vi',u:'https://www.myvi.in'}]},
+ NEW_CONNECTION:{cat:'network',label:"Get a new Vi connection",facts:["New prepaid or postpaid connections need basic KYC (ID + address proof) — eSIM is also available on supported devices."],cta:[{l:'Get a new connection',u:'https://www.myvi.in'}]},
+
+ PAY_DTH:{cat:'utilities',label:"Pay DTH bill",facts:["You can recharge most major DTH operators directly from the Vi app's utility payments section, no separate app needed."],cta:[{l:'Pay DTH',u:'https://www.myvi.in'}]},
+ PAY_ELECTRICITY:{cat:'utilities',label:"Pay electricity bill",facts:["Electricity bill payment for supported boards is available in the same utility payments hub as your mobile bill."],cta:[{l:'Pay electricity bill',u:'https://www.myvi.in'}]},
+ RECHARGE_FASTAG:{cat:'utilities',label:"Recharge FASTag",facts:["FASTag top-ups for supported issuing banks can be done alongside your mobile recharge — handy before a road trip."],cta:[{l:'Recharge FASTag',u:'https://www.myvi.in'}]},
+ BOOK_LPG:{cat:'utilities',label:"Book LPG cylinder",facts:["LPG cylinder booking for supported providers is available in the utilities section — one less app to juggle."],cta:[{l:'Book LPG',u:'https://www.myvi.in'}]},
+
+ CALLER_TUNE_ACTIVATE:{cat:'entertainment',label:"Set a caller tune",facts:["Caller tunes are a small recurring VAS charge — pick a track and it plays for callers until you change or cancel it."],cta:[{l:'Set caller tune',u:'https://www.myvi.in'}]},
+ CALLER_TUNE_DEACTIVATE:{cat:'entertainment',label:"Remove caller tune",facts:["Removing it stops the recurring charge from your next billing cycle."],cta:[{l:'Remove caller tune',u:'https://www.myvi.in'}]},
+
+ CUSTOMER_CARE:{cat:'account',label:"Talk to customer care",facts:["For anything account-specific, identity-sensitive, or unresolved here, a live specialist can access your account directly."],cta:[{l:'Contact customer care',u:'https://www.myvi.in'},{l:'Chat on WhatsApp',u:'https://www.myvi.in'}]},
+ TRACK_REQUEST:{cat:'account',label:"Track my request",facts:["Every request (SIM replacement, address change, porting, dispute) gets a reference ID — tracking status just needs that ID."],cta:[{l:'Track my request',u:'https://www.myvi.in'}]},
+ VI_WHATSAPP:{cat:'account',label:"Chat with Vi on WhatsApp",facts:["Vi's official WhatsApp service handles quick balance checks, recharges and bill payments conversationally, right inside WhatsApp."],cta:[{l:'Open Vi WhatsApp',u:'https://www.myvi.in'}]},
+};
+
+const CATS = [
+  {id:'recharge',label:'Recharge & Plans',sub:'Prepaid, postpaid & top-up'},
+  {id:'bills',label:'Bills & Payments',sub:'View, pay, autopay, disputes'},
+  {id:'roaming',label:'Roaming & Travel',sub:'15 countries, packs & status'},
+  {id:'network',label:'Network & SIM',sub:'Coverage, PUK, porting'},
+  {id:'entertainment',label:'Entertainment',sub:'OTT bundles & caller tunes'},
+  {id:'utilities',label:'Pay Utilities',sub:'DTH, electricity, FASTag, LPG'},
+  {id:'quick',label:'Quick Checks',sub:'Balance, validity, packs, DND'},
+  {id:'account',label:'Account & Care',sub:'Support, WhatsApp, tracking'},
+];
+const POPULAR = ['CHECK_BALANCE','BILL_DISPUTE','ACTIVATE_ROAMING','PAY_BILL','HOW_TO_RECHARGE','NETWORK_TROUBLE','CUSTOMER_CARE'];
+
+/* ============================= Delighters (industry learnings) ============================= */
+const DELIGHTERS = [
+  {ind:'Airlines · Delta / KLM',title:'Proactive nudges before you ask',body:"The world's best airline bots tell you about a delay before you check. Vic2 does the same for telecom: a data-exhaustion or roaming-expiry nudge before it becomes a shock bill — see the banner that can appear below the chat."},
+  {ind:'Banking · Erica, Eno',title:'Root-cause bill explainers, not denial',body:"Bank bots don't just show a number when you ask 'why was I charged' — they break down the spike by category. Vic2's bill-dispute flow does exactly this for roaming and data overages instead of a generic 'please check your bill'."},
+  {ind:'Healthcare · Ada, Babylon',title:'Empathetic triage, guided branching',body:"Symptom checkers never jump straight to an answer — they ask the one clarifying question that changes everything. Vic2 mirrors this for network trouble and recharge failures: narrowing causes step by step, gently."},
+  {ind:'Telecom · T-Mobile, Jio',title:'One-tap account actions',body:"Leading telco bots let you actually act (pay, activate, pause) inside the chat, not just read about how to. Vic2's action cards simulate this end-to-end flow, then hand off the real transaction to myvi.in."},
+  {ind:'Retail · Sephora, Domino\'s',title:'Visual, tappable intent, not a wall of text',body:"Conversational commerce leaders use rich tiles and cards over paragraphs. Vic2's topic tiles and smart cards are built the same way — scan and tap, don't read and guess."},
+  {ind:'Streaming · Netflix, Spotify',title:'Personalise from context, not just rules',body:"Recommendations adapt to who's asking. Vic2's persona demo shows the same question (roaming bill) answered differently for a frequent traveller vs. a student vs. a senior citizen."},
+  {ind:'Global CX · Amazon Rufus, Apple',title:'Graceful human handoff with context carried over',body:"The best bots know when to stop being a bot. Vic2 detects frustration and hands off to a specialist with the conversation already summarised — you never repeat yourself."},
+  {ind:'Every great bot',title:'Never invent a number',body:"Vic2 is built to explain, diagnose and act — but every balance, bill amount and price is always pulled live from myvi.in, never guessed. Trust over false confidence."},
+];
+
+/* ============================= State ============================= */
+const state = {
+  lang: localStorage.getItem('vic2_lang') || 'en',
+  persona: localStorage.getItem('vic2_persona') || 'rohit',
+  voiceOut: localStorage.getItem('vic2_voiceout') === '1',
+  messages: [],
+  history: [], // {role,content} for sample context
+  sampleFn: null,
+  sampleChecked: false,
+  recog: null,
+  listening: false,
+  shownNudge: localStorage.getItem('vic2_nudge_shown') === '1',
+  stats: JSON.parse(localStorage.getItem('vic2_stats')||'{"conversations":0,"good":0,"bad":0,"langsUsed":{},"intents":{}}'),
+};
+function saveStats(){ localStorage.setItem('vic2_stats', JSON.stringify(state.stats)); }
+function bumpStat(intentId){
+  state.stats.conversations++;
+  state.stats.intents[intentId] = (state.stats.intents[intentId]||0)+1;
+  state.stats.langsUsed[state.lang] = (state.stats.langsUsed[state.lang]||0)+1;
+  saveStats();
+}
+
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(el._t); el._t = setTimeout(()=>el.classList.remove('show'), 2200);
+}
+
+/* ============================= Rendering: static chrome ============================= */
+function personaOf(id){ return PERSONAS.find(p=>p.id===id) || PERSONAS[0]; }
+
+function renderChrome(){
+  document.getElementById('heroTitle').textContent = t('heroTitle');
+  document.getElementById('heroSub').textContent = t('heroSub');
+  document.getElementById('lblPopular').textContent = t('popular');
+  document.getElementById('lblBrowse').textContent = t('browse');
+  document.getElementById('textInput').placeholder = t('placeholder');
+  document.getElementById('disclaimerTxt').textContent = t('disclaimer');
+  document.getElementById('delightStripTitle').textContent = t('delightStrip');
+  document.getElementById('statusText').textContent = t('statusOnline');
+
+  const p = personaOf(state.persona);
+  document.getElementById('personaChipName').textContent = p.name;
+  document.getElementById('personaChipMeta').textContent = p.meta;
+  document.querySelector('#personaChipHero').innerHTML = '<span class="persona-avatar"></span>'+t('talkingAs')+' <b>'+p.name+'</b> · <span>'+p.meta+'</span>';
+
+  // popular rail
+  const rail = document.getElementById('popularRail');
+  rail.innerHTML = POPULAR.map(id=>{
+    const k = KB[id];
+    return '<div class="chip" data-intent="'+id+'"><span class="emo" style="color:'+catColor[k.cat]+'">●</span>'+escapeHtml(k.label)+'</div>';
+  }).join('');
+  rail.querySelectorAll('.chip').forEach(c=>c.addEventListener('click', ()=>runIntent(c.dataset.intent)));
+
+  // category grid
+  const grid = document.getElementById('catGrid');
+  grid.innerHTML = CATS.map(c=>{
+    return '<button class="catcard" data-cat="'+c.id+'"><span class="ic" style="background:'+catColor[c.id]+'">'+svgIcon(c.id)+'</span><span class="lbl">'+c.label+'</span><span class="sub">'+c.sub+'</span></button>';
+  }).join('');
+  grid.querySelectorAll('.catcard').forEach(c=>c.addEventListener('click', ()=>openCategory(c.dataset.cat)));
+
+  // language grid (sheet)
+  const lg = document.getElementById('langGrid');
+  lg.innerHTML = LANGS.map(l=>'<div class="langcard'+(l.id===state.lang?' active':'')+'" data-lang="'+l.id+'"><div class="native">'+l.native+'</div><div class="eng">'+l.eng+'</div></div>').join('');
+  lg.querySelectorAll('.langcard').forEach(c=>c.addEventListener('click', ()=>{
+    state.lang = c.dataset.lang; localStorage.setItem('vic2_lang', state.lang);
+    renderChrome();
+  }));
+
+  // persona list (sheet)
+  const pl = document.getElementById('personaList');
+  pl.innerHTML = PERSONAS.map(p=>'<div class="personacard'+(p.id===state.persona?' active':'')+'" data-p="'+p.id+'"><span class="pav">'+p.init+'</span><span><span class="pname">'+p.name+'</span><div class="pmeta">'+p.meta+'</div><span class="ptag">'+p.tag+'</span></span></div>').join('');
+  pl.querySelectorAll('.personacard').forEach(c=>c.addEventListener('click', ()=>{
+    state.persona = c.dataset.p; localStorage.setItem('vic2_persona', state.persona);
+    renderChrome();
+    toast('Now chatting as '+personaOf(state.persona).name);
+  }));
+
+  // learn tab
+  const ls = document.getElementById('learnStats');
+  const totalFb = state.stats.good+state.stats.bad;
+  const satisfaction = totalFb ? Math.round(100*state.stats.good/totalFb) : null;
+  ls.innerHTML = [
+    ['num:'+state.stats.conversations,'Your chats here'],
+    ['num:'+(satisfaction!==null?satisfaction+'%':'—'),'Your thumbs-up rate'],
+    ['num:'+Object.keys(state.stats.langsUsed).length,"Languages you've used"]
+  ].map(([n,l])=>'<div class="stat"><div class="num">'+n.split(':')[1]+'</div><div class="lbl">'+l+'</div></div>').join('');
+  document.getElementById('learnList').innerHTML = [
+    'Real today: every 👍/👎 you give is remembered on this device and shapes your own "most helpful" view over time.',
+    'Real today: Vic2 reasons freshly on every question using Claude — it is not a fixed decision tree, so it genuinely adapts to how you phrase things, your mood, and your language.',
+    'Roadmap to full self-learning at Vi scale: pool feedback across all consumers (not just this device), auto-flag KB articles with low resolution rates for the content team, and retrain ranking weekly from real conversation outcomes.',
+    "Roadmap: live account + network telemetry (your real balance, your actual tower's congestion) replacing the static facts used in this public demo.",
+  ].map(s=>'<div class="learnitem"><span class="b"></span><span>'+s+'</span></div>').join('');
+
+  // delighters tab
+  document.getElementById('delightList').innerHTML = DELIGHTERS.map(d=>'<div class="delight"><div class="dind">'+d.ind+'</div><div class="dtitle">'+d.title+'</div><div class="dbody">'+d.body+'</div></div>').join('');
+
+  document.getElementById('btnSound').style.color = state.voiceOut ? 'var(--purple)' : '';
+  document.getElementById('btnSound').style.borderColor = state.voiceOut ? 'var(--purple)' : '';
+}
+
+function openCategory(catId){
+  const cat = CATS.find(c=>c.id===catId);
+  const intents = Object.keys(KB).filter(id=>KB[id].cat===catId);
+  pushBotMessage({
+    text: "Here's everything under <b>"+cat.label+"</b>:",
+    quickReplies: intents.map(id=>({label:KB[id].label, intent:id})),
+  });
+}
+
+/* ============================= Feed rendering ============================= */
+function scrollFeedToEnd(){ window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'}); }
+
+function pushUserMessage(text){
+  const feed = document.getElementById('feed');
+  const row = document.createElement('div');
+  row.className='msg user';
+  row.innerHTML = '<div class="avatar-sm user">'+personaOf(state.persona).init+'</div><div class="bubble-wrap"><div class="bubble">'+escapeHtml(text)+'</div></div>';
+  feed.appendChild(row);
+  scrollFeedToEnd();
+}
+
+function pushTyping(){
+  const feed = document.getElementById('feed');
+  const row = document.createElement('div');
+  row.className='msg bot'; row.id='typingRow';
+  row.innerHTML = '<div class="avatar-sm bot">'+svgIcon('bot')+'</div><div class="bubble-wrap"><div class="bubble typing"><span></span><span></span><span></span></div></div>';
+  feed.appendChild(row); scrollFeedToEnd();
+  return row;
+}
+
+function moodTagHtml(mood){
+  if(!mood) return '';
+  if(mood==='frustrated') return "<span class=\"mood-tag empathy\">🤍 Noticed you're frustrated — prioritising this</span>";
+  if(mood==='churn') return "<span class=\"mood-tag empathy\">🤍 We'd hate to lose you — flagged for retention care</span>";
+  if(mood==='happy') return '<span class="mood-tag happy">✨ Glad that helped</span>';
+  return '';
+}
+
+function cardHtml(card){
+  const cls = card.type==='escalation' ? 'escalate' : (card.type==='upsell' ? 'upsell':'action');
+  const iconKey = card.type==='escalation' ? 'account' : (KB[card.intentRef]?KB[card.intentRef].cat:'quick');
+  let inner = '<div class="vhead"><span class="vic">'+svgIcon(iconKey==='escalation'?'account':iconKey)+'</span><div><div class="vtitle">'+escapeHtml(card.title)+'</div>'+(card.subtitle?'<div class="vsub">'+escapeHtml(card.subtitle)+'</div>':'')+'</div></div>';
+  if(card.bullets && card.bullets.length){ inner += '<ul>'+card.bullets.map(b=>'<li>'+escapeHtml(b)+'</li>').join('')+'</ul>'; }
+  if(card.stepline){ inner += '<div class="stepline" data-stepline="1"><span class="spinner"></span><span class="steptext">'+escapeHtml(card.stepline[0])+'</span></div>'; }
+  if(card.ctas && card.ctas.length){ inner += '<div class="vctas">'+card.ctas.map((c,i)=>'<a class="btn '+(i===0?'btn-primary':'btn-ghost')+'" href="'+c.u+'" target="_blank" rel="noopener">'+escapeHtml(c.l)+'</a>').join('')+'</div>'; }
+  return '<div class="vcard '+cls+'" '+(card.stepline?'data-animate-steps="'+card.stepline.join('|')+'"':'')+'>'+inner+'</div>';
+}
+
+function animateStepline(vcardEl, steps){
+  let i=0;
+  const textEl = vcardEl.querySelector('.steptext');
+  const spinEl = vcardEl.querySelector('.spinner');
+  const tick = ()=>{
+    if(i>=steps.length) return;
+    textEl.textContent = steps[i];
+    i++;
+    if(i<steps.length){ setTimeout(tick, 650); }
+    else {
+      setTimeout(()=>{
+        spinEl.outerHTML = '<span class="progress-ok">✓</span>';
+        textEl.textContent = steps[steps.length-1];
+      }, 650);
+    }
+  };
+  tick();
+}
+
+function pushBotMessage(opts){
+  // opts: {text, mood, cards:[], quickReplies:[], csat:bool, msgId}
+  const feed = document.getElementById('feed');
+  const typingRow = document.getElementById('typingRow');
+  if(typingRow) typingRow.remove();
+  const id = 'm'+Date.now()+Math.random().toString(36).slice(2,6);
+  const row = document.createElement('div');
+  row.className='msg bot'; row.id=id;
+  let cardsHtml = '';
+  if(opts.cards && opts.cards.length){ cardsHtml = '<div class="cards">'+opts.cards.map(cardHtml).join('')+'</div>'; }
+  let qrHtml='';
+  if(opts.quickReplies && opts.quickReplies.length){
+    qrHtml = '<div class="qr-row">'+opts.quickReplies.map((q,i)=>'<div class="qr" data-qi="'+i+'">'+escapeHtml(q.label)+'</div>').join('')+'</div>';
+  }
+  let csatHtml='';
+  if(opts.csat){
+    csatHtml = '<div class="csat">'+t('csat')+'<span class="opts"><button data-csat="yes">'+t('csatYes')+'</button><button data-csat="no">'+t('csatNo')+'</button></span></div>';
+  }
+  row.innerHTML = '<div class="avatar-sm bot">'+svgIcon('bot')+'</div><div class="bubble-wrap">'+
+    '<div class="bubble">'+opts.text+'</div>'+
+    cardsHtml+qrHtml+csatHtml+
+    '<div class="meta-row">'+moodTagHtml(opts.mood)+
+      '<span class="fb-btns"><button class="fb-btn" data-fb="good" title="Helpful"><svg viewBox="0 0 24 24" fill="currentColor">'+ICONS.thumbup+'</svg></button>'+
+      '<button class="fb-btn" data-fb="bad" title="Not helpful"><svg viewBox="0 0 24 24" fill="currentColor">'+ICONS.thumbdown+'</svg></button></span>'+
+    '</div>'+
+  '</div>';
+  feed.appendChild(row);
+
+  row.querySelectorAll('[data-animate-steps]').forEach(el=>animateStepline(el, el.dataset.stepline.split('|')));
+  row.querySelectorAll('.qr').forEach((el,i)=>{
+    const q = (opts.quickReplies||[])[i];
+    if(!q) return;
+    el.addEventListener('click', ()=>{ if(q.intent) runIntent(q.intent); else handleTurn(q.label, null); });
+  });
+  row.querySelectorAll('[data-fb]').forEach(b=>b.addEventListener('click', ()=>{
+    const good = b.dataset.fb==='good';
+    row.querySelectorAll('[data-fb]').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    if(good) state.stats.good++; else state.stats.bad++;
+    saveStats();
+    toast(t('feedbackThanks'));
+  }));
+  row.querySelectorAll('[data-csat]').forEach(b=>b.addEventListener('click', ()=>{
+    b.closest('.csat').innerHTML = b.dataset.csat==='yes' ? '✨ '+t('csatYes') : 'Noted — connecting you with more options.';
+    if(b.dataset.csat==='no'){
+      setTimeout(()=>runIntent('CUSTOMER_CARE'), 400);
+    }
+  }));
+
+  if(opts.voiceText && state.voiceOut){ speak(opts.voiceText); }
+  scrollFeedToEnd();
+  return id;
+}
+
+/* ============================= Sentiment (local, instant) ============================= */
+const NEG_WORDS = ['angry','worst','terrible','horrible','hate','useless','scam','fraud','frustrated','frustrating','pathetic','disgusting','disappointed','ridiculous','unacceptable','fed up','sick of','tired of','भयंकर','गुस्सा','परेशान','बेकार'];
+const CHURN_WORDS = ['port out','switch to jio','switch to airtel','switch to bsnl','cancel my','close my connection','leaving vi','leave vi','other operator','dusra operator','porting out'];
+function detectMood(text){
+  const low = text.toLowerCase();
+  const exclaim = (text.match(/!/g)||[]).length;
+  const caps = text.replace(/[^A-Z]/g,'').length;
+  const negHit = NEG_WORDS.some(w=>low.includes(w));
+  const churnHit = CHURN_WORDS.some(w=>low.includes(w));
+  if(churnHit) return 'churn';
+  if(negHit || exclaim>=2 || caps>8) return 'frustrated';
+  return 'neutral';
+}
+const moodLiveEl = document.getElementById('moodLive');
+document.getElementById('textInput').addEventListener('input', (e)=>{
+  const v = e.target.value;
+  if(v.length<6){ moodLiveEl.classList.remove('show'); moodLiveEl.innerHTML=''; return; }
+  const m = detectMood(v);
+  if(m==='frustrated'){ moodLiveEl.classList.add('show'); moodLiveEl.innerHTML = '🤍 <b>Sensing some frustration</b> — Vic2 will prioritise this and keep it short.'; }
+  else if(m==='churn'){ moodLiveEl.classList.add('show'); moodLiveEl.innerHTML = "💜 <b>We hear you</b> — let's see what we can do before anything else."; }
+  else { moodLiveEl.classList.remove('show'); moodLiveEl.innerHTML=''; }
+});
+
+/* ============================= Retrieval over KB ============================= */
+function retrieveIntents(text, intentHint, topN){
+  topN = topN||3;
+  if(intentHint && KB[intentHint]) return [intentHint];
+  const low = text.toLowerCase();
+  const scored = Object.keys(KB).filter(id=>KB[id].cat!=='system').map(id=>{
+    const k = KB[id];
+    let score = 0;
+    const labelWords = k.label.toLowerCase().split(/\W+/).filter(Boolean);
+    labelWords.forEach(w=>{ if(w.length>2 && low.includes(w)) score+=2; });
+    if(low.includes('roam')) { if(k.cat==='roaming') score+=3; if(id==='BILL_DISPUTE') score+=2; }
+    if(low.includes('bill') || low.includes('charge')) { if(k.cat==='bills') score+=2; }
+    if(/high|zyada|jyada|too much|expensive|shock/.test(low) && (k.cat==='bills'||k.cat==='roaming')) score+=2;
+    if(/network|signal|call drop|no service/.test(low) && id==='NETWORK_TROUBLE') score+=3;
+    if(/balance/.test(low) && id==='CHECK_BALANCE') score+=2;
+    return {id, score};
+  }).sort((a,b)=>b.score-a.score);
+  const top = scored.filter(s=>s.score>0).slice(0,topN).map(s=>s.id);
+  return top.length? top : ['FALLBACK'];
+}
+
+function factsForPrompt(ids){
+  return ids.map(id=>{
+    const k = KB[id];
+    let s = '### '+id+' ("'+k.label+'")\n';
+    if(k.facts) s += k.facts.map(f=>'- '+f).join('\n')+'\n';
+    if(k.steps) s += 'Steps: '+k.steps.join(' / ')+'\n';
+    if(k.cta) s += 'Official links available: '+k.cta.map(c=>c.l).join(', ')+'\n';
+    return s;
+  }).join('\n');
+}
+
+/* ============================= Scripted (offline) responder ============================= */
+function scriptedReply(intentId, userText){
+  const k = KB[intentId] || KB.FALLBACK;
+  const mood = detectMood(userText||'');
+  let text = '<p>'+escapeHtml(k.label)+'.</p>';
+  if(k.facts) text += '<p>'+escapeHtml(k.facts[0])+'</p>';
+  const cards = [];
+  const bullets = (k.facts||[]).slice(1).concat(k.steps||[]);
+  cards.push({type:'action', title:k.label, subtitle: k.tag==='diagnostic' ? 'Likely causes & next steps' : 'What you should know', bullets: bullets.slice(0,4), ctas:k.cta||[{l:'Open myvi.in',u:'https://www.myvi.in'}]});
+  return {text, mood, cards, quickReplies: intentId==='FALLBACK'? POPULAR.slice(0,4).map(id=>({label:KB[id].label,intent:id})):[], csat:true};
+}
+
+/* ============================= Sample (intelligent) responder ============================= */
+async function ensureSample(){
+  if(state.sampleChecked) return state.sampleFn;
+  state.sampleChecked = true;
+  try{
+    if(window.claude && typeof window.claude.use === 'function'){
+      state.sampleFn = await window.claude.use('sample');
+    }
+  }catch(e){ state.sampleFn = null; }
+  return state.sampleFn;
+}
+
+function buildPrompt(userText, intentIds, persona, lang){
+  const langObj = LANGS.find(l=>l.id===lang) || LANGS[0];
+  const rules = [
+    "You are Vic2, the empathetic AI customer companion for Vi (Vodafone Idea), India's telecom operator. You are warm, specific, confident and never generic or robotic.",
+    "CRITICAL RULE: never invent or state a specific live balance, bill amount, price, date or number as fact. For any live figure, say it must be checked on myvi.in and offer that as an action — never make one up.",
+    "Ground every factual claim ONLY in the KNOWLEDGE BASE SNIPPETS given below. Do not invent telecom facts beyond them.",
+    "Detect the consumer's emotional state (neutral, mildly concerned, frustrated, or at risk of leaving Vi/churn) from their wording and respond with matching empathy — acknowledge feelings briefly before facts, especially if they sound upset.",
+    "Be genuinely diagnostic, not generic: if the question is 'why is X high/wrong', give the SPECIFIC likely causes and a concrete next step, never a vague 'please check your bill' non-answer.",
+    "Reply ENTIRELY in "+langObj.eng+" ("+langObj.native+") using natural, warm, consumer-friendly phrasing appropriate for India — not a stiff translation.",
+    "Consumer persona/context for personalisation (adapt tone & suggestions accordingly, don't state the persona name back): "+persona.context,
+    "Respond with ONLY one JSON object, no markdown fences, no commentary, matching this shape:",
+    '{"reply": "1-3 short warm sentences, empathetic if needed, specific and helpful, in the target language", "mood": "neutral|frustrated|churn|happy", "cards": [{"type":"action|upsell|escalation","title":"short title in target language","subtitle":"short subtitle in target language","bullets":["2-4 short specific points in target language, grounded in the KB"],"ctaIntent":"one KB id this maps to, or null"}], "quickReplies": ["0-4 short follow-up phrases in target language a consumer might tap next"], "escalate": false}',
+    "Include at most 2 cards. Use type 'escalation' only if genuinely frustrated/churn-risk or the issue needs a human. Use type 'upsell' only when a relevant, non-pushy cross-sell/up-sell genuinely helps (e.g. a roaming pack after a roaming bill question, a higher-data plan after a data-exhaustion question) — never upsell during a complaint before resolving it.",
+    "",
+    "KNOWLEDGE BASE SNIPPETS:",
+    factsForPrompt(intentIds),
+  ].join('\n');
+  const turns = [{role:'user', content: rules}];
+  state.history.slice(-6).forEach(h=>turns.push(h));
+  turns.push({role:'user', content: userText});
+  return turns;
+}
+
+function ctaForIntent(id){
+  const k = KB[id];
+  if(k && k.cta) return k.cta;
+  return [{l:'Open myvi.in',u:'https://www.myvi.in'}];
+}
+
+async function intelligentReply(userText, intentHint){
+  const ids = retrieveIntents(userText, intentHint, 3);
+  const sampleFn = await ensureSample();
+  if(!sampleFn){
+    return {fallback:true, ...scriptedReply(ids[0], userText), intentId:ids[0]};
+  }
+  try{
+    const data = await sampleFn.json(buildPrompt(userText, ids, personaOf(state.persona), state.lang), {modelTier:'default', cache:false});
+    const cards = (data.cards||[]).slice(0,2).map(c=>({
+      type: c.type==='escalation'?'escalation':(c.type==='upsell'?'upsell':'action'),
+      title: c.title||'', subtitle: c.subtitle||'', bullets:(c.bullets||[]).slice(0,4),
+      intentRef: c.ctaIntent,
+      ctas: c.type==='escalation' ? [{l:'Talk to a specialist',u:'https://www.myvi.in'}] : ctaForIntent(c.ctaIntent),
+    }));
+    return {
+      fallback:false,
+      text:'<p>'+escapeHtml(data.reply||'').replace(/\n/g,'</p><p>')+'</p>',
+      mood: data.mood||'neutral',
+      cards,
+      quickReplies: (data.quickReplies||[]).slice(0,4).map(q=>({label:q, intent:null, freeText:q})),
+      csat: true,
+      intentId: ids[0],
+    };
+  }catch(e){
+    return {fallback:true, ...scriptedReply(ids[0], userText), intentId:ids[0]};
+  }
+}
+
+/* ============================= Orchestration ============================= */
+let busy = false;
+async function runIntent(intentId){
+  const k = KB[intentId];
+  const label = k ? k.label : intentId;
+  await handleTurn(label, intentId);
+}
+async function handleTurn(userText, intentHint){
+  if(busy) return;
+  busy = true;
+  pushUserMessage(userText);
+  state.history.push({role:'user', content: userText});
+  pushTyping();
+  document.getElementById('btnSend').disabled = true;
+  try{
+    const res = await intelligentReply(userText, intentHint);
+    if(res.fallback){
+      const banner = !state._offlineToldOnce;
+      state._offlineToldOnce = true;
+      if(banner) toast(t('offline'));
+    }
+    const msgId = pushBotMessage({
+      text: res.text, mood: res.mood, cards: res.cards||[],
+      quickReplies: (res.quickReplies||[]).map(q=>q.intent?q:{label:q.label, intent:null, freeText:q.label}),
+      csat: res.csat, voiceText: stripHtml(res.text),
+    });
+    state.history.push({role:'assistant', content: stripHtml(res.text)});
+    bumpStat(res.intentId||'FREE_TEXT');
+    if(res.mood==='churn'){
+      setTimeout(()=>maybeEscalate('churn'), 500);
+    }
+  } finally {
+    busy = false;
+    document.getElementById('btnSend').disabled = false;
+    maybeShowNudge();
+  }
+}
+function stripHtml(html){ const d=document.createElement('div'); d.innerHTML=html; return d.textContent||''; }
+
+function maybeEscalate(reason){
+  pushBotMessage({
+    text: "<p>I'd really rather get this right for you than leave you frustrated. Want me to connect you straight to a retention specialist who can look at your account directly?</p>",
+    cards:[{type:'escalation', title:'Talk to a Vi specialist', subtitle:'Your context carries over — no need to repeat yourself', bullets:['Priority queue for account-specific issues','Can review your exact usage & charges'], ctas:[{l:'Connect me now',u:'https://www.myvi.in'},{l:'Chat on WhatsApp',u:'https://www.myvi.in'}]}],
+  });
+}
+
+/* ============================= Composer wiring ============================= */
+const textInput = document.getElementById('textInput');
+const btnSend = document.getElementById('btnSend');
+btnSend.addEventListener('click', sendFromInput);
+textInput.addEventListener('keydown', (e)=>{
+  if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendFromInput(); }
+});
+textInput.addEventListener('input', ()=>{ textInput.style.height='auto'; textInput.style.height=Math.min(textInput.scrollHeight,90)+'px'; });
+function sendFromInput(){
+  const v = textInput.value.trim();
+  if(!v) return;
+  textInput.value=''; textInput.style.height='auto';
+  moodLiveEl.classList.remove('show'); moodLiveEl.innerHTML='';
+  handleTurn(v, null);
+}
+
+/* ============================= Voice (speech) ============================= */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const btnMic = document.getElementById('btnMic');
+if(!SR){ btnMic.disabled = true; btnMic.title = 'Voice input not supported in this browser'; }
+else {
+  const recog = new SR();
+  recog.continuous = false; recog.interimResults = true;
+  state.recog = recog;
+  recog.onresult = (e)=>{
+    let finalText='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal) finalText += e.results[i][0].transcript;
+      else textInput.value = e.results[i][0].transcript;
+    }
+    if(finalText){ textInput.value = finalText; }
+  };
+  recog.onend = ()=>{
+    btnMic.classList.remove('listening');
+    state.listening=false;
+    document.getElementById('statusText').textContent = t('statusOnline');
+    if(textInput.value.trim()){ toast(t('heardYou')); setTimeout(sendFromInput, 300); }
+  };
+  recog.onerror = ()=>{ btnMic.classList.remove('listening'); state.listening=false; document.getElementById('statusText').textContent = t('statusOnline'); };
+  btnMic.addEventListener('click', ()=>{
+    if(state.listening){ recog.stop(); return; }
+    const langObj = LANGS.find(l=>l.id===state.lang)||LANGS[0];
+    recog.lang = langObj.speech;
+    try{ recog.start(); state.listening=true; btnMic.classList.add('listening'); document.getElementById('statusText').textContent = t('statusListening'); }
+    catch(e){}
+  });
+}
+function speak(text){
+  if(!('speechSynthesis' in window)) return;
+  try{
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    const langObj = LANGS.find(l=>l.id===state.lang)||LANGS[0];
+    u.lang = langObj.speech;
+    window.speechSynthesis.speak(u);
+  }catch(e){}
+}
+document.getElementById('btnSound').addEventListener('click', ()=>{
+  state.voiceOut = !state.voiceOut;
+  localStorage.setItem('vic2_voiceout', state.voiceOut?'1':'0');
+  renderChrome();
+  toast(state.voiceOut ? 'Voice replies on' : 'Voice replies off');
+});
+
+/* ============================= Sheet ============================= */
+const sheetBackdrop = document.getElementById('sheetBackdrop');
+document.getElementById('btnSheet').addEventListener('click', ()=>{ renderChrome(); sheetBackdrop.classList.add('open'); });
+document.getElementById('sheetClose').addEventListener('click', ()=>sheetBackdrop.classList.remove('open'));
+sheetBackdrop.addEventListener('click', (e)=>{ if(e.target===sheetBackdrop) sheetBackdrop.classList.remove('open'); });
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.tabpanel').forEach(x=>x.classList.remove('active'));
+    tab.classList.add('active');
+    document.querySelector('.tabpanel[data-panel="'+tab.dataset.tab+'"]').classList.add('active');
+  });
+});
+document.getElementById('delightStrip').addEventListener('click', ()=>{
+  renderChrome();
+  sheetBackdrop.classList.add('open');
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tabpanel').forEach(x=>x.classList.remove('active'));
+  document.querySelector('.tab[data-tab="about"]').classList.add('active');
+  document.querySelector('.tabpanel[data-panel="about"]').classList.add('active');
+});
+
+/* ============================= Proactive nudge (agentic delighter) ============================= */
+function maybeShowNudge(){
+  if(state.shownNudge) return;
+  state.shownNudge = true;
+  localStorage.setItem('vic2_nudge_shown','1');
+  setTimeout(()=>{
+    const host = document.getElementById('nudgeHost');
+    const el = document.createElement('div');
+    el.className='nudge';
+    el.innerHTML = '<span style="font-size:20px">📶</span><div class="txt"><b>Proactive from Vic2</b>Heads up — if you have an upcoming trip, activate a roaming pack before you land so this never turns into bill shock. <span style="color:var(--purple);font-weight:700;cursor:pointer" id="nudgeAct">Check roaming options →</span></div><button class="x" id="nudgeX">✕</button>';
+    host.appendChild(el);
+    document.getElementById('nudgeX').addEventListener('click', ()=>el.remove());
+    document.getElementById('nudgeAct').addEventListener('click', ()=>{ el.remove(); runIntent('ACTIVATE_ROAMING'); });
+    setTimeout(()=>{ if(el.parentNode) el.remove(); }, 12000);
+  }, 9000);
+}
+
+/* ============================= Boot ============================= */
+function boot(){
+  renderChrome();
+  pushBotMessage({
+    text: '<p>'+t('heroSub').split('.')[0]+'. '+'What can I help with today?</p>',
+    quickReplies: POPULAR.slice(0,4).map(id=>({label:KB[id].label,intent:id})),
+  });
+}
+if(document.readyState==='complete' || document.readyState==='interactive'){ setTimeout(boot, 30); }
+else document.addEventListener('DOMContentLoaded', boot);
+
+})();
+</script>
