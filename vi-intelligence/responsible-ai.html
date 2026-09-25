@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Responsible AI | Vi Intelligence</title>
+<meta name="description" content="GRACIE, the Vi Responsible AI gates, and what you can ask of any Vi AI service.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --paper:#ffffff; --ink:#15171d; --muted:#5b6170; --line:#e4e6ec;
+  --red:#e60000; --yellow:#ffc400; --wash:#f7f8fa; --field:#ffffff;
+}
+:root:not([data-theme="light"]){ }
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0f1116; --ink:#eef0f5; --muted:#a0a7b8; --line:#272b36;
+    --wash:#161923; --field:#1b1f2a;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0f1116; --ink:#eef0f5; --muted:#a0a7b8; --line:#272b36; --wash:#161923; --field:#1b1f2a;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 12px); -webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:Archivo,"Helvetica Neue",Arial,sans-serif; font-size:17px; line-height:1.6;
+  font-variant-numeric:tabular-nums;
+}
+.wrap{max-width:74rem;margin:0 auto;padding:0 clamp(18px,5vw,56px)}
+a{color:inherit}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
+  outline:3px solid var(--yellow); outline-offset:2px}
+
+/* masthead */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--paper);
+  border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:18px;min-height:58px;flex-wrap:wrap}
+.mark{font-weight:800;letter-spacing:-.02em;font-size:1.05rem;text-decoration:none;white-space:nowrap}
+.mark em{font-style:normal;color:var(--red)}
+.chapters{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap}
+.chapters a{
+  text-decoration:none;font-size:.78rem;font-weight:600;color:var(--muted);
+  padding:6px 10px;border:1px solid var(--line);border-radius:2px;white-space:nowrap}
+.chapters a[aria-current="page"]{color:var(--ink);border-color:var(--ink)}
+
+/* hero: the nine-beat thread is the device */
+.hero{padding:clamp(40px,7vw,86px) 0 clamp(28px,4vw,44px)}
+.kicker{font-size:.84rem;font-weight:600;color:var(--muted);margin:0 0 14px}
+h1{font-size:clamp(2.1rem,6.2vw,4rem);line-height:1.02;letter-spacing:-.035em;font-weight:800;margin:0 0 18px;max-width:22ch}
+.stand{font-size:clamp(1.05rem,2.3vw,1.3rem);color:var(--muted);max-width:52ch;margin:0}
+
+.thread{margin:clamp(26px,4vw,40px) 0 0;position:relative;overflow-x:auto}
+.thread ol{display:flex;gap:0;list-style:none;margin:0;padding:0;min-width:520px}
+.thread li{flex:1;padding:16px 14px 0;border-top:3px solid var(--yellow);position:relative}
+.thread li.human{border-top-color:var(--red)}
+.thread b{display:block;font-size:.95rem;font-weight:700}
+.thread span{display:block;font-size:.82rem;color:var(--muted);margin-top:2px}
+
+section{padding:clamp(34px,5vw,60px) 0;border-top:1px solid var(--line)}
+h2{font-size:clamp(1.4rem,3vw,2rem);letter-spacing:-.02em;font-weight:800;margin:0 0 6px;max-width:26ch}
+h3{font-size:1.02rem;font-weight:700;margin:0 0 4px}
+p{max-width:66ch;margin:0 0 16px}
+.lead{color:var(--muted);max-width:60ch;margin:0 0 26px}
+.grid{display:grid;gap:clamp(18px,3vw,30px);grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.item{border-left:2px solid var(--line);padding-left:16px}
+.item.mark-red{border-left-color:var(--red)}
+.item.mark-yellow{border-left-color:var(--yellow)}
+.item p{font-size:.95rem;color:var(--muted);margin:0}
+ul.plain{list-style:none;margin:0 0 18px;padding:0;max-width:60ch}
+ul.plain li{padding:11px 0;border-bottom:1px solid var(--line);display:flex;gap:14px;align-items:baseline}
+ul.plain li b{min-width:9.5rem;font-weight:700}
+ul.plain li span{color:var(--muted);font-size:.95rem}
+
+.act{background:var(--wash);border:1px solid var(--line);padding:clamp(20px,3vw,32px);margin-top:10px}
+.btn{display:inline-block;background:var(--red);color:#fff;text-decoration:none;font-weight:700;
+  padding:13px 22px;border:0;border-radius:2px;font-size:1rem;cursor:pointer;font-family:inherit}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}
+.btn:hover{opacity:.9}
+.note{font-size:.82rem;color:var(--muted);max-width:56ch}
+label{display:block;font-weight:600;font-size:.9rem;margin:14px 0 5px}
+input,select,textarea{width:100%;max-width:34rem;font:inherit;font-size:.98rem;padding:11px 12px;
+  background:var(--field);color:var(--ink);border:1px solid var(--line);border-radius:2px}
+textarea{min-height:104px;resize:vertical}
+.consent{display:flex;gap:10px;align-items:flex-start;margin:18px 0 6px;max-width:34rem}
+.consent input{width:18px;height:18px;margin-top:3px;flex:0 0 auto}
+.consent span{font-size:.86rem;color:var(--muted)}
+.out{margin-top:18px;padding:16px;border-left:3px solid var(--yellow);background:var(--wash);display:none}
+.out.show{display:block}
+.out pre{white-space:pre-wrap;font-family:inherit;font-size:.92rem;margin:0 0 10px}
+.pend{font-size:.78rem;color:var(--red);font-weight:600}
+
+footer{border-top:1px solid var(--line);padding:30px 0 46px;color:var(--muted);font-size:.86rem}
+footer p{max-width:60ch;margin:0 0 8px}
+footer .sign{color:var(--ink);font-weight:700}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="mark" href="/"><em>Vi</em> Intelligence</a>
+  <nav class="chapters" aria-label="Chapters">
+        <a href="/ai-lab">AI Lab</a>
+        <a href="/agentic-ai">Agentic AI</a>
+        <a href="/ai-assistant">AI Assistant</a>
+        <a href="/responsible-ai" aria-current="page">Responsible AI</a>
+  </nav>
+</div></header>
+
+<main>
+<div class="wrap">
+  <div class="hero">
+    <p class="kicker">Chapter four of four, from the pavilion films</p>
+    <h1>Responsible AI at Vi</h1>
+    <p class="stand">Every AI service has a named owner, a clear purpose and a recorded approval state. Trust ends with a person.</p>
+    <div class="thread" aria-label="The Vi Responsible AI gates">
+      <ol>
+        <li><b>Value approval</b><span>Is this worth doing</span></li>
+        <li><b>RAI submission</b><span>Owner, purpose, data, risk</span></li>
+        <li class="human"><b>RAI audit</b><span>Reviewed against the framework</span></li>
+        <li><b>Secure launch</b><span>Controls in place first</span></li>
+        <li class="human"><b>Continuous monitoring</b><span>An issue can stay open</span></li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+<section><div class="wrap">
+  <h2>GRACIE</h2>
+  <p class="lead">Vi's Responsible AI framework. Six pillars that turn principles into a process people can question and understand.</p>
+  <ul class="plain">
+    <li><b>Governance</b><span>Clear policies and standards for AI at Vi, with defined decision rights.</span></li>
+    <li><b>Responsibility</b><span>Assigns ownership for every AI service and its outcomes.</span></li>
+    <li><b>Accountability</b><span>Consequences are traceable to a named owner, not to a system.</span></li>
+    <li><b>Compliance</b><span>Meets regulatory, contractual and internal obligations.</span></li>
+    <li><b>Integrity</b><span>Tests for fairness, bias and quality before and after launch.</span></li>
+    <li><b>Ethics</b><span>Aligns AI with Vi's values and with the people it affects.</span></li>
+  </ul>
+</div></section>
+
+<section><div class="wrap">
+  <h2>What you can ask of any Vi AI service</h2>
+  <div class="grid">
+    <div class="item mark-yellow"><h3>Who owns it</h3><p>Every service has a named owner and a recorded purpose.</p></div>
+    <div class="item mark-yellow"><h3>Why this answer</h3><p>An explanation route, in plain language.</p></div>
+    <div class="item mark-red"><h3>A route to a person</h3><p>A separate path to human review, whatever the answer was.</p></div>
+    <div class="item mark-red"><h3>An issue can stay open</h3><p>Nothing is closed to make a number look better. Pending means pending.</p></div>
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <h2>Generative visuals in the pavilion</h2>
+  <p>Parts of the four pavilion films were produced with generative visual tools. Characters shown are not real customers and the interfaces shown are representations. Where a film shows a product capability, it is one Vi has built or is building; nothing in the films should be read as a performance claim.</p>
+</div></section>
+
+<section><div class="wrap">
+  <h2>Questions from press, regulators and partners</h2>
+  <p class="lead">The Responsible AI team answers queries about the framework, the gates and how a specific service was reviewed.</p>
+  <div class="act">
+    <p style="margin:0 0 14px"><a class="btn" href="/agentic-ai#enquire">Contact Vi Intelligence</a></p>
+    <p class="pend">Dedicated Responsible AI mailbox and privacy notice link to be supplied by Vi before this page goes live.</p>
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <h2>The other three chapters</h2>
+  <ul class="plain">
+    <li><b><a href="/ai-lab">AI Lab</a></b><span>Where people's needs become ideas that are tested and improved.</span></li>
+    <li><b><a href="/agentic-ai">Agentic AI</a></b><span>How a bounded human goal becomes routine execution.</span></li>
+    <li><b><a href="/ai-assistant">AI Assistant</a></b><span>How useful help enters everyday life, with permission and in your language.</span></li>
+  </ul>
+</div></section>
+</main>
+<footer><div class="wrap">
+  <p class="sign">An experience by Vi Intelligence. Designed to think ahead.</p>
+  <p>Vodafone Idea Limited. Shown at India Mobile Congress 2026, Vi Intelligence pavilion.</p>
+  <p>Some scenes in the pavilion films were produced using generative visual tools. Availability, languages and features described here are subject to confirmation.</p>
+</div></footer>
+</body>
+</html>

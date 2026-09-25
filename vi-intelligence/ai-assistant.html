@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AI Assistant | Vi Intelligence</title>
+<meta name="description" content="Help that fits your day, in your language, with your permission.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --paper:#ffffff; --ink:#15171d; --muted:#5b6170; --line:#e4e6ec;
+  --red:#e60000; --yellow:#ffc400; --wash:#f7f8fa; --field:#ffffff;
+}
+:root:not([data-theme="light"]){ }
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0f1116; --ink:#eef0f5; --muted:#a0a7b8; --line:#272b36;
+    --wash:#161923; --field:#1b1f2a;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0f1116; --ink:#eef0f5; --muted:#a0a7b8; --line:#272b36; --wash:#161923; --field:#1b1f2a;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 12px); -webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:Archivo,"Helvetica Neue",Arial,sans-serif; font-size:17px; line-height:1.6;
+  font-variant-numeric:tabular-nums;
+}
+.wrap{max-width:74rem;margin:0 auto;padding:0 clamp(18px,5vw,56px)}
+a{color:inherit}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
+  outline:3px solid var(--yellow); outline-offset:2px}
+
+/* masthead */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--paper);
+  border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:18px;min-height:58px;flex-wrap:wrap}
+.mark{font-weight:800;letter-spacing:-.02em;font-size:1.05rem;text-decoration:none;white-space:nowrap}
+.mark em{font-style:normal;color:var(--red)}
+.chapters{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap}
+.chapters a{
+  text-decoration:none;font-size:.78rem;font-weight:600;color:var(--muted);
+  padding:6px 10px;border:1px solid var(--line);border-radius:2px;white-space:nowrap}
+.chapters a[aria-current="page"]{color:var(--ink);border-color:var(--ink)}
+
+/* hero: the nine-beat thread is the device */
+.hero{padding:clamp(40px,7vw,86px) 0 clamp(28px,4vw,44px)}
+.kicker{font-size:.84rem;font-weight:600;color:var(--muted);margin:0 0 14px}
+h1{font-size:clamp(2.1rem,6.2vw,4rem);line-height:1.02;letter-spacing:-.035em;font-weight:800;margin:0 0 18px;max-width:22ch}
+.stand{font-size:clamp(1.05rem,2.3vw,1.3rem);color:var(--muted);max-width:52ch;margin:0}
+
+.thread{margin:clamp(26px,4vw,40px) 0 0;position:relative;overflow-x:auto}
+.thread ol{display:flex;gap:0;list-style:none;margin:0;padding:0;min-width:520px}
+.thread li{flex:1;padding:16px 14px 0;border-top:3px solid var(--yellow);position:relative}
+.thread li.human{border-top-color:var(--red)}
+.thread b{display:block;font-size:.95rem;font-weight:700}
+.thread span{display:block;font-size:.82rem;color:var(--muted);margin-top:2px}
+
+section{padding:clamp(34px,5vw,60px) 0;border-top:1px solid var(--line)}
+h2{font-size:clamp(1.4rem,3vw,2rem);letter-spacing:-.02em;font-weight:800;margin:0 0 6px;max-width:26ch}
+h3{font-size:1.02rem;font-weight:700;margin:0 0 4px}
+p{max-width:66ch;margin:0 0 16px}
+.lead{color:var(--muted);max-width:60ch;margin:0 0 26px}
+.grid{display:grid;gap:clamp(18px,3vw,30px);grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.item{border-left:2px solid var(--line);padding-left:16px}
+.item.mark-red{border-left-color:var(--red)}
+.item.mark-yellow{border-left-color:var(--yellow)}
+.item p{font-size:.95rem;color:var(--muted);margin:0}
+ul.plain{list-style:none;margin:0 0 18px;padding:0;max-width:60ch}
+ul.plain li{padding:11px 0;border-bottom:1px solid var(--line);display:flex;gap:14px;align-items:baseline}
+ul.plain li b{min-width:9.5rem;font-weight:700}
+ul.plain li span{color:var(--muted);font-size:.95rem}
+
+.act{background:var(--wash);border:1px solid var(--line);padding:clamp(20px,3vw,32px);margin-top:10px}
+.btn{display:inline-block;background:var(--red);color:#fff;text-decoration:none;font-weight:700;
+  padding:13px 22px;border:0;border-radius:2px;font-size:1rem;cursor:pointer;font-family:inherit}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}
+.btn:hover{opacity:.9}
+.note{font-size:.82rem;color:var(--muted);max-width:56ch}
+label{display:block;font-weight:600;font-size:.9rem;margin:14px 0 5px}
+input,select,textarea{width:100%;max-width:34rem;font:inherit;font-size:.98rem;padding:11px 12px;
+  background:var(--field);color:var(--ink);border:1px solid var(--line);border-radius:2px}
+textarea{min-height:104px;resize:vertical}
+.consent{display:flex;gap:10px;align-items:flex-start;margin:18px 0 6px;max-width:34rem}
+.consent input{width:18px;height:18px;margin-top:3px;flex:0 0 auto}
+.consent span{font-size:.86rem;color:var(--muted)}
+.out{margin-top:18px;padding:16px;border-left:3px solid var(--yellow);background:var(--wash);display:none}
+.out.show{display:block}
+.out pre{white-space:pre-wrap;font-family:inherit;font-size:.92rem;margin:0 0 10px}
+.pend{font-size:.78rem;color:var(--red);font-weight:600}
+
+footer{border-top:1px solid var(--line);padding:30px 0 46px;color:var(--muted);font-size:.86rem}
+footer p{max-width:60ch;margin:0 0 8px}
+footer .sign{color:var(--ink);font-weight:700}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="mark" href="/"><em>Vi</em> Intelligence</a>
+  <nav class="chapters" aria-label="Chapters">
+        <a href="/ai-lab">AI Lab</a>
+        <a href="/agentic-ai">Agentic AI</a>
+        <a href="/ai-assistant" aria-current="page">AI Assistant</a>
+        <a href="/responsible-ai">Responsible AI</a>
+  </nav>
+</div></header>
+
+<main>
+<div class="wrap">
+  <div class="hero">
+    <p class="kicker">Chapter three of four, from the pavilion films</p>
+    <h1>Help that fits your day</h1>
+    <p class="stand">In your language, with your permission. The assistant asks before it uses anything personal, and waits for you to choose.</p>
+    <div class="thread" aria-label="How the assistant works">
+      <ol>
+        <li class="human"><b>You ask</b><span>In the language you use</span></li>
+        <li><b>It explains</b><span>What it proposes, in plain words</span></li>
+        <li class="human"><b>You allow or not</b><span>Permission before anything personal</span></li>
+        <li><b>It prepares</b><span>Ready for you to review</span></li>
+        <li class="human"><b>You decide</b><span>Nothing happens on its own</span></li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+<section><div class="wrap">
+  <h2>Get it on your phone</h2>
+  <p class="lead">The assistant lives inside the Vi App.</p>
+  <div class="act">
+    <p style="margin:0 0 16px"><a class="btn" id="store" href="#">Open the Vi App</a></p>
+    <p class="pend">Play Store and App Store links to be supplied. This button currently detects the device and will route to the right store once the links are added.</p>
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <h2>Languages</h2>
+  <p class="lead">Confirmed for the pavilion demonstration. More will be added as they are released.</p>
+  <ul class="plain">
+    <li><b>Hindi</b><span>Text and voice</span></li>
+    <li><b>Tamil</b><span>Text and voice</span></li>
+    <li><b>English</b><span>Text and voice</span></li>
+    <li><b>Marathi</b><span>Text and voice</span></li>
+    <li><b>Fifth language</b><span class="pend">To be confirmed before release</span></li>
+  </ul>
+</div></section>
+
+<section><div class="wrap">
+  <h2>What it will and will not do</h2>
+  <div class="grid">
+    <div class="item mark-red"><h3>Asks first</h3><p>Before anything personal is used, you are shown the choice, and both options stay on screen long enough to read.</p></div>
+    <div class="item mark-red"><h3>Waits for you</h3><p>It prepares a next step and holds. It does not order, buy or commit anything on your behalf.</p></div>
+    <div class="item mark-yellow"><h3>Explains itself</h3><p>Every suggestion comes with a plain reason. You can ask why, and you can ask a person.</p></div>
+    <div class="item mark-yellow"><h3>Works for small businesses too</h3><p>The same assistant helps a shop owner keep track of what needs attention, without adding a new system to learn.</p></div>
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <h2>The other three chapters</h2>
+  <ul class="plain">
+    <li><b><a href="/ai-lab">AI Lab</a></b><span>Where people's needs become ideas that are tested and improved.</span></li>
+    <li><b><a href="/agentic-ai">Agentic AI</a></b><span>How a bounded human goal becomes routine execution.</span></li>
+    <li><b><a href="/responsible-ai">Responsible AI</a></b><span>The owner, purpose, gates and monitoring beneath every chapter.</span></li>
+  </ul>
+</div></section>
+</main>
+<script>
+(function(){
+  var a=document.getElementById('store'), ua=navigator.userAgent||'';
+  var ios=/iPad|iPhone|iPod/.test(ua), lbl=ios?'Open the Vi App on the App Store':'Open the Vi App on Google Play';
+  a.textContent=lbl;
+  a.addEventListener('click',function(e){e.preventDefault();});
+})();
+</script>
+<footer><div class="wrap">
+  <p class="sign">An experience by Vi Intelligence. Designed to think ahead.</p>
+  <p>Vodafone Idea Limited. Shown at India Mobile Congress 2026, Vi Intelligence pavilion.</p>
+  <p>Some scenes in the pavilion films were produced using generative visual tools. Availability, languages and features described here are subject to confirmation.</p>
+</div></footer>
+</body>
+</html>
