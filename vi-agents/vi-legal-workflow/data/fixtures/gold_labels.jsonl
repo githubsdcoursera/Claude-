@@ -1,0 +1,32 @@
+{"id":"NDA-01","skill":"nda-triage","overall_tier":"GREEN","must_find":[],"must_not":["N5","N13","N15"],"escalate":false,"critical":false}
+{"id":"NDA-02","skill":"nda-triage","overall_tier":"RED","must_find":["N4","N5","N6","N8","N13","N14"],"must_not":[],"escalate":true,"critical":true,"critical_items":["N5","N13"]}
+{"id":"NDA-03","skill":"nda-triage","overall_tier":"RED","must_find":["N15"],"must_not":[],"escalate":true,"critical":true,"critical_items":["N15"]}
+{"id":"NDA-04","skill":"nda-triage","overall_tier":"RED","must_find":["N2"],"must_not":[],"escalate":true,"critical":false,"notes":"flag AI/ML data use for intake"}
+{"id":"NDA-05","skill":"nda-triage","overall_tier":"YELLOW","must_find":["N4","N6","N7","N8","N14","N15"],"must_not":["RED"],"escalate":false,"critical":false}
+{"id":"NDA-06","skill":"nda-triage","overall_tier":"RED","must_find":["N11","N12","N13","N14"],"must_not":[],"escalate":true,"critical":true,"critical_items":["N11","N12"]}
+{"id":"NDA-07","skill":"execution-check","overall_result":"FAIL","must_find":["X2","X7","X8","X9"],"must_not":[],"critical":true,"critical_items":["X8"]}
+{"id":"NDA-08","skill":"nda-triage","overall_tier":"RED","must_find":["N9","N16"],"must_not":[],"escalate":true,"critical":true,"critical_items":["N9"]}
+{"id":"MOU-01","skill":"ai-partner-mou","mode":"draft","must_find":["S1","S2","S4","S5","S6","S7","S8","S9","S10","S11","S12","S13","S14","S15","S16"],"must_not":["binding_price","exclusivity"],"obligations":{"poc_start":"2026-12-01","production_decision":"2027-03-15","term_months":18,"termination_notice_days":30},"critical":false}
+{"id":"MOU-02","skill":"ai-partner-mou","mode":"review","overall_tier":"YELLOW","must_find":[{"change":1,"tier":"YELLOW","recommend":"accept_with_principles_retained"},{"change":2,"tier":"YELLOW","recommend":"ai_office_decision"},{"change":4,"tier":"RED","recommend":"counter"}],"must_not":["accept change 4 as drafted"],"escalate":false,"critical":false}
+{"id":"MOU-03","skill":"ai-partner-mou","mode":"review","overall_tier":"RED","must_find":[{"change":1,"tier":"RED","recommend":"reinstate","evidence":"partner deck ML engine"},{"change":2,"tier":"RED","recommend":"reject"},{"change":3,"tier":"GREEN","recommend":"accept_if_S9_S10_S14_protected"},{"change":4,"tier":"YELLOW","recommend":"counter"}],"must_not":["accept deletion of S10","accept exclusivity"],"escalate":true,"critical":true,"critical_items":["change 1","change 2"]}
+{"id":"MOU-04","skill":"ai-partner-mou","mode":"review","overall_tier":"RED","must_find":[{"change":1,"tier":"RED","recommend":"counter"},{"change":2,"tier":"RED","recommend":"counter"},{"change":3,"tier":"RED","recommend":"counter"},{"change":4,"tier":"YELLOW","recommend":"counter"}],"must_not":["accept training on Vi data"],"escalate":true,"critical":true,"critical_items":["change 2"],"execution_check":{"overall_result":"FAIL","must_find":["X2","X5","X7"]}}
+{"id":"VC-01","skill":"vendor-ai-contract-review","overall_tier":"RED","ai_applicable":true,"must_find":["V9","R1","R2","R3","R4","R5","R6","R7","R8","R9","R10"],"must_not":["accept deletion"],"escalate":true,"critical":true}
+{"id":"VC-02","skill":"vendor-ai-contract-review","overall_tier":"RED","ai_applicable":true,"must_find":["V6","R3"],"must_not":[],"escalate":true,"critical":true}
+{"id":"VC-03","skill":"vendor-ai-contract-review","overall_tier":"RED","must_find":["V7","V10"],"must_not":[],"escalate":true,"critical":true}
+{"id":"VC-04","skill":"vendor-ai-contract-review","overall_tier":"RED","must_find":["V8"],"must_not":[],"escalate":false,"critical":false}
+{"id":"VC-05","skill":"vendor-ai-contract-review","overall_tier":"RED","must_find":["V11","V12"],"must_not":[],"escalate":true,"critical":false}
+{"id":"VC-06","skill":"vendor-ai-contract-review","overall_tier":"YELLOW","ai_applicable":true,"must_find":["V9 equivalent mapped R1-R10"],"must_not":["RED for V9"],"escalate":false,"critical":false}
+{"id":"VC-07","skill":"vendor-ai-contract-review","overall_tier":"RED","ai_applicable":true,"must_find":["R5","R7","R8"],"must_not":[],"escalate":true,"critical":true}
+{"id":"VC-08","skill":"vendor-ai-contract-review","overall_tier":"RED","must_find":["V1"],"must_not":[],"escalate":false,"critical":false}
+{"id":"VC-09","skill":"vendor-ai-contract-review","overall_tier":"RED","must_find":["V13"],"must_not":[],"escalate":true,"critical":false}
+{"id":"VC-10","skill":"vendor-ai-contract-review","overall_tier":"GREEN","ai_applicable":false,"must_find":[],"must_not":["V9 missing"],"escalate":false,"critical":false}
+{"id":"VC-11","skill":"obligations-tracker","auto_renewal":true,"notice_deadline":"2027-10-02","report_due_dates":["2027-04-15","2027-07-15","2027-10-15","2028-01-15"],"critical":true}
+{"id":"VC-12","skill":"vendor-ai-contract-review","overall_tier":"RED","ai_applicable":true,"must_find":["V5","R3","R10"],"must_not":[],"escalate":true,"critical":true}
+{"id":"DP-01","skill":"dpdp-rights-request","class":"access","verification":"passed","escalate":false,"critical":false}
+{"id":"DP-02","skill":"dpdp-rights-request","class":"erasure","verification":"passed","partial_action":true,"flag_legal":true,"escalate":false,"critical":false}
+{"id":"DP-03","skill":"dpdp-rights-request","class":"access","verification":"failed","disclose":false,"escalate":false,"critical":true}
+{"id":"DP-04","skill":"dpdp-rights-request","class":"consent_withdrawal","escalate":false,"critical":false}
+{"id":"DP-05","skill":"dpdp-rights-request","class":"erasure","escalate":true,"critical":true}
+{"id":"DP-06","skill":"dpdp-rights-request","class":"access","escalate":true,"must_not":["confirm or deny lawful interception"],"critical":true}
+{"id":"DP-07","skill":"dpdp-rights-request","class":"correction","escalate":false,"critical":false}
+{"id":"DP-08","skill":"dpdp-rights-request","class":"grievance","escalate":true,"route":["DPO","AI Office"],"critical":false}

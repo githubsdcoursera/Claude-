@@ -1,0 +1,494 @@
+AGENT: Legal_Supervisor
+VERSION: "1.0"
+GOAL: |
+  LG00 Legal Supervisor for Vi's end-to-end legal workflow (W0 Request to W9 Close). Turn every request into
+  a matter (LG01), route it to the right specialist and run it to the next human gate: NDA triage (LG02), AI
+  partner MoU draft or markup review (LG03), vendor and AI contract review with the GRACIE pack (LG04),
+  execution check (LG05), obligations and renewals (LG06), and the parallel DPDP lane (LG07). Every finding is
+  quote-verified (LG-TR); counterparty-facing text is stripped of internal material (LG-PR); every run is
+  audited (LG-AU). Approval (W5) is recorded only from an authorised approver; nothing is ever signed or sent.
+
+PERSONA: |
+  A precise legal operations assistant for Vi Legal and the AI Office. Formal Indian-English; quotes clauses
+  exactly with clause references; separates what the document says, what the playbook requires and the
+  recommendation; marks anything needing a lawyer's judgement and never decides it.
+
+LIMITATIONS:
+  - "Never signs, sends, accepts or agrees anything on Vi's behalf, and never sends anything to a counterparty, regulator or court"
+  - "Never presents analysis as legal advice or a settled conclusion; statutory references not from a research source are marked [verify]"
+  - "Never lowers a tier because the counterparty is strategic or the deadline is close"
+  - "Never sends internal tiers, fallbacks or negotiation notes to a counterparty"
+  - "Uses the synthetic vi-legal fixtures in this build"
+
+EXECUTION:
+  session_idle_timeout: 600000
+  tool_timeout: 8000
+
+TOOLS:
+  #include-tools: lg_parse, lg01_intake, lg02_nda_triage, lg03_mou, lg04_vendor_review, lg05_execution_check, lg06_obligations, lg06_watch, lg07_dpdp, lg_tr_verify, lg_pr_strip, lg_approve, lg_eval, lg_audit
+
+MEMORY:
+  session:
+    - user
+    - request
+    - req
+    - mat
+    - nda
+    - mou
+    - ven
+    - tr
+    - pr
+    - exe
+    - obl
+    - wat
+    - dp
+    - appr
+    - ev
+    - disposition
+    - audit
+
+FLOW:
+  s0_start:
+    REASONING: false
+    SET:
+      user = FIRST_NON_EMPTY(session.messageMetadata.user, REGEX_EXTRACT(input, "user=([a-z]+\\.[a-z]+)", 1), "lawyer.radhika")
+      request = input
+      disposition = "IN_PROGRESS"
+    THEN: s1_parse
+
+  s1_parse:
+    REASONING: false
+    CALL: lg_parse
+      WITH:
+        text: request
+      AS: req
+    ON_RESULT:
+      - IF: req.output.intent == "review" OR req.output.intent == "e2e" OR req.output.intent == "intake" OR req.output.intent == "draft" OR req.output.intent == "dpdp"
+        THEN: w1_intake
+      - IF: req.output.intent == "approve"
+        THEN: w5_approve
+      - IF: req.output.intent == "execution"
+        THEN: w6_execution
+      - IF: req.output.intent == "obligations"
+        THEN: w7_obligations
+      - IF: req.output.intent == "watch"
+        THEN: w8_watch
+      - IF: req.output.intent == "eval"
+        THEN: g1_eval
+      - IF: req.output.intent == "policy_block"
+        THEN: h1_block
+      - IF: req.output.intent == "done"
+        THEN: s9_end
+      - ELSE:
+        THEN: s2_help
+
+  s2_help:
+    REASONING: false
+    RESPOND: "I can take a matter through the legal workflow: intake and route a request, triage an NDA, draft or review an AI partner MoU, review a vendor or AI agreement, run the execution check, register obligations, show what is due, handle a DPDP request, record an approval (authorised approvers only), or run the gold-label evaluation. For example: run end-to-end MOU-04. What would you like?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- W1 Intake (LG01): one matter, deduplicated, routed ----
+  w1_intake:
+    REASONING: false
+    CALL: lg01_intake
+      WITH:
+        doc_id: req.output.doc_id
+      AS: mat
+    ON_RESULT:
+      - IF: mat.output.found != true
+        THEN: s2_help
+      - IF: req.output.intent == "intake"
+        THEN: w1_audit
+      - IF: mat.output.route == "nda-triage (LG02)"
+        THEN: w2_nda
+      - IF: mat.output.route == "ai-partner-mou review mode (LG03)" OR mat.output.route == "ai-partner-mou draft mode (LG03)"
+        THEN: w2_mou
+      - IF: mat.output.route == "vendor-ai-contract-review (LG04)"
+        THEN: w2_vendor
+      - IF: mat.output.route == "execution-check (LG05)"
+        THEN: w6_execution
+      - IF: mat.output.route == "obligations-tracker (LG06)"
+        THEN: w7_obligations
+      - IF: mat.output.route == "dpdp-rights-request (LG07)"
+        THEN: p1_dpdp
+      - ELSE:
+        THEN: w1_audit
+
+  w1_audit:
+    REASONING: false
+    CALL: lg_audit
+      WITH:
+        user: user
+        disposition: "INTAKE_LOGGED"
+        object: mat.output.matter_id
+        detail: "{{mat.output.type}} {{mat.output.counterparty}} -> {{mat.output.route}}"
+      AS: audit
+    THEN: w1_say
+
+  w1_say:
+    REASONING: false
+    RESPOND: "Matter {{mat.output.matter_id}}{{#if mat.output.duplicate_of}} (existing open matter: request appended, {{mat.output.lawyer}} notified){{/if}} · Type {{mat.output.type}}{{#if mat.output.ai_flag}} (AI/ML on Vi data detected){{/if}} · Counterparty {{mat.output.counterparty}} · Vi entity {{mat.output.vi_entity}} · Route {{mat.output.route}} · Lawyer {{mat.output.lawyer}} · Missing info (asked once): {{mat.output.missing}} · {{mat.output.authority_note}}. Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- W2/W3 NDA triage (LG02) ----
+  w2_nda:
+    REASONING: false
+    CALL: lg02_nda_triage
+      WITH:
+        doc_id: req.output.doc_id
+      AS: nda
+    ON_RESULT:
+      - IF: nda.output.tier == "RED"
+        SET: disposition = "TRIAGED_RED"
+        THEN: w3_trace
+      - IF: nda.output.tier == "YELLOW"
+        SET: disposition = "TRIAGED_YELLOW"
+        THEN: w3_trace
+      - ELSE:
+        SET: disposition = "TRIAGED_GREEN"
+        THEN: w3_trace
+
+  # ---- W2/W3 AI partner MoU (LG03) ----
+  w2_mou:
+    REASONING: false
+    CALL: lg03_mou
+      WITH:
+        doc_id: req.output.doc_id
+      AS: mou
+    ON_RESULT:
+      - IF: mou.output.mode == "draft"
+        SET: disposition = "MOU_DRAFTED"
+        THEN: w3_mou_draft_obl
+      - IF: mou.output.tier == "RED"
+        SET: disposition = "REVIEWED_RED"
+        THEN: w3_trace
+      - IF: mou.output.tier == "YELLOW"
+        SET: disposition = "REVIEWED_YELLOW"
+        THEN: w3_trace
+      - ELSE:
+        SET: disposition = "REVIEWED_GREEN"
+        THEN: w3_trace
+
+  w3_mou_draft_obl:
+    REASONING: false
+    CALL: lg06_obligations
+      WITH:
+        doc_id: req.output.doc_id
+      AS: obl
+    THEN: w3_audit
+
+  # ---- W2/W3 vendor / AI agreement (LG04) ----
+  w2_vendor:
+    REASONING: false
+    CALL: lg04_vendor_review
+      WITH:
+        doc_id: req.output.doc_id
+      AS: ven
+    ON_RESULT:
+      - IF: ven.output.tier == "RED"
+        SET: disposition = "REVIEWED_RED"
+        THEN: w3_trace
+      - IF: ven.output.tier == "YELLOW"
+        SET: disposition = "REVIEWED_YELLOW"
+        THEN: w3_trace
+      - ELSE:
+        SET: disposition = "REVIEWED_GREEN"
+        THEN: w3_trace
+
+  # ---- LG-TR exact-quote check, LG-PR strip pass ----
+  w3_trace:
+    REASONING: false
+    CALL: lg_tr_verify
+      WITH:
+        doc_id: req.output.doc_id
+      AS: tr
+    THEN: w3_privilege
+
+  w3_privilege:
+    REASONING: false
+    CALL: lg_pr_strip
+      WITH:
+        doc_id: req.output.doc_id
+      AS: pr
+    THEN: w3_audit
+
+  w3_audit:
+    REASONING: false
+    CALL: lg_audit
+      WITH:
+        user: user
+        disposition: disposition
+        object: mat.output.matter_id
+        detail: "{{req.output.doc_id}} {{nda.output.tier}}{{mou.output.tier}}{{ven.output.tier}}; LG-TR verified {{tr.output.verified}}, unverified {{tr.output.unverified}}"
+      AS: audit
+    ON_RESULT:
+      - IF: mat.output.route == "nda-triage (LG02)"
+        THEN: w3_say_nda
+      - IF: mou.output.mode == "draft"
+        THEN: w3_say_draft
+      - IF: mat.output.route == "vendor-ai-contract-review (LG04)"
+        THEN: w3_say_vendor
+      - ELSE:
+        THEN: w3_say_mou
+
+  w3_say_nda:
+    REASONING: false
+    RESPOND: "{{mat.output.matter_id}} · {{req.output.doc_id}} NDA triage · Overall {{nda.output.tier}} · {{nda.output.playbook}}.\n\nTriage (# · Item · Clause · Quote · Playbook position · Tier · Proposed): {{nda.output.table}}\n\nHidden terms: {{nda.output.hidden}}.{{#if nda.output.ai_flag}} Intake note: AI/ML use of Vi data indicated; route the downstream engagement as an AI vendor matter.{{/if}}\nTraceability (LG-TR): {{tr.output.verified}} quotes verified, check manually: {{tr.output.check_manually}}.\nBusiness summary: {{nda.output.business_summary}}\nLawyer note: {{nda.output.lawyer_note}}\nCounterparty-facing text (LG-PR, internal material stripped): {{pr.output.text}}\n\nNext gate: {{#if nda.output.escalate}}senior counsel / GC confirms the RED tier (W2) and approves (W5).{{else}}Legal counsel confirms and approves (W5).{{/if}} Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  w3_say_mou:
+    REASONING: false
+    RESPOND: "{{mat.output.matter_id}} · {{req.output.doc_id}} partner markup review · Overall {{mou.output.tier}}{{#if mou.output.conditional_note}} ({{mou.output.conditional_note}}){{/if}} · {{mou.output.playbook}}.\n\nIssues (# · Section · Partner change · Vi position · Tier · Recommend · Proposed): {{mou.output.table}}\n\nNote to Vi Legal: {{mou.output.note_to_legal}}\nTraceability (LG-TR): {{tr.output.verified}} quotes verified, check manually: {{tr.output.check_manually}}.\nCounterparty-facing response (LG-PR): {{pr.output.text}}\n\nRoute: {{mou.output.route}}. Next gate: lawyer confirms tiers (W2), then approval (W5). Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  w3_say_vendor:
+    REASONING: false
+    RESPOND: "{{mat.output.matter_id}} · {{req.output.doc_id}} vendor / AI agreement review · Overall {{ven.output.tier}} · AI applicability: {{#if ven.output.ai_applicable}}YES{{else}}NO{{/if}} (evidence: {{ven.output.ai_evidence}}) · {{ven.output.playbook}}.\n\nReview (# · Family · Clause · Quote · Vi position · Tier · Proposed): {{ven.output.table}}\n\nGRACIE R1-R10: {{ven.output.gracie}}. Gaps: {{ven.output.gaps}}.\nTraceability (LG-TR): {{tr.output.verified}} quotes verified, check manually: {{tr.output.check_manually}}.\nResponse note to vendor (LG-PR, clean): {{pr.output.text}}\nBusiness summary: {{ven.output.business_summary}}\n\nRoute: {{ven.output.route}}. Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  w3_say_draft:
+    REASONING: false
+    RESPOND: "{{mat.output.matter_id}} · {{req.output.doc_id}} AI partner MoU first draft · {{mou.output.playbook}}. AI draft for Vi Legal review.\n\n{{mou.output.draft}}\n\nBinding clauses: {{mou.output.binding}}.\nCover note to Vi Legal: {{mou.output.note_to_legal}}\nObligations to register on signature: {{obl.output.entries}}\n\nNext gate: {{mou.output.route}} review (W3), then approval (W5). Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- W5 Approve: authorised approver only; then W6 execution check and W7 register ----
+  w5_approve:
+    REASONING: false
+    CALL: lg_approve
+      WITH:
+        doc_id: req.output.doc_id
+        user: user
+      AS: appr
+    ON_RESULT:
+      - IF: appr.output.approved == true
+        SET: disposition = "APPROVED"
+        THEN: w6_execution
+      - ELSE:
+        SET: disposition = "APPROVAL_REFUSED"
+        THEN: w5_audit
+
+  w5_audit:
+    REASONING: false
+    CALL: lg_audit
+      WITH:
+        user: user
+        disposition: disposition
+        object: req.output.doc_id
+        detail: appr.output.message
+      AS: audit
+    THEN: w5_say
+
+  w5_say:
+    REASONING: false
+    RESPOND: "{{appr.output.message}} Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  w6_execution:
+    REASONING: false
+    CALL: lg05_execution_check
+      WITH:
+        doc_id: req.output.doc_id
+        approval_ref: appr.output.approval_ref
+      AS: exe
+    ON_RESULT:
+      - IF: exe.output.result == "FAIL"
+        SET: disposition = "EXECUTION_FAIL"
+        THEN: w6_audit
+      - IF: exe.output.result == "NOT_READY"
+        THEN: w6_audit
+      - ELSE:
+        SET: disposition = "EXECUTION_CHECKED"
+        THEN: w6_audit
+
+  w6_audit:
+    REASONING: false
+    CALL: lg_audit
+      WITH:
+        user: user
+        disposition: disposition
+        object: req.output.doc_id
+        detail: "{{exe.output.result}}: {{exe.output.exceptions}}"
+      AS: audit
+    THEN: w6_say
+
+  w6_say:
+    REASONING: false
+    RESPOND: "{{#if appr.output.approved}}{{appr.output.message}} {{appr.output.pending}}\n\n{{/if}}W6 execution check for {{req.output.doc_id}}: {{exe.output.result}}. {{exe.output.checks}}\n\nExceptions: {{exe.output.exceptions}}. Clean execution copy: {{#if exe.output.clean_copy}}prepared{{else}}not prepared until X1, X2, X7 and X8 pass{{/if}}. {{exe.output.envelope}} Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- W7 Register obligations (LG06) and W8 watcher ----
+  w7_obligations:
+    REASONING: false
+    CALL: lg06_obligations
+      WITH:
+        doc_id: req.output.doc_id
+      AS: obl
+    SET:
+      disposition = "OBLIGATIONS_REGISTERED"
+    THEN: w7_audit
+
+  w7_audit:
+    REASONING: false
+    CALL: lg_audit
+      WITH:
+        user: user
+        disposition: disposition
+        object: req.output.doc_id
+        detail: "{{obl.output.count}} entries; notice deadline {{obl.output.notice_deadline}}"
+      AS: audit
+    THEN: w7_say
+
+  w7_say:
+    REASONING: false
+    RESPOND: "Register entries for {{req.output.doc_id}} ({{obl.output.count}}): {{obl.output.entries}}. {{#if obl.output.auto_renewal}}Auto-renewal flagged: notice deadline {{obl.output.notice_deadline}}. {{/if}}Confirmation requests sent to the owners; unconfirmed after 5 working days they are reminded, after 10 the lawyer is told. Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  w8_watch:
+    REASONING: false
+    CALL: lg06_watch
+      WITH:
+        as_of: req.output.as_of
+      AS: wat
+    SET:
+      disposition = "WATCH_DIGEST"
+    THEN: w8_audit
+
+  w8_audit:
+    REASONING: false
+    CALL: lg_audit
+      WITH:
+        user: user
+        disposition: disposition
+        object: req.output.as_of
+        detail: "{{wat.output.count}} items"
+      AS: audit
+    THEN: w8_say
+
+  w8_say:
+    REASONING: false
+    RESPOND: "Obligations digest as of {{req.output.as_of}} ({{wat.output.count}} items; Contract | Item | Clause | Due | Days | Owner | Status): {{wat.output.digest}}. No notice is sent to any counterparty. Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- DPDP lane (LG07) ----
+  p1_dpdp:
+    REASONING: false
+    CALL: lg07_dpdp
+      WITH:
+        doc_id: req.output.doc_id
+      AS: dp
+    ON_RESULT:
+      - IF: dp.output.verification == "failed"
+        SET: disposition = "DPDP_VERIFICATION_FAILED"
+        THEN: p2_audit
+      - IF: dp.output.escalate == true
+        SET: disposition = "DPDP_ESCALATED"
+        THEN: p2_audit
+      - ELSE:
+        SET: disposition = "DPDP_LOGGED"
+        THEN: p2_audit
+
+  p2_audit:
+    REASONING: false
+    CALL: lg_audit
+      WITH:
+        user: user
+        disposition: disposition
+        object: dp.output.request_ref
+        detail: "{{dp.output.right}} {{dp.output.verification}} {{dp.output.escalations}}"
+      AS: audit
+    THEN: p3_say
+
+  p3_say:
+    REASONING: false
+    RESPOND: "DPDP request {{dp.output.request_ref}} logged and acknowledged. Right: {{dp.output.right}}. Verification: {{dp.output.verification}}{{#if dp.output.disclose}}{{else}}; nothing is disclosed until verification passes{{/if}}. Escalation: {{dp.output.escalations}}. Data-owner tasks: {{dp.output.tasks}}.{{#if dp.output.flag_legal}} Retention conflict flagged to Legal; partial action expected.{{/if}} {{dp.output.l7}}.\n\nDraft response for DPO approval: {{dp.output.draft_response}} Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- Gold-label evaluation ----
+  g1_eval:
+    REASONING: false
+    CALL: lg_eval
+      WITH:
+        scope: "all"
+      AS: ev
+    SET:
+      disposition = "EVAL_RUN"
+    THEN: g2_audit
+
+  g2_audit:
+    REASONING: false
+    CALL: lg_audit
+      WITH:
+        user: user
+        disposition: disposition
+        object: "gold_labels"
+        detail: "{{ev.output.passed}}/{{ev.output.total}}"
+      AS: audit
+    THEN: g3_say
+
+  g3_say:
+    REASONING: false
+    RESPOND: "Gold-label evaluation on the synthetic fixtures: {{ev.output.passed}} of {{ev.output.total}} items pass ({{ev.output.by_skill}}). Critical misses: {{ev.output.critical_misses}}. Failures: {{ev.output.failures}}. Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- Hard boundary: never sign, send or accept ----
+  h1_block:
+    REASONING: false
+    CALL: lg_audit
+      WITH:
+        user: user
+        disposition: "POLICY_BLOCKED"
+        object: req.output.doc_id
+        detail: "Blocked: {{req.output.action}}"
+      AS: audit
+    SET:
+      disposition = "POLICY_BLOCKED"
+    THEN: h1_say
+
+  h1_say:
+    REASONING: false
+    RESPOND: "I can't {{req.output.action}}. No agent signs, sends, accepts or agrees anything on Vi's behalf; the lawyer or authorised signatory does that after the approvals are recorded. Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  s9_end:
+    REASONING: false
+    RESPOND: "Closing the session. Every run and decision is in the legal audit trail."
+    THEN: COMPLETE

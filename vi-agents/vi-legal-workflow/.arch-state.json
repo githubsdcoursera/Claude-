@@ -1,0 +1,35 @@
+{
+  "workflows": {
+    "lg01_intake": "01a17e17-456e-7220-81c0-abac6b178d4a",
+    "lg02_nda_triage": "01a17e17-4f81-716c-bd1d-6e7c37ac42e3",
+    "lg03_mou": "01a17e17-58f8-70d3-ada2-0a3cb3996d86",
+    "lg04_vendor_review": "01a17e18-3753-7592-9a70-ff6d3da0db29",
+    "lg05_execution_check": "01a17e18-4158-70d5-9128-69dae8a115ca",
+    "lg06_obligations": "01a17e19-1d1b-7a66-86ba-3d6f42a9115c",
+    "lg06_watch": "01a17e19-2bc4-7342-becd-b7ee99b12414",
+    "lg07_dpdp": "01a17e19-357b-75c8-bc4a-18986bbbd113",
+    "lg_approve": "01a17e1a-1402-7e31-8a36-85e4be9ff53c",
+    "lg_audit": "01a17e1a-1df7-79fe-a6ba-e87004d08757",
+    "lg_eval": "01a17e1a-fc3d-7519-8f81-123d268df2a9",
+    "lg_parse": "01a17e1b-0671-72e9-97ec-ece1106126ca",
+    "lg_pr_strip": "01a17e1b-12de-76ba-937f-9af3169fb016",
+    "lg_tr_verify": "01a17e1b-f26f-7b9b-af79-2cc182952210"
+  },
+  "workflow_versions": {
+    "lg01_intake": "v1.0.0",
+    "lg02_nda_triage": "v1.0.0",
+    "lg03_mou": "v1.0.0",
+    "lg04_vendor_review": "v1.0.0",
+    "lg05_execution_check": "v1.0.0",
+    "lg06_obligations": "v1.0.0",
+    "lg06_watch": "v1.0.0",
+    "lg07_dpdp": "v1.0.0",
+    "lg_approve": "v1.0.0",
+    "lg_audit": "v1.0.0",
+    "lg_eval": "v1.0.0",
+    "lg_parse": "v1.0.0",
+    "lg_pr_strip": "v1.0.0",
+    "lg_tr_verify": "v1.0.0"
+  },
+  "projectId": "01a17e17-3685-7685-8d67-491f8dffefe7"
+}
