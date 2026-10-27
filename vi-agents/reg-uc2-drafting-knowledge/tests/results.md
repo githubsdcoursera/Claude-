@@ -1,24 +1,24 @@
 # Test results: Vi RA-UC2 Drafting and Institutional Knowledge
 
-9/11 scenarios passed. Run 2026-10-27 18:04 UTC against the draft agent through Arch debug sessions; backend systems are mock workflows.
+11/11 scenarios passed. Run 2026-10-27 21:42 UTC against the draft agent through Arch debug sessions; backend systems are mock workflows.
 
 | Scenario | Result | Disposition | End | Slowest turn | Notes |
 |---|---|---|---|---:|---|
-| E1_E3_E4_draft_all_questions_gap_options_current_positions | FAIL | DRAFT_PACKAGED | complete | 1006 ms | tool rd03_consistency not called; never said: GAP on Q6; never said: STALE on Q5 |
-| E6_restricted_note_not_used_or_mentioned | PASS | DRAFT_PACKAGED | complete | 1008 ms |  |
-| E6b_authorised_user_sees_restricted_label | PASS | DRAFT_PACKAGED | complete | 917 ms |  |
-| E2_conflicting_positions_flagged_escalated | FAIL | MEMO_CONFLICT_ESCALATED | complete | 729 ms | tool rd03_consistency not called |
-| E8_internal_memo_template | PASS | MEMO_DRAFTED | complete | 757 ms |  |
-| E10_what_did_we_say_in_2023 | PASS | POSITION_LOOKUP | complete | 541 ms |  |
-| E4b_superseded_labelled_in_lookup | PASS | POSITION_LOOKUP | complete | 552 ms |  |
-| E5_fake_citation_flagged | PASS | UNSUPPORTED_FLAGGED | complete | 402 ms |  |
-| E7_head_files_final_register_updated | PASS | FINAL_FILED_REGISTER_UPDATED | complete | 541 ms |  |
-| E7b_officer_cannot_file_final | PASS | FILE_REFUSED | complete | 594 ms |  |
-| E9_heavy_edits_captured | PASS | EDITS_CAPTURED | complete | 628 ms |  |
+| E1_E3_E4_draft_all_questions_gap_options_current_positions | PASS | DRAFT_PACKAGED | complete | 939 ms |  |
+| E6_restricted_note_not_used_or_mentioned | PASS | DRAFT_PACKAGED | complete | 1050 ms |  |
+| E6b_authorised_user_sees_restricted_label | PASS | DRAFT_PACKAGED | complete | 1113 ms |  |
+| E2_conflicting_positions_flagged_escalated | PASS | MEMO_CONFLICT_ESCALATED | complete | 795 ms |  |
+| E8_internal_memo_template | PASS | MEMO_DRAFTED | complete | 724 ms |  |
+| E10_what_did_we_say_in_2023 | PASS | POSITION_LOOKUP | complete | 640 ms |  |
+| E4b_superseded_labelled_in_lookup | PASS | POSITION_LOOKUP | complete | 414 ms |  |
+| E5_fake_citation_flagged | PASS | UNSUPPORTED_FLAGGED | complete | 621 ms |  |
+| E7_head_files_final_register_updated | PASS | FINAL_FILED_REGISTER_UPDATED | complete | 624 ms |  |
+| E7b_officer_cannot_file_final | PASS | FILE_REFUSED | complete | 402 ms |  |
+| E9_heavy_edits_captured | PASS | EDITS_CAPTURED | complete | 421 ms |  |
 
 ## E1_E3_E4_draft_all_questions_gap_options_current_positions
 
-Session `7f073b09-102f-47b8-94d1-e75d3e6fe221`. Tools: rd_parse, rd01_scope, rd02_positions, rd04_draft, r_cite_verify, r_audit_log, rd_parse.
+Session `3c1791a0-39ee-4bdd-ab2c-076636e7ee3e`. Tools: rd_parse, rd01_scope, rd02_positions, rd03_check_consistency, rd04_draft, r_cite_verify, r_audit_log, rd_parse.
 
 | Caller | Agent |
 |---|---|
@@ -27,7 +27,7 @@ Session `7f073b09-102f-47b8-94d1-e75d3e6fe221`. Tools: rd_parse, rd01_scope, rd0
 
 ## E6_restricted_note_not_used_or_mentioned
 
-Session `de8a0669-96b9-44c4-b489-57c82eba86af`. Tools: rd_parse, rd01_scope, rd02_positions, rd03_check_consistency, rd04_draft, r_cite_verify, r_audit_log, rd_parse.
+Session `627eccef-e6b9-476f-88c2-07f598853356`. Tools: rd_parse, rd01_scope, rd02_positions, rd03_check_consistency, rd04_draft, r_cite_verify, r_audit_log, rd_parse.
 
 | Caller | Agent |
 |---|---|
@@ -36,7 +36,7 @@ Session `de8a0669-96b9-44c4-b489-57c82eba86af`. Tools: rd_parse, rd01_scope, rd0
 
 ## E6b_authorised_user_sees_restricted_label
 
-Session `5847bcf7-c62d-46b0-8af6-1e389ccd93ba`. Tools: rd_parse, rd01_scope, rd02_positions, rd03_check_consistency, rd04_draft, r_cite_verify, r_audit_log, rd_parse.
+Session `c347d065-1174-4541-925c-f6667c8d2341`. Tools: rd_parse, rd01_scope, rd02_positions, rd03_check_consistency, rd04_draft, r_cite_verify, r_audit_log, rd_parse.
 
 | Caller | Agent |
 |---|---|
@@ -45,7 +45,7 @@ Session `5847bcf7-c62d-46b0-8af6-1e389ccd93ba`. Tools: rd_parse, rd01_scope, rd0
 
 ## E2_conflicting_positions_flagged_escalated
 
-Session `f7ee45bc-3b7c-4b9e-b9e7-babf6b35e8c3`. Tools: rd_parse, rd03_check_consistency, r_notify, rd_memo, r_audit_log, rd_parse.
+Session `0527a1f5-1709-4312-8e23-39b5fce09fcf`. Tools: rd_parse, rd03_check_consistency, r_notify, rd_memo, r_audit_log, rd_parse.
 
 | Caller | Agent |
 |---|---|
@@ -54,7 +54,7 @@ Session `f7ee45bc-3b7c-4b9e-b9e7-babf6b35e8c3`. Tools: rd_parse, rd03_check_cons
 
 ## E8_internal_memo_template
 
-Session `db96dfe4-a3fa-4075-83aa-1199089d290b`. Tools: rd_parse, rd03_check_consistency, rd_memo, r_audit_log, rd_parse.
+Session `5263188a-922a-4ad1-af65-e93cb2f87be6`. Tools: rd_parse, rd03_check_consistency, rd_memo, r_audit_log, rd_parse.
 
 | Caller | Agent |
 |---|---|
@@ -63,7 +63,7 @@ Session `db96dfe4-a3fa-4075-83aa-1199089d290b`. Tools: rd_parse, rd03_check_cons
 
 ## E10_what_did_we_say_in_2023
 
-Session `d4a72eb0-b719-4b83-b0ab-f10ded7b209e`. Tools: rd_parse, rd_lookup, r_audit_log, rd_parse.
+Session `95b45269-de86-40ff-acd5-30cd5d7c7f0d`. Tools: rd_parse, rd_lookup, r_audit_log, rd_parse.
 
 | Caller | Agent |
 |---|---|
@@ -72,7 +72,7 @@ Session `d4a72eb0-b719-4b83-b0ab-f10ded7b209e`. Tools: rd_parse, rd_lookup, r_au
 
 ## E4b_superseded_labelled_in_lookup
 
-Session `1fca761b-92d4-4f79-8c46-eef20c8f1447`. Tools: rd_parse, rd_lookup, r_audit_log, rd_parse.
+Session `66e15713-bc8d-4fca-a825-e8d7df0b1ce6`. Tools: rd_parse, rd_lookup, r_audit_log, rd_parse.
 
 | Caller | Agent |
 |---|---|
@@ -81,7 +81,7 @@ Session `1fca761b-92d4-4f79-8c46-eef20c8f1447`. Tools: rd_parse, rd_lookup, r_au
 
 ## E5_fake_citation_flagged
 
-Session `118c169a-b355-4ff2-a469-af03205dc191`. Tools: rd_parse, r_cite_verify, r_audit_log, rd_parse.
+Session `ad1b70cb-3da8-4f58-a239-decdd30f7b80`. Tools: rd_parse, r_cite_verify, r_audit_log, rd_parse.
 
 | Caller | Agent |
 |---|---|
@@ -90,7 +90,7 @@ Session `118c169a-b355-4ff2-a469-af03205dc191`. Tools: rd_parse, r_cite_verify, 
 
 ## E7_head_files_final_register_updated
 
-Session `1376379d-2c45-4e83-b5e8-2446db425915`. Tools: rd_parse, rd06_file_final, r_audit_log, rd_parse.
+Session `215ad77a-e8eb-48ac-8823-e4aff2a0ccd6`. Tools: rd_parse, rd06_file_final, r_audit_log, rd_parse.
 
 | Caller | Agent |
 |---|---|
@@ -99,7 +99,7 @@ Session `1376379d-2c45-4e83-b5e8-2446db425915`. Tools: rd_parse, rd06_file_final
 
 ## E7b_officer_cannot_file_final
 
-Session `c216840c-1843-4727-bb3b-def009df32ac`. Tools: rd_parse, rd06_file_final, r_audit_log, rd_parse.
+Session `348d3cdf-7c8e-4a58-a0b5-b1f89be1d87a`. Tools: rd_parse, rd06_file_final, r_audit_log, rd_parse.
 
 | Caller | Agent |
 |---|---|
@@ -108,7 +108,7 @@ Session `c216840c-1843-4727-bb3b-def009df32ac`. Tools: rd_parse, rd06_file_final
 
 ## E9_heavy_edits_captured
 
-Session `2d100b97-9089-4598-8fb5-6e6114092a18`. Tools: rd_parse, rd06_capture_edits, r_audit_log, rd_parse.
+Session `e7458a95-4b2d-4b12-ac7d-b9c38939b64e`. Tools: rd_parse, rd06_capture_edits, r_audit_log, rd_parse.
 
 | Caller | Agent |
 |---|---|
