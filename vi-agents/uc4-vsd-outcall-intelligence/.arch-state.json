@@ -16,8 +16,8 @@
     "a26_enable_dial": "v1.0.3",
     "a26_get_call_script": "v1.0.3",
     "a27_append_live_log": "v1.0.3",
-    "a27_score_segment": "v1.0.4",
-    "a28_next_best_action": "v1.0.3"
+    "a27_score_segment": "v1.0.5",
+    "a28_next_best_action": "v1.0.4"
   },
   "projectId": "01a17d1e-6cee-7e45-bb2a-c3e8f0269129"
 }

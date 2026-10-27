@@ -5,7 +5,7 @@
 // @in text:string "Transcribed segment text"
 // @out label score confidence shift
 const t = String(input.text || "").toLowerCase();
-const neg = (t.match(/frustrat|angry|fed up|waste|useless|third time|again and again|not fixed|still|worst|cancel|port|leave/g) || []).length;
+const neg = (t.match(/frustrat|angry|fed up|waste|useless|third time|again and again|not fixed|still|worst|cancel|port|leave|moving to|switch to|airtel|jio/g) || []).length;
 const pos = (t.match(/thank|great|fixed|working now|resolved|better|happy|good/g) || []).length;
 const score = Math.max(-1, Math.min(1, (pos - neg) / 3));
 const label = score <= -0.3 ? "negative" : score >= 0.3 ? "positive" : "neutral";

@@ -153,8 +153,8 @@ const P = {
     { cue: "frustrat|angry|fed up|waste|useless|third time|again and again", trigger: "negative_shift", suggestion: "Acknowledge the repeated effort first, for example: I understand this has taken too many calls, and I am sorry. Then confirm the one thing you will do today." },
     { cue: "port|switch|leave|other operator|jio|airtel", trigger: "churn_signal", suggestion: "Do not argue or delay. Acknowledge, ask what would change their mind, and if they still want to port, give the approved UPC steps." },
     { cue: "charge|bill|refund|dispute|overcharged", trigger: "billing_dispute", suggestion: "Read the disputed amount from the account panel, confirm the dispute reference, and explain the next update date. Do not promise a refund." },
-    { cue: "still|not fixed|same problem|drop|no signal", trigger: "unresolved_issue", suggestion: "Do not record sign-off. Re-open the complaint with the latest symptoms and give the customer the new reference." },
-    { cue: "fixed|working now|resolved|better now|no issue", trigger: "positive_resolution", suggestion: "Ask for explicit confirmation that the issue is resolved, then record sign-off." },
+    { cue: "working now|are fixed|is fixed|fixed now|got fixed|resolved|better now|no issue now", trigger: "positive_resolution", suggestion: "Ask for explicit confirmation that the issue is resolved, then record sign-off." },
+    { cue: "still|not fixed|same problem|no signal|keeps dropping|still dropping", trigger: "unresolved_issue", suggestion: "Do not record sign-off. Re-open the complaint with the latest symptoms and give the customer the new reference." },
   ],
   coverage: { "560037": "4G and 5G", "400050": "4G and 5G", "682001": "4G", "600017": "4G and 5G", "110092": "4G" },
   // Prepaid recharge plans (plan fit) and the signed offer-authority matrix. MOCK values.
