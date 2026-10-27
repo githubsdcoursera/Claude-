@@ -1,30 +1,30 @@
 # Test results: Vi TowerCo Management
 
-1/17 scenarios passed. Run 2026-10-27 16:21 UTC against the draft agent through Arch debug sessions; backend systems are mock workflows.
+16/17 scenarios passed. Run 2026-10-27 17:21 UTC against the draft agent through Arch debug sessions; backend systems are mock workflows.
 
 | Scenario | Result | Disposition | End | Slowest turn | Notes |
 |---|---|---|---|---:|---|
-| GOLD-001_premature_rent_before_rfs_hold | FAIL | HOLD_RECOMMENDED | complete | 1740 ms | never said: PREMATURE_BILLING (billed before RFS); never said: Payment readiness: HOLD, payable ₹0, held ₹50,000; never said: nothing has been sent to the vendor |
-| GOLD-002_duplicate_line_excluded | FAIL | PARTIAL_PAY_RECOMMENDED | complete | 1712 ms | never said: LINE-SYN-0000541 on INV-SYN-000181; never said: excluded from the payable baseline; never said: held ₹52,500 |
-| GOLD-003_one_escalation_only | FAIL | PARTIAL_PAY_RECOMMENDED | complete | 1648 ms | never said: ₹50,000 × 1.05 (1 escalation at 5%) × 1.00 active = ₹52,500; never said: DOUBLE_ESCALATION; never said: OVERBILLED by ₹2,625 |
-| GOLD-004_reused_eb_consumer_flagged | FAIL | - | complete | 329 ms | tool tc_eb_consumer_check not called; disposition None != EB_CONSUMER_REUSE_FLAGGED; never said: mapped to 2 sites (MHGOA-SYN-0014 and MHGOA-SYN-0024); never said: not auto-approved |
-| GOLD-005_missing_support_docs_vendor_request | FAIL | DOCS_INCOMPLETE_HOLD | complete | 1218 ms | never said: EB bill copy and loading annexure missing; never said: Vendor request VRQ-; never said: the invoice is not marked complete |
-| GOLD-006_underbilling_reported | FAIL | PAY_RECOMMENDED | complete | 1434 ms | never said: UNDERBILLED by ₹4,000; never said: the vendor underbilled by ₹4,000; include it in the provision |
-| post_exit_already_disputed_no_duplicate_dispute | FAIL | HOLD_RECOMMENDED | complete | 1531 ms | never said: POST_EXIT_BILLING; never said: Already under dispute DSP-SYN-0001 (control CTRL-SYN-0001, OPEN); no duplicate dispute raised. |
-| non_bts_energy_dispute_draft | FAIL | HOLD_RECOMMENDED | complete | 1541 ms | never said: NON_BTS_BILLING; never said: Draft dispute DRAFT-DSP-; never said: DN recommendation ₹15,000 pre-tax. Pending Network + Finance COE approval |
-| loading_quantity_variance | FAIL | PARTIAL_PAY_RECOMMENDED | complete | 1511 ms | never said: 3 units (frozen CLT) × ₹2,500; never said: LOADING_QTY_VARIANCE |
-| eb_amount_mismatch | PASS | PARTIAL_PAY_RECOMMENDED | complete | 1544 ms |  |
-| clean_match_pay_recommended | FAIL | PAY_RECOMMENDED | complete | 1735 ms | never said: All 3 lines match the shadow bill.; never said: Payment readiness: PAY; never said: Payment release stays with authorised Finance. |
-| period_summary_august | FAIL | PERIOD_SUMMARY | complete | 619 ms | never said: 3 exceptions: MHGOA-SYN-0007 RENT POST_EXIT_BILLING ₹52,500 |
-| provision_september | FAIL | PROVISION_RECOMMENDED | complete | 576 ms | never said: nothing is posted |
-| golden_regression_release_gate | FAIL | - | complete | 484 ms | disposition None != GOLDEN_GATE_PASSED |
-| payment_release_blocked_human_gate | FAIL | POLICY_BLOCKED | complete | 642 ms | never said: for Authorised Finance |
-| multi_turn_case_then_sap_post_blocked | FAIL | - | - | 0 ms | session load failed: {'success': False, 'error': 'Not connected to server. Call platform_connect first.'} |
-| site_without_period_asks_for_period | FAIL | - | - | 0 ms | session load failed: {'success': False, 'error': 'Not connected to server. Call platform_connect first.'} |
+| GOLD-001_premature_rent_before_rfs_hold | PASS | HOLD_RECOMMENDED | complete | 1836 ms |  |
+| GOLD-002_duplicate_line_excluded | PASS | PARTIAL_PAY_RECOMMENDED | complete | 1639 ms |  |
+| GOLD-003_one_escalation_only | PASS | PARTIAL_PAY_RECOMMENDED | complete | 1785 ms |  |
+| GOLD-004_reused_eb_consumer_flagged | FAIL | - | complete | 211 ms | tool tc_eb_consumer_check not called; disposition None != EB_CONSUMER_REUSE_FLAGGED; never said: mapped to 2 sites (MHGOA-SYN-0014 and MHGOA-SYN-0024); never said: not auto-approved |
+| GOLD-005_missing_support_docs_vendor_request | PASS | DOCS_INCOMPLETE_HOLD | complete | 1263 ms |  |
+| GOLD-006_underbilling_reported | PASS | PAY_RECOMMENDED | complete | 1357 ms |  |
+| post_exit_already_disputed_no_duplicate_dispute | PASS | HOLD_RECOMMENDED | complete | 1249 ms |  |
+| non_bts_energy_dispute_draft | PASS | HOLD_RECOMMENDED | complete | 1885 ms |  |
+| loading_quantity_variance | PASS | PARTIAL_PAY_RECOMMENDED | complete | 1980 ms |  |
+| eb_amount_mismatch | PASS | PARTIAL_PAY_RECOMMENDED | complete | 1455 ms |  |
+| clean_match_pay_recommended | PASS | PAY_RECOMMENDED | complete | 1388 ms |  |
+| period_summary_august | PASS | PERIOD_SUMMARY | complete | 512 ms |  |
+| provision_september | PASS | PROVISION_RECOMMENDED | complete | 441 ms |  |
+| golden_regression_release_gate | PASS | GOLDEN_GATE_PASSED | complete | 646 ms |  |
+| payment_release_blocked_human_gate | PASS | POLICY_BLOCKED | complete | 593 ms |  |
+| multi_turn_case_then_sap_post_blocked | PASS | POLICY_BLOCKED | complete | 1894 ms |  |
+| site_without_period_asks_for_period | PASS | PAY_RECOMMENDED | complete | 1655 ms |  |
 
 ## GOLD-001_premature_rent_before_rfs_hold
 
-Session `7c696850-cc5f-4558-ab31-b29da4b73abe`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_dispute_prepare, tc_request_approval, tc_payment_readiness, tc_record_case, tc_parse_request.
+Session `a0f8b09a-253b-4664-9f08-4dbc10738d9a`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_dispute_prepare, tc_request_approval, tc_payment_readiness, tc_record_case, tc_parse_request.
 
 | Caller | Agent |
 |---|---|
@@ -33,7 +33,7 @@ Session `7c696850-cc5f-4558-ab31-b29da4b73abe`. Tools: tc_parse_request, tc_case
 
 ## GOLD-002_duplicate_line_excluded
 
-Session `3b79bc85-46da-4075-82d3-9be151d55105`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_dispute_prepare, tc_request_approval, tc_payment_readiness, tc_record_case, tc_parse_request.
+Session `08d15330-7d80-4a5b-9b8d-80978ea7cbd3`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_dispute_prepare, tc_request_approval, tc_payment_readiness, tc_record_case, tc_parse_request.
 
 | Caller | Agent |
 |---|---|
@@ -42,7 +42,7 @@ Session `3b79bc85-46da-4075-82d3-9be151d55105`. Tools: tc_parse_request, tc_case
 
 ## GOLD-003_one_escalation_only
 
-Session `d21381a9-7051-426c-8e16-279bed84390b`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_dispute_prepare, tc_request_approval, tc_payment_readiness, tc_record_case, tc_parse_request.
+Session `06c86eaf-e75b-49ea-b29d-9509cf6f40d9`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_dispute_prepare, tc_request_approval, tc_payment_readiness, tc_record_case, tc_parse_request.
 
 | Caller | Agent |
 |---|---|
@@ -51,7 +51,7 @@ Session `d21381a9-7051-426c-8e16-279bed84390b`. Tools: tc_parse_request, tc_case
 
 ## GOLD-004_reused_eb_consumer_flagged
 
-Session `81cd67d3-d3b2-40b9-b16b-54d1c36b0242`. Tools: tc_parse_request, tc_parse_request.
+Session `36f3863e-d765-4c9c-88d2-f8fb0b5b1cf4`. Tools: tc_parse_request, tc_parse_request.
 
 | Caller | Agent |
 |---|---|
@@ -60,7 +60,7 @@ Session `81cd67d3-d3b2-40b9-b16b-54d1c36b0242`. Tools: tc_parse_request, tc_pars
 
 ## GOLD-005_missing_support_docs_vendor_request
 
-Session `09565ad8-6f94-4fc9-8924-ce000dbeaf49`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_payment_readiness, tc_record_case, tc_parse_request.
+Session `a2aed57a-a45a-4e08-af6c-46a049a4480d`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_payment_readiness, tc_record_case, tc_parse_request.
 
 | Caller | Agent |
 |---|---|
@@ -69,7 +69,7 @@ Session `09565ad8-6f94-4fc9-8924-ce000dbeaf49`. Tools: tc_parse_request, tc_case
 
 ## GOLD-006_underbilling_reported
 
-Session `548d08c7-da62-4df9-af99-f75e2a56fc61`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_payment_readiness, tc_record_case, tc_parse_request.
+Session `3eeb7a5f-ca17-4710-9f3c-828dd16c668f`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_payment_readiness, tc_record_case, tc_parse_request.
 
 | Caller | Agent |
 |---|---|
@@ -78,7 +78,7 @@ Session `548d08c7-da62-4df9-af99-f75e2a56fc61`. Tools: tc_parse_request, tc_case
 
 ## post_exit_already_disputed_no_duplicate_dispute
 
-Session `df33100e-c07d-43e9-b84d-e789b8478f8b`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_dispute_prepare, tc_payment_readiness, tc_record_case, tc_parse_request.
+Session `dce3f795-11d3-4687-9086-1dd26daf492f`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_dispute_prepare, tc_payment_readiness, tc_record_case, tc_parse_request.
 
 | Caller | Agent |
 |---|---|
@@ -87,7 +87,7 @@ Session `df33100e-c07d-43e9-b84d-e789b8478f8b`. Tools: tc_parse_request, tc_case
 
 ## non_bts_energy_dispute_draft
 
-Session `5042290b-eec3-439d-ba67-73a26c7c2e53`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_dispute_prepare, tc_request_approval, tc_payment_readiness, tc_record_case, tc_parse_request.
+Session `4a553414-7848-46f0-b5f3-dc2e7a7c14a9`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_eb_check, tc_dispute_prepare, tc_request_approval, tc_payment_readiness, tc_record_case, tc_parse_request.
 
 | Caller | Agent |
 |---|---|
@@ -96,7 +96,7 @@ Session `5042290b-eec3-439d-ba67-73a26c7c2e53`. Tools: tc_parse_request, tc_case
 
 ## loading_quantity_variance
 
-Session `febe727f-caca-41c9-aa24-b124820ffd0e`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_dispute_prepare, tc_request_approval, tc_payment_readiness, tc_record_case, tc_parse_request.
+Session `de39bee6-f4ca-44f5-8cf3-82721ff95e1b`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_eb_check, tc_dispute_prepare, tc_request_approval, tc_payment_readiness, tc_record_case, tc_parse_request.
 
 | Caller | Agent |
 |---|---|
@@ -105,16 +105,16 @@ Session `febe727f-caca-41c9-aa24-b124820ffd0e`. Tools: tc_parse_request, tc_case
 
 ## eb_amount_mismatch
 
-Session `3f868ad4-3d6e-4e20-94c6-4e4951acb08f`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_dispute_prepare, tc_request_approval, tc_payment_readiness, tc_record_case, tc_parse_request.
+Session `aef03adb-0c0f-4768-a51c-c8923c5229ef`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_eb_check, tc_dispute_prepare, tc_request_approval, tc_payment_readiness, tc_record_case, tc_parse_request.
 
 | Caller | Agent |
 |---|---|
 | reconcile MHGOA-SYN-0013 for 2026-07 | Case CASE-MHGOA-SYN-0013-2026-07 under AGR-SYN-INDUS-001 v1.0, rule book TCRB-SYN-1.0, frozen input MIF-SYN-2026-07-v1 (frozen). Site status: active and billable; billable from 2025-04-01.\n\nShadow b... |
-| done | Case CASE-MHGOA-SYN-0013-2026-07 under AGR-SYN-INDUS-001 v1.0, rule book TCRB-SYN-1.0, frozen input MIF-SYN-2026-07-v1 (frozen). Site status: active and billable; billable from 2025-04-01.\n\nShadow bill: rent ₹50,000 × 1.05 (1 escalation at 5%) × 1.00 active = ₹52,500; loading 2 units (frozen CLT) × ₹2,500 × 1.00 active = ₹5,000; energy validated EB bill CONS-SYN-00013 = ₹12,251. Expected ₹69,751 against billed ₹76,251 on INV-SYN-000103.\n\nReconciliation: ENERGY_EB LINE-SYN-0000309: billed ₹18,751, expected ₹12,251, OVERBILLED by ₹6,500, EB_AMOUNT_MISMATCH (EB amount differs from the electricity bill). Draft dispute DRAFT-DSP-18KGS27 prepared with evidence pack EVP-1FU7YYL (sha256 0dqrgu0); DN recommendation ₹6,500 pre-tax. Pending Network + Finance COE approval APR-09OBFYP; nothing has been sent to the vendor. \n\nPayment readiness: PARTIAL_PAY, payable ₹69,751, held ₹6,500 (EB_AMOUNT_MISMATCH ₹6,500). Payment release stays with authorised Finance. Audit AUD-18FXPI2.\n\nCitations: AGR-SYN-INDUS-001 v1.0, Schedule B cl. 4.1 base infrastructure fee (synthetic clause reference); AGR-SYN-INDUS-001 v1.0, Schedule B cl. 4.3 annual escalation (synthetic clause reference); AGR-SYN-INDUS-001 v1.0, Schedule C cl. 2.2 loading rate per unit (synthetic clause reference); AGR-SYN-INDUS-001 v1.0, Schedule D cl. 3.1 EB passthrough at actuals (synthetic clause reference). Billable from RFS per AGR-SYN-INDUS-001 v1.0, cl. 5.2 billable from RFS (synthetic clause reference). SR, SP, SO and RFAI milestones are not in the synthetic package and were not inferred.\n\nAnything else? |
+| done | Closing the session. Every outcome is in the audit trail. |
 
 ## clean_match_pay_recommended
 
-Session `bdf00694-2f22-4c0b-b813-9f67d1d93596`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_payment_readiness, tc_record_case, tc_parse_request.
+Session `1991452f-f20e-4961-93d8-cbba2fd62e43`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_eb_check, tc_payment_readiness, tc_record_case, tc_parse_request.
 
 | Caller | Agent |
 |---|---|
@@ -123,7 +123,7 @@ Session `bdf00694-2f22-4c0b-b813-9f67d1d93596`. Tools: tc_parse_request, tc_case
 
 ## period_summary_august
 
-Session `537085ed-e248-438d-b81e-a6a2224029a7`. Tools: tc_parse_request, tc_period_summary, tc_record_case, tc_parse_request.
+Session `2c3af067-12c8-4a47-a1aa-8aed0d6895f7`. Tools: tc_parse_request, tc_period_summary, tc_record_case, tc_parse_request.
 
 | Caller | Agent |
 |---|---|
@@ -132,7 +132,7 @@ Session `537085ed-e248-438d-b81e-a6a2224029a7`. Tools: tc_parse_request, tc_peri
 
 ## provision_september
 
-Session `a6447838-41ef-4685-8792-976d788b044f`. Tools: tc_parse_request, tc_provision, tc_record_case, tc_parse_request.
+Session `061a9cb3-ff27-4793-8a5f-102817f45d79`. Tools: tc_parse_request, tc_provision, tc_record_case, tc_parse_request.
 
 | Caller | Agent |
 |---|---|
@@ -141,7 +141,7 @@ Session `a6447838-41ef-4685-8792-976d788b044f`. Tools: tc_parse_request, tc_prov
 
 ## golden_regression_release_gate
 
-Session `d86a5743-06e3-4f23-a860-9c24cbfbdc95`. Tools: tc_parse_request, tc_golden_regression, tc_parse_request.
+Session `3848b994-21f3-4fa4-a981-ae175fd7b848`. Tools: tc_parse_request, tc_golden_regression, tc_record_case, tc_parse_request.
 
 | Caller | Agent |
 |---|---|
@@ -150,7 +150,7 @@ Session `d86a5743-06e3-4f23-a860-9c24cbfbdc95`. Tools: tc_parse_request, tc_gold
 
 ## payment_release_blocked_human_gate
 
-Session `d54a4d9c-1e38-403e-9137-69c115ff12a4`. Tools: tc_parse_request, tc_request_approval, tc_record_case, tc_parse_request.
+Session `fbf28823-a869-4ef4-a6a6-d118f5df1f15`. Tools: tc_parse_request, tc_request_approval, tc_record_case, tc_parse_request.
 
 | Caller | Agent |
 |---|---|
@@ -159,14 +159,20 @@ Session `d54a4d9c-1e38-403e-9137-69c115ff12a4`. Tools: tc_parse_request, tc_requ
 
 ## multi_turn_case_then_sap_post_blocked
 
-Session `None`. Tools: none.
+Session `70b93e9c-ba15-4f6f-be83-194af06b8cd5`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_eb_check, tc_dispute_prepare, tc_request_approval, tc_payment_readiness, tc_record_case, tc_parse_request, tc_request_approval, tc_record_case, tc_parse_request.
 
 | Caller | Agent |
 |---|---|
+| reconcile MHGOA-SYN-0009 for 2026-08 | Case CASE-MHGOA-SYN-0009-2026-08 under AGR-SYN-INDUS-001 v1.0, rule book TCRB-SYN-1.0, frozen input MIF-SYN-2026-08-v1 (frozen). Site status: active and billable; billable from 2025-04-01.\n\nShadow b... |
+| ok now post it to SAP | I can't post it to sap. Payment release, SAP posting, DN and CN approval, settlement, sending disputes to vendors and contract or rule changes are human decisions under the decision-rights model. I've created approval task APR-17V36SP for Authorised Finance, who will see the reconciled evidence. Anything else? |
+| done | Closing the session. Every outcome is in the audit trail. |
 
 ## site_without_period_asks_for_period
 
-Session `None`. Tools: none.
+Session `81f0f3aa-3bb1-4980-a3d6-31ba20dc284d`. Tools: tc_parse_request, tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_eb_check, tc_payment_readiness, tc_record_case, tc_parse_request.
 
 | Caller | Agent |
 |---|---|
+| reconcile site 3 | Which billing period for MHGOA-SYN-0003? Please give the site and period together, for example: reconcile MHGOA-SYN-0003 for 2026-06. |
+| reconcile MHGOA-SYN-0003 for 2026-07 | Case CASE-MHGOA-SYN-0003-2026-07 under AGR-SYN-INDUS-001 v1.0, rule book TCRB-SYN-1.0, frozen input MIF-SYN-2026-07-v1 (frozen). Site status: active and billable; billable from 2026-07-01.\n\nShadow bill: rent ₹50,000 × 1.05 (1 escalation at 5%) × 1.00 active = ₹52,500; loading 2 units (frozen CLT) × ₹2,500 × 1.00 active = ₹5,000; energy validated EB bill CONS-SYN-00003 = ₹12,570. Expected ₹70,070 against billed ₹70,070 on INV-SYN-000093.\n\nReconciliation: All 3 lines match the shadow bill. \n\nPayment readiness: PAY, payable ₹70,070, held ₹0 (all lines reconciled). Payment release stays with authorised Finance. Audit AUD-19YTSSB.\n\nCitations: AGR-SYN-INDUS-001 v1.0, Schedule B cl. 4.1 base infrastructure fee (synthetic clause reference); AGR-SYN-INDUS-001 v1.0, Schedule B cl. 4.3 annual escalation (synthetic clause reference); AGR-SYN-INDUS-001 v1.0, Schedule C cl. 2.2 loading rate per unit (synthetic clause reference); AGR-SYN-INDUS-001 v1.0, Schedule D cl. 3.1 EB passthrough at actuals (synthetic clause reference). Billable from RFS per AGR-SYN-INDUS-001 v1.0, cl. 5.2 billable from RFS (synthetic clause reference). SR, SP, SO and RFAI milestones are not in the synthetic package and were not inferred.\n\nAnything else? |
+| done | Closing the session. Every outcome is in the audit trail. |
