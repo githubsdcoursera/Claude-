@@ -477,7 +477,7 @@ FLOW:
       WITH:
         user: user
         disposition: "POLICY_BLOCKED"
-        object: req.output.doc_id
+        object: "policy:{{req.output.action}}"
         detail: "Blocked: {{req.output.action}}"
       AS: audit
     SET:
