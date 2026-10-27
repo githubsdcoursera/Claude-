@@ -33,7 +33,7 @@
     "a08_record_consent": "v1.0.0",
     "a11_record_csat": "v1.0.0",
     "a09_create_handoff": "v1.0.0",
-    "a11_write_post_call": "v1.0.1"
+    "a11_write_post_call": "v1.0.2"
   },
   "projectId": "01a17d40-5a67-7bc6-829c-7a41b5fe03a4"
 }
