@@ -1,0 +1,19 @@
+[
+  {"name": "app_logged_in_strong_auth_addon_no_otp",
+   "turns": ["CHAT_START msisdn=9830000002 channel=vi_app", "English", "I need more data", "add the extra 1 GB", "yes", "no", "no", "5"],
+   "expect": {"tools": ["a03_get_customer_360", "a08_record_consent", "a13_buy_data_pack"], "no_tools": ["a04_send_otp"], "disposition": "RESOLVED", "exit": "complete",
+              "says": ["This chat is recorded", "last contact with us", "nothing was charged"]}},
+  {"name": "whatsapp_number_capture_and_otp_then_balance",
+   "turns": ["CHAT_START channel=whatsapp", "English", "my number is 9830000001", "123456", "balance", "no", "4"],
+   "expect": {"tools": ["a04_send_otp", "a04_verify_otp", "a03_get_customer_360", "a11_record_csat"], "disposition": "RESOLVED", "exit": "complete",
+              "says": ["type your 10-digit Vi mobile number", "Your main balance is ₹12.50"]}},
+  {"name": "web_vas_stop_requires_otp",
+   "turns": ["CHAT_START msisdn=9830000001 channel=web", "English", "stop subscription", "1", "yes", "123456", "no", "5"],
+   "expect": {"tools": ["a14_list_vas", "a04_send_otp", "a14_deactivate_vas"], "disposition": "RESOLVED", "exit": "complete", "says": ["Hello Tunes has been stopped"]}},
+  {"name": "recharge_link_in_chat",
+   "turns": ["CHAT_START msisdn=9830000001 channel=vi_app", "English", "recharge", "yes", "no", "5"],
+   "expect": {"tools": ["a12_send_recharge_link"], "disposition": "RESOLVED", "exit": "complete", "says": ["secure recharge link"]}},
+  {"name": "full_thread_handoff_to_live_chat",
+   "turns": ["CHAT_START msisdn=9830000001 channel=whatsapp", "English", "I want to talk to an agent"],
+   "expect": {"tools": ["a09_create_handoff"], "disposition": "HANDOFF_CUSTOMER_REQUEST", "exit": "escalate", "says": ["see this whole conversation"]}}
+]

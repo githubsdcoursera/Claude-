@@ -1,0 +1,29 @@
+{
+  "name": "Vi Prepaid Dropped Leads Outcall",
+  "description": "Prepaid dropped-lead recovery outcall (prepaid extension; not reported as UC6 until a prepaid UC ID is approved): de-duplicate, max three attempts, contact gate, diagnose drop point, pre-filled resume link, callback or hot transfer, conversion attribution. Backend systems are MOCK workflows.",
+  "entry_agent": "Prepaid_Dropped_Leads_Supervisor",
+  "model": "gemma4",
+  "agents": {
+    "Prepaid_Dropped_Leads_Supervisor": "agents/prepaid_dropped_leads_supervisor.agent.abl"
+  },
+  "shared_mocks": [
+    "a06_record_opt_out",
+    "a09_create_handoff",
+    "a11_write_post_call"
+  ],
+  "smoke_inputs": {
+    "msisdn": "9820000001",
+    "direction": "outbound",
+    "campaign": "PREPAID_DROPPED_LEAD",
+    "lead_id": "LD-71001",
+    "resume_step": "kyc",
+    "preference": "evening",
+    "queue": "PREPAID_SALES_DESK",
+    "reason": "smoke",
+    "summary": "smoke",
+    "recommended_next_step": "smoke",
+    "disposition": "SMOKE",
+    "outcome": "smoke"
+  },
+  "deployment_label": "prepaid-dropped-leads-v1"
+}

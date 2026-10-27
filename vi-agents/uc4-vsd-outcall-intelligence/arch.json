@@ -1,0 +1,9 @@
+{
+  "name": "Vi UC4 VSD Outcall Intelligence",
+  "description": "UC4 VSD Agent Outcall Intelligence (assistive): pre-call brief and grounded script gate the dial, live advisory sentiment and approved next-best-action cues, supervisor join, A11 summary for one-click approval. Backend systems are MOCK workflows.",
+  "entry_agent": "UC4_VSD_Assist",
+  "model": "gemma4",
+  "agents": { "UC4_VSD_Assist": "agents/uc4_vsd_assist.agent.abl" },
+  "smoke_inputs": { "account_id": "ACC1001", "campaign": "SERVICE_CONNECT", "agent_name": "Asha", "brief_shown": "true", "script_shown": "true", "call_ref": "VSD-TEST", "speaker": "customer", "text": "this is the third time I am calling, still not fixed", "sentiment": "negative", "cue": "", "reason": "smoke", "requester_role": "vsd_agent", "outcome": "SIGNED_OFF", "summary": "smoke", "edited": "false" },
+  "deployment_label": "uc4-v1"
+}

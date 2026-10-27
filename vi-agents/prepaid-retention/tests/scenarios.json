@@ -1,0 +1,285 @@
+[
+ {
+  "name": "network_issue_fixed_first_then_free_offer",
+  "turns": [
+   "CALL_START msisdn=9810000001 direction=outbound campaign=PREPAID_LAPSE_RISK_30D",
+   "English",
+   "yes speaking",
+   "my network keeps dropping calls",
+   "yes",
+   "yes go ahead",
+   "no thanks"
+  ],
+  "expect": {
+   "tools": [
+    "a06_compliance_gate",
+    "a03_get_retention_context",
+    "prt01_check_network",
+    "a08_raise_network_ticket",
+    "prt03_get_offer_authority",
+    "a08_record_consent",
+    "a08_apply_offer",
+    "a11_schedule_outcome_tracking",
+    "a11_write_post_call"
+   ],
+   "no_tools": [
+    "a04_send_otp"
+   ],
+   "disposition": "OFFER_APPLIED",
+   "exit": "complete",
+   "says": [
+    "I am an AI, and this call is recorded",
+    "known issue in Kukatpally",
+    "I've logged your complaint under reference",
+    "10 GB of bonus data free for 7 days"
+   ],
+   "never_says": [
+    "{{#if"
+   ]
+  }
+ },
+ {
+  "name": "price_reason_chargeable_offer_with_otp",
+  "turns": [
+   "CALL_START msisdn=9810000002 direction=outbound campaign=PREPAID_LAPSE_RISK_30D",
+   "English",
+   "yes",
+   "honestly it is too expensive",
+   "yes",
+   "yes I agree",
+   "123456",
+   "no"
+  ],
+  "expect": {
+   "tools": [
+    "prt02_get_plan_fit",
+    "prt03_get_offer_authority",
+    "a08_record_consent",
+    "a04_send_otp",
+    "a04_verify_otp",
+    "a08_apply_offer",
+    "a08_send_sms"
+   ],
+   "no_tools": [
+    "a08_raise_network_ticket"
+   ],
+   "disposition": "OFFER_APPLIED",
+   "exit": "complete",
+   "says": [
+    "for ₹249",
+    "Do you agree"
+   ]
+  }
+ },
+ {
+  "name": "port_request_answered_immediately_no_pitch",
+  "turns": [
+   "CALL_START msisdn=9810000003 direction=outbound campaign=PREPAID_LAPSE_RISK_30D",
+   "English",
+   "yes",
+   "I want to port my number to Jio",
+   "no that's all"
+  ],
+  "expect": {
+   "tools": [
+    "prt04_mnp_guidance",
+    "a08_send_sms",
+    "a11_write_post_call"
+   ],
+   "no_tools": [
+    "prt03_get_offer_authority",
+    "a08_apply_offer"
+   ],
+   "disposition": "PORT_GUIDANCE_GIVEN",
+   "exit": "complete",
+   "says": [
+    "send an SMS with the word PORT"
+   ],
+   "never_says": [
+    "I can offer you"
+   ]
+  }
+ },
+ {
+  "name": "port_request_mid_offer_still_answered",
+  "turns": [
+   "CALL_START msisdn=9810000002 direction=outbound campaign=PREPAID_LAPSE_RISK_30D",
+   "English",
+   "yes",
+   "it's costly",
+   "no, I'd rather port out to airtel",
+   "no"
+  ],
+  "expect": {
+   "tools": [
+    "prt04_mnp_guidance"
+   ],
+   "no_tools": [
+    "a08_apply_offer"
+   ],
+   "disposition": "PORT_GUIDANCE_GIVEN",
+   "exit": "complete",
+   "says": [
+    "Unique Porting Code"
+   ]
+  }
+ },
+ {
+  "name": "dnd_compliance_stop_no_call",
+  "turns": [
+   "CALL_START msisdn=9810000004 direction=outbound campaign=PREPAID_LAPSE_RISK_30D"
+  ],
+  "expect": {
+   "tools": [
+    "a06_compliance_gate",
+    "a11_write_post_call"
+   ],
+   "no_tools": [
+    "a03_get_retention_context"
+   ],
+   "disposition": "COMPLIANCE_STOP",
+   "exit": "complete",
+   "never_says": [
+    "virtual assistant"
+   ]
+  }
+ },
+ {
+  "name": "attempt_cap_reached_no_call",
+  "turns": [
+   "CALL_START msisdn=9810000005 direction=outbound campaign=PREPAID_LAPSE_RISK_30D"
+  ],
+  "expect": {
+   "tools": [
+    "a06_compliance_gate"
+   ],
+   "no_tools": [
+    "a03_get_retention_context"
+   ],
+   "disposition": "COMPLIANCE_STOP",
+   "exit": "complete",
+   "never_says": [
+    "virtual assistant"
+   ]
+  }
+ },
+ {
+  "name": "offer_declined_sms_and_tracking",
+  "turns": [
+   "CALL_START msisdn=9810000003 direction=outbound campaign=PREPAID_LAPSE_RISK_30D",
+   "English",
+   "yes",
+   "my data runs out too quickly",
+   "no thanks",
+   "no"
+  ],
+  "expect": {
+   "tools": [
+    "prt02_get_plan_fit",
+    "prt03_get_offer_authority",
+    "a08_send_sms",
+    "a11_schedule_outcome_tracking"
+   ],
+   "no_tools": [
+    "a08_apply_offer"
+   ],
+   "disposition": "OFFER_DECLINED",
+   "exit": "complete",
+   "says": [
+    "sent your recharge options"
+   ]
+  }
+ },
+ {
+  "name": "no_issue_recharge_reminder",
+  "turns": [
+   "CALL_START msisdn=9810000001 direction=outbound campaign=PREPAID_LAPSE_RISK_30D",
+   "English",
+   "yes",
+   "no everything is fine, I will recharge"
+  ],
+  "expect": {
+   "tools": [
+    "a11_schedule_outcome_tracking",
+    "a11_write_post_call"
+   ],
+   "no_tools": [
+    "prt03_get_offer_authority"
+   ],
+   "disposition": "NO_ISSUE_REMINDED",
+   "exit": "complete",
+   "says": [
+    "recharge any time in the Vi app"
+   ]
+  }
+ },
+ {
+  "name": "free_text_reason_classified_by_llm",
+  "turns": [
+   "CALL_START msisdn=9810000002 direction=outbound campaign=PREPAID_LAPSE_RISK_30D",
+   "English",
+   "yes",
+   "my sim got blocked last week for no reason and it took days to fix",
+   "no",
+   "no"
+  ],
+  "expect": {
+   "tools": [
+    "prt03_get_offer_authority",
+    "a11_write_post_call"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 4000
+  }
+ },
+ {
+  "name": "wrong_party",
+  "turns": [
+   "CALL_START msisdn=9810000001 direction=outbound campaign=PREPAID_LAPSE_RISK_30D",
+   "English",
+   "no wrong number"
+  ],
+  "expect": {
+   "no_tools": [
+    "a03_get_retention_context"
+   ],
+   "disposition": "WRONG_PARTY",
+   "exit": "complete",
+   "never_says": [
+    "₹299"
+   ]
+  }
+ },
+ {
+  "name": "opt_out",
+  "turns": [
+   "CALL_START msisdn=9810000001 direction=outbound campaign=PREPAID_LAPSE_RISK_30D",
+   "English",
+   "yes",
+   "please don't call me again"
+  ],
+  "expect": {
+   "tools": [
+    "a06_record_opt_out"
+   ],
+   "disposition": "OPT_OUT",
+   "exit": "complete"
+  }
+ },
+ {
+  "name": "asks_for_human",
+  "turns": [
+   "CALL_START msisdn=9810000001 direction=outbound campaign=PREPAID_LAPSE_RISK_30D",
+   "English",
+   "yes",
+   "can I talk to a real person"
+  ],
+  "expect": {
+   "tools": [
+    "a09_create_handoff"
+   ],
+   "disposition": "HANDOFF_CUSTOMER_REQUEST",
+   "exit": "escalate"
+  }
+ }
+]

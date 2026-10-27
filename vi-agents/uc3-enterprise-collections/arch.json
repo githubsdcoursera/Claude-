@@ -1,0 +1,10 @@
+{
+  "name": "Vi UC3 Enterprise Collections",
+  "description": "UC3 Conversational AI Collections Agent (enterprise; IVR voice, WhatsApp, web chat): A22 reminders, A23 payment follow-up (pay now, PTP, callback), A24 dispute with SR token and dunning pause, collections-desk handoff. Backend systems are MOCK workflows.",
+  "entry_agent": "UC3_Collections_Supervisor",
+  "model": "gemma4",
+  "agents": { "UC3_Collections_Supervisor": "agents/uc3_collections_supervisor.agent.abl" },
+  "shared_mocks": ["a06_record_opt_out", "a09_create_handoff", "a11_write_post_call"],
+  "smoke_inputs": { "account_id": "ENT5001", "msisdn": "9870000001", "campaign": "ENT_COLLECTIONS_FOLLOWUP", "channel": "whatsapp", "days": "3", "preference": "tomorrow morning", "dispute_type": "billing_error", "amount": "12000", "details": "charged twice", "invoice": "INV-2026-09-5001", "sr_token": "SR-TEST", "template": "ptp_confirmation", "queue": "COLLECTIONS_DESK", "reason": "smoke", "summary": "smoke", "recommended_next_step": "smoke", "disposition": "SMOKE", "outcome": "smoke" },
+  "deployment_label": "uc3-v1"
+}

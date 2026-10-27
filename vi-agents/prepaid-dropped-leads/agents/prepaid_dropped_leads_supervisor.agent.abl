@@ -1,0 +1,407 @@
+AGENT: Prepaid_Dropped_Leads_Supervisor
+VERSION: "1.0"
+GOAL: |
+  Recover prepaid digital journeys that stopped before completion (new SIM order, recharge, plan purchase):
+  check the lead is not a duplicate or already converted and is within three attempts, pass the contact
+  gate, disclose AI and recording, confirm the right party, explain exactly where the journey stopped and
+  why, then send a pre-filled resume link, book a callback or hot-transfer to an advisor. Write the
+  disposition with conversion attribution. This is the prepaid extension; it is not reported as UC6.
+
+PERSONA: |
+  Vi's virtual assistant on a phone call. Helpful and quick: the customer already wanted to buy, so
+  remove friction rather than sell. One idea per sentence, one question at a time. Never states a
+  price, plan or coverage fact a tool did not return.
+
+LIMITATIONS:
+  - "Cannot collect Aadhaar, OTPs or payment details on the call; these are completed through the secure link"
+  - "Cannot change prices or apply discounts"
+  - "Calls a lead at most three times"
+
+EXECUTION:
+  session_idle_timeout: 120000
+  voice_latency_target: 800
+  tool_timeout: 8000
+
+TOOLS:
+  #include-tools: a07_get_lead, a06_compliance_gate, a06_record_opt_out, a03_get_journey_context, pdl02_get_resolution, a10_check_coverage, pdl01_send_resume_link, a07_schedule_callback, a09_create_handoff, a11_write_post_call
+
+MEMORY:
+  session:
+    - msisdn
+    - direction
+    - campaign
+    - lead
+    - gate
+    - journey
+    - resolution
+    - coverage
+    - link
+    - callback
+    - callback_preference
+    - customer_reason
+    - disposition
+    - outcome
+    - handoff_reason
+    - handoff_next_step
+    - handoff
+    - post_call
+    - opt_out
+    - spoken_language
+
+INTENTS:
+  human_escalation: "Caller asks to speak to a person, an agent, an advisor or customer care."
+
+ESCALATE:
+  triggers:
+    - WHEN: user.sentiment == "very_negative" OR user.sentiment == "frustrated"
+      REASON: "Negative sentiment persisted"
+      PRIORITY: high
+      TAGS: [prepaid_dropped_lead, sentiment]
+  context_for_human:
+    - msisdn
+    - lead
+    - journey
+    - resolution
+    - customer_reason
+    - handoff_reason
+    - handoff_next_step
+    - conversation_transcript
+  routing:
+    queue: "PREPAID_SALES_DESK"
+    skill_tags: [prepaid, sales, journey_recovery]
+
+FLOW:
+  global_digressions:
+    - INTENT: opt_out_request
+      KEYWORDS: ["stop calling", "don't call", "do not call", "opt out", "unsubscribe", "remove my number", "call mat karo"]
+      GOTO: x4_opt_out
+    - INTENT: human_request
+      KEYWORDS: ["speak to a person", "talk to a person", "talk to someone", "real person", "human agent", "speak to an agent", "talk to an agent", "speak to an advisor", "talk to an advisor", "connect me to an advisor", "agent se baat"]
+      GOTO: s6_hot_transfer
+
+  # ---- S0 Trigger: ingested, de-duplicated lead (A07) ----
+  s0_trigger:
+    REASONING: false
+    SET:
+      msisdn = FIRST_NON_EMPTY(session.messageMetadata.msisdn, REGEX_EXTRACT(input, "msisdn=(\\d{10})", 1), customer_id)
+      direction = FIRST_NON_EMPTY(session.messageMetadata.direction, REGEX_EXTRACT(input, "direction=(\\w+)", 1), "outbound")
+      campaign = FIRST_NON_EMPTY(session.messageMetadata.campaign, REGEX_EXTRACT(input, "campaign=(\\w+)", 1), "PREPAID_DROPPED_LEAD")
+      disposition = "IN_PROGRESS"
+    THEN: s0_lead
+
+  s0_lead:
+    REASONING: false
+    CALL: a07_get_lead
+      WITH:
+        msisdn: msisdn
+      AS: lead
+    ON_RESULT:
+      - IF: lead.output.callable == true
+        THEN: s0_compliance
+      - IF: lead.output.status == "converted" OR lead.output.duplicate == true
+        SET:
+          disposition = "LEAD_ALREADY_CONVERTED"
+          outcome = "no_call_duplicate_or_converted"
+        THEN: s9_write
+      - IF: lead.output.found == true AND lead.output.attempts >= 3
+        SET:
+          disposition = "MAX_ATTEMPTS_REACHED"
+          outcome = "no_call_attempt_cap"
+        THEN: s9_write
+      - ELSE:
+        SET:
+          disposition = "COMPLIANCE_STOP"
+          outcome = "lead_not_callable"
+        THEN: s9_write
+
+  # ---- S0/X4 Contact gate (A06): fail closed ----
+  s0_compliance:
+    REASONING: false
+    CALL: a06_compliance_gate
+      WITH:
+        msisdn: msisdn
+        direction: direction
+        campaign: campaign
+      AS: gate
+    ON_RESULT:
+      - IF: gate.output.allowed == true
+        THEN: s1_disclose
+      - ELSE:
+        SET:
+          disposition = "COMPLIANCE_STOP"
+          outcome = FIRST_NON_EMPTY(gate.output.stop_reason, "compliance_gate_unavailable")
+        THEN: s9_write
+
+  # ---- S1 Disclose (must-say) ----
+  s1_disclose:
+    REASONING: false
+    RESPOND: "Namaste, this is Vi's virtual assistant. I am an AI, and this call is recorded for quality and training. Would you like to continue in English or Hindi?"
+    ON_INPUT:
+      - IF: input matches "(hindi|हिंदी|hindee)"
+        SET: spoken_language = "hi"
+        THEN: s2_right_party
+      - ELSE:
+        SET: spoken_language = "en"
+        THEN: s2_right_party
+
+  # ---- S2 Right party ----
+  s2_right_party:
+    REASONING: false
+    MAX_ATTEMPTS: 2
+    ON_EXHAUSTED: x2_fallback
+    RESPOND: "Am I speaking with {{gate.output.first_name}}?"
+    ON_INPUT:
+      - IF: input matches "(^|[^a-z])(yes|yeah|yep|speaking|haan|ha|han|ji|bol raha|bol rahi|that's me|it is me)([^a-z]|$)"
+        THEN: s3_load_journey
+      - IF: input matches "(^|[^a-z])(no|nahi|nahin|wrong number|not me|not here)([^a-z]|$)"
+        SET:
+          disposition = "WRONG_PARTY"
+          outcome = "right_party_not_confirmed"
+        THEN: x3_wrong_party
+      - ELSE:
+        RESPOND: "Sorry, I didn't catch that. Am I speaking with {{gate.output.first_name}}? Please say yes or no."
+        THEN: s2_right_party
+
+  # ---- S3 Load journey, plan, recharge, KYC and coverage context (A03) ----
+  s3_load_journey:
+    REASONING: false
+    CALL: a03_get_journey_context
+      WITH:
+        msisdn: msisdn
+      AS: journey
+    ON_RESULT:
+      - IF: journey.output.found == true
+        THEN: s3_resolution
+      - ELSE:
+        SET:
+          handoff_reason = "Journey record unavailable"
+          handoff_next_step = "Find the customer's dropped journey and help complete it"
+          disposition = "SYSTEM_FAILURE"
+        THEN: s6_hot_transfer_failure
+
+  s3_resolution:
+    REASONING: false
+    CALL: pdl02_get_resolution
+      WITH:
+        msisdn: msisdn
+      AS: resolution
+    THEN: s4_diagnose
+
+  # ---- S4 Diagnose the drop point ----
+  s4_diagnose:
+    REASONING: false
+    MAX_ATTEMPTS: 2
+    ON_EXHAUSTED: x2_fallback
+    RESPOND: "Thanks, {{gate.output.first_name}}. You started {{journey.output.journey_label}} in the Vi app and it stopped at {{journey.output.drop_label}}. {{resolution.output.must_say}} Would you like me to send you a link that takes you straight back to that step, with your details already filled in?"
+    ON_INPUT:
+      - IF: input matches "(advisor|person|human|someone|call me now|talk to)"
+        THEN: s6_hot_transfer
+      - IF: input matches "(later|busy|another time|not now|call back|callback|baad mein)"
+        THEN: s5_callback_ask
+      - IF: input matches "(coverage|network|signal|5g|4g|range)"
+        THEN: s5_coverage
+      - IF: input matches "(^|[^a-z])(yes|yeah|yep|sure|okay|ok|send|go ahead|haan|ha|han|ji|bhej do)([^a-z]|$)"
+        THEN: s6_send_link
+      - IF: input matches "(^|[^a-z])(no|nahi|nahin|not interested|don't want|dont want|changed my mind)([^a-z]|$)"
+        SET:
+          customer_reason = input
+        THEN: s5_not_interested
+      - ELSE:
+        SET: customer_reason = input
+        THEN: s5_question
+
+  # ---- S5 Resolve ----
+  s5_coverage:
+    REASONING: false
+    CALL: a10_check_coverage
+      WITH:
+        msisdn: msisdn
+      AS: coverage
+    THEN: s5_coverage_say
+
+  s5_coverage_say:
+    REASONING: false
+    RESPOND: "{{#if coverage.output.found}}Vi has {{coverage.output.coverage}} coverage at your registered address.{{else}}I couldn't confirm coverage for your pincode on this call, and an advisor can check it for you.{{/if}} Shall I send you the link to finish {{journey.output.journey_label}}?"
+    ON_INPUT:
+      - IF: input matches "(advisor|person|human|someone|talk to)"
+        THEN: s6_hot_transfer
+      - IF: input matches "(^|[^a-z])(yes|yeah|yep|sure|okay|ok|send|go ahead|haan|ha|han|ji|bhej do)([^a-z]|$)"
+        THEN: s6_send_link
+      - IF: input matches "(later|busy|call back|callback)"
+        THEN: s5_callback_ask
+      - ELSE:
+        SET: customer_reason = input
+        THEN: s5_not_interested
+
+  s5_question:
+    REASONING: true
+    GOAL: |
+      The customer is deciding whether to finish {{journey.output.journey_label}} (plan {{journey.output.plan}},
+      amount {{journey.output.amount}}, stopped at {{journey.output.drop_label}}). They said: "{{customer_reason}}".
+      Answer in at most two short spoken sentences using only these facts, then ask whether they would like
+      the link to finish, to speak to an advisor, or a callback later. If you don't know, offer the advisor.
+    STEP_CONSTRAINTS:
+      - "Never state a price, plan, offer or coverage that is not in the facts above."
+    MAX_TURNS: 2
+    THEN: s5_after_question
+
+  s5_after_question:
+    REASONING: false
+    ON_INPUT:
+      - IF: input matches "(advisor|person|human|someone|talk to)"
+        THEN: s6_hot_transfer
+      - IF: input matches "(later|busy|call back|callback)"
+        THEN: s5_callback_ask
+      - IF: input matches "(^|[^a-z])(yes|yeah|yep|sure|okay|ok|send|link|go ahead|haan|ha|han|ji)([^a-z]|$)"
+        THEN: s6_send_link
+      - ELSE:
+        SET: customer_reason = input
+        THEN: s5_not_interested
+
+  s5_callback_ask:
+    REASONING: false
+    RESPOND: "Of course. When would be a good time to call you back? For example, this evening or tomorrow morning."
+    ON_INPUT:
+      - ELSE:
+        SET: callback_preference = input
+        THEN: s6_schedule_callback
+
+  s5_not_interested:
+    REASONING: false
+    SET:
+      disposition = "NOT_INTERESTED"
+      outcome = "declined"
+    RESPOND: "No problem, thank you for letting me know. If you change your mind, you can pick up where you left off in the Vi app at any time. Have a good day."
+    THEN: s9_write
+
+  # ---- S6 Act: resume link, callback or hot transfer ----
+  s6_send_link:
+    REASONING: false
+    CALL: pdl01_send_resume_link
+      WITH:
+        msisdn: msisdn
+        lead_id: lead.output.lead_id
+        resume_step: journey.output.drop_step
+      AS: link
+    ON_RESULT:
+      - IF: link.output.sent == true
+        SET:
+          disposition = "RESUME_LINK_SENT"
+          outcome = "resume_link_sent"
+        THEN: s7_link_sent
+      - ELSE:
+        SET:
+          handoff_reason = "Resume link could not be sent"
+          handoff_next_step = "Help the customer finish the journey"
+          disposition = "SYSTEM_FAILURE"
+        THEN: s6_hot_transfer_failure
+
+  s6_schedule_callback:
+    REASONING: false
+    CALL: a07_schedule_callback
+      WITH:
+        msisdn: msisdn
+        lead_id: lead.output.lead_id
+        preference: callback_preference
+      AS: callback
+    SET:
+      disposition = "CALLBACK_SCHEDULED"
+      outcome = "callback_scheduled"
+    THEN: s7_callback_confirm
+
+  s6_hot_transfer:
+    REASONING: false
+    SET:
+      handoff_reason = "Customer wants an advisor to complete the journey"
+      handoff_next_step = "Complete the dropped journey with the customer now"
+      disposition = "HOT_TRANSFERRED"
+      outcome = "hot_transfer"
+    THEN: x1_handoff
+
+  s6_hot_transfer_failure:
+    REASONING: false
+    THEN: x1_handoff
+
+  # ---- S7 Wrap-up ----
+  s7_link_sent:
+    REASONING: false
+    RESPOND: "Done. I've sent the link to this number by SMS and WhatsApp. It opens {{journey.output.drop_label}} with your details already filled in. Is there anything else I can help you with?"
+    ON_INPUT:
+      - IF: input matches "(advisor|person|human|someone|talk to)"
+        THEN: s6_hot_transfer
+      - ELSE:
+        THEN: s8_farewell
+
+  s7_callback_confirm:
+    REASONING: false
+    RESPOND: "Done. We'll call you back {{callback.output.slot}}. Thank you, and have a good day."
+    THEN: s9_write
+
+  s8_farewell:
+    REASONING: false
+    RESPOND: "Thank you for choosing Vi. Have a good day."
+    THEN: s9_write
+
+  # ---- S9 Post-call: disposition, CRM and conversion attribution (A11) ----
+  s9_write:
+    REASONING: false
+    CALL: a11_write_post_call
+      WITH:
+        msisdn: msisdn
+        disposition: disposition
+        summary: "Prepaid dropped lead {{lead.output.lead_id}}. Journey {{journey.output.journey}} stopped at {{journey.output.drop_step}}. Cause {{resolution.output.cause}}. Customer said: {{customer_reason}}. Attribution {{link.output.attribution_id}}. Outcome {{outcome}}."
+        outcome: outcome
+      AS: post_call
+    THEN: COMPLETE
+
+  # ---- Exception states ----
+  x1_handoff:
+    REASONING: false
+    CALL: a09_create_handoff
+      WITH:
+        msisdn: msisdn
+        queue: "PREPAID_SALES_DESK"
+        reason: handoff_reason
+        summary: "Prepaid dropped lead {{lead.output.lead_id}}: {{journey.output.journey_label}} stopped at {{journey.output.drop_label}}. Cause {{resolution.output.cause}}. Plan {{journey.output.plan}} {{journey.output.amount}}."
+        recommended_next_step: handoff_next_step
+      AS: handoff
+    RESPOND: "I'm connecting you to a Vi advisor now, who will have the details of your order. Please stay on the line."
+    THEN: x1_post_call
+
+  x1_post_call:
+    REASONING: false
+    CALL: a11_write_post_call
+      WITH:
+        msisdn: msisdn
+        disposition: disposition
+        summary: "Prepaid dropped lead {{lead.output.lead_id}} transferred: {{handoff_reason}}"
+        outcome: "handoff"
+      AS: post_call
+    THEN: ESCALATE with REASON: "Prepaid sales hot transfer"
+
+  x2_fallback:
+    REASONING: false
+    SET:
+      handoff_reason = "Clarification failed twice"
+      handoff_next_step = "Continue the journey-recovery conversation"
+      disposition = "HOT_TRANSFERRED"
+      outcome = "clarify_failed"
+    THEN: x1_handoff
+
+  x3_wrong_party:
+    REASONING: false
+    RESPOND: "Sorry for the trouble. Thank you for your time. Goodbye."
+    THEN: s9_write
+
+  x4_opt_out:
+    REASONING: false
+    CALL: a06_record_opt_out
+      WITH:
+        msisdn: msisdn
+        campaign: campaign
+      AS: opt_out
+    SET:
+      disposition = "OPT_OUT"
+      outcome = "opted_out"
+    RESPOND: "Understood. I've recorded that you don't want these calls, and we won't call you about this again. Goodbye."
+    THEN: s9_write

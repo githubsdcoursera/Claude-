@@ -1,0 +1,429 @@
+AGENT: UC7_Upgrade_Supervisor
+VERSION: "1.0"
+GOAL: |
+  Convert eligible prepaid customers to postpaid on the same SIM and number (S0-S9): take the eligible,
+  propensity-ranked lead, pass the consent/DND/window/circle gate, disclose AI and recording, confirm the
+  right party, run catalogue, eligibility and credit checks, and give the exact comparison of the best-fit
+  postpaid plan against the customer's current spend. A decline gets details by SMS; a request for a person
+  gets a hot transfer; an acceptance gets consent and OTP, then the same-SIM order and e-KYC link. Confirm the
+  migration and first bill, then track activation and the 30-day check-in.
+
+PERSONA: |
+  Vi's virtual assistant on a phone call. Clear and honest about value: compares like for like, never
+  overstates savings, never pressures. Reads plan prices and benefits exactly as the catalogue returns them.
+
+LIMITATIONS:
+  - "Never quotes a plan, price or benefit that the catalogue did not return"
+  - "Cannot create an order without explicit consent and a verified OTP"
+  - "Does not call customers in circles excluded from the pilot"
+
+EXECUTION:
+  session_idle_timeout: 120000
+  voice_latency_target: 800
+  tool_timeout: 8000
+
+TOOLS:
+  #include-tools: a07_get_upgrade_lead, a06_compliance_gate, a06_record_opt_out, a15_get_upgrade_offer, a08_record_consent, a04_send_otp, a04_verify_otp, a08_create_migration_order, a08_send_sms, a11_schedule_activation_tracking, a09_create_handoff, a11_write_post_call
+
+MEMORY:
+  session:
+    - msisdn
+    - campaign
+    - lead
+    - gate
+    - offer
+    - consent
+    - otp
+    - otp_said
+    - otp_check
+    - otp_attempts
+    - idem_key
+    - order
+    - sms
+    - tracking
+    - disposition
+    - outcome
+    - handoff_reason
+    - handoff_next_step
+    - handoff
+    - post_call
+    - opt_out
+    - spoken_language
+
+INTENTS:
+  human_escalation: "Caller asks to speak to a person, an agent or an advisor."
+
+ESCALATE:
+  triggers:
+    - WHEN: user.sentiment == "very_negative" OR user.sentiment == "frustrated"
+      REASON: "Negative sentiment persisted"
+      PRIORITY: high
+      TAGS: [uc7, upgrade, sentiment]
+  context_for_human:
+    - msisdn
+    - offer
+    - consent
+    - order
+    - handoff_reason
+    - handoff_next_step
+    - conversation_transcript
+  routing:
+    queue: "POSTPAID_TELESALES"
+    skill_tags: [postpaid, upgrade]
+
+FLOW:
+  global_digressions:
+    - INTENT: opt_out_request
+      KEYWORDS: ["stop calling", "don't call", "do not call", "opt out", "unsubscribe", "remove my number", "call mat karo"]
+      GOTO: x4_opt_out
+    - INTENT: human_request
+      KEYWORDS: ["speak to a person", "talk to a person", "talk to someone", "real person", "human agent", "speak to an agent", "talk to an agent", "speak to an advisor", "talk to an advisor", "agent se baat"]
+      GOTO: x1_hot_transfer
+
+  # ---- S0 Eligible base and propensity (A07) ----
+  s0_trigger:
+    REASONING: false
+    SET:
+      msisdn = FIRST_NON_EMPTY(session.messageMetadata.msisdn, REGEX_EXTRACT(input, "msisdn=(\\d{10})", 1), customer_id)
+      campaign = FIRST_NON_EMPTY(session.messageMetadata.campaign, REGEX_EXTRACT(input, "campaign=(\\w+)", 1), "UPGRADE_PREPAID_TO_POSTPAID")
+      otp_attempts = 0
+      disposition = "IN_PROGRESS"
+    THEN: s0_lead
+
+  s0_lead:
+    REASONING: false
+    CALL: a07_get_upgrade_lead
+      WITH:
+        msisdn: msisdn
+      AS: lead
+    ON_RESULT:
+      - IF: lead.output.callable == true
+        THEN: s0_compliance
+      - ELSE:
+        SET:
+          disposition = "NOT_IN_ELIGIBLE_BASE"
+          outcome = "no_call"
+        THEN: s9_write
+
+  # ---- Consent / DND / window / circle gate (A06): fail closed ----
+  s0_compliance:
+    REASONING: false
+    CALL: a06_compliance_gate
+      WITH:
+        msisdn: msisdn
+        campaign: campaign
+      AS: gate
+    ON_RESULT:
+      - IF: gate.output.allowed == true
+        THEN: s1_disclose
+      - ELSE:
+        SET:
+          disposition = "COMPLIANCE_STOP"
+          outcome = FIRST_NON_EMPTY(gate.output.stop_reason, "compliance_gate_unavailable")
+        THEN: s9_write
+
+  # ---- S1 Disclose ----
+  s1_disclose:
+    REASONING: false
+    RESPOND: "Namaste, this is Vi's virtual assistant. I am an AI, and this call is recorded for quality and training. Would you like to continue in English or Hindi?"
+    ON_INPUT:
+      - IF: input matches "(hindi|हिंदी|hindee)"
+        SET: spoken_language = "hi"
+        THEN: s2_right_party
+      - ELSE:
+        SET: spoken_language = "en"
+        THEN: s2_right_party
+
+  # ---- S2 Right party ----
+  s2_right_party:
+    REASONING: false
+    MAX_ATTEMPTS: 2
+    ON_EXHAUSTED: x2_fallback
+    RESPOND: "Am I speaking with {{gate.output.first_name}}?"
+    ON_INPUT:
+      - IF: input matches "(^|[^a-z])(yes|yeah|yep|speaking|haan|ha|han|ji|bol raha|bol rahi|that's me|it is me)([^a-z]|$)"
+        THEN: s3_offer
+      - IF: input matches "(^|[^a-z])(no|nahi|nahin|wrong number|not me|not here)([^a-z]|$)"
+        SET:
+          disposition = "WRONG_PARTY"
+          outcome = "right_party_not_confirmed"
+        THEN: x3_wrong_party
+      - ELSE:
+        RESPOND: "Sorry, am I speaking with {{gate.output.first_name}}? Please say yes or no."
+        THEN: s2_right_party
+
+  # ---- S3/S5 Catalogue, eligibility and credit check; exact comparison (A15) ----
+  s3_offer:
+    REASONING: false
+    CALL: a15_get_upgrade_offer
+      WITH:
+        msisdn: msisdn
+      AS: offer
+    ON_RESULT:
+      - IF: offer.output.eligible == true
+        THEN: s5_compare
+      - IF: offer.output.reason == "credit_check_not_passed"
+        SET:
+          disposition = "NOT_ELIGIBLE_CREDIT"
+          outcome = "credit_check_not_passed"
+        THEN: s5_not_eligible
+      - ELSE:
+        SET:
+          handoff_reason = "Upgrade offer unavailable"
+          handoff_next_step = "Check eligibility and offer the upgrade"
+          disposition = "SYSTEM_FAILURE"
+        THEN: x1_handoff
+
+  s5_compare:
+    REASONING: false
+    MAX_ATTEMPTS: 2
+    ON_EXHAUSTED: x2_fallback
+    RESPOND: "Thanks, {{gate.output.first_name}}. You're on {{offer.output.current_plan}} and spend about {{offer.output.current_spend}}. On postpaid, {{offer.output.plan_name}} is {{offer.output.price}} with {{offer.output.benefit}}. You keep the same SIM and the same number. Would you like to switch?"
+    ON_INPUT:
+      - IF: input matches "(^|[^a-z])(yes|yeah|yep|sure|okay|ok|switch|go ahead|haan|ha|han|ji|kar do)([^a-z]|$)"
+        THEN: s6_consent
+      - IF: input matches "(^|[^a-z])(no|nahi|nahin|not now|later|not interested|don't|dont)([^a-z]|$)"
+        SET:
+          disposition = "DECLINED_SMS_SENT"
+          outcome = "declined"
+        THEN: s5_declined
+      - ELSE:
+        RESPOND: "Would you like to switch to {{offer.output.plan_name}} at {{offer.output.price}}? You can also ask to speak to an advisor."
+        THEN: s5_compare
+
+  s5_not_eligible:
+    REASONING: false
+    RESPOND: "Thanks, {{gate.output.first_name}}. Right now I'm not able to offer a postpaid plan on this number, so there's nothing for you to do. Thank you for your time and for being with Vi."
+    THEN: s9_write
+
+  s5_declined:
+    REASONING: false
+    CALL: a08_send_sms
+      WITH:
+        msisdn: msisdn
+        template: "upgrade_details"
+        ref_id: offer.output.plan_id
+      AS: sms
+    THEN: s5_declined_say
+
+  s5_declined_say:
+    REASONING: false
+    RESPOND: "No problem. I've sent the details of {{offer.output.plan_name}} to you by SMS in case you'd like to switch later. Thank you for your time."
+    THEN: s9_write
+
+  # ---- S6 Confirm and act: read-back, consent, OTP, same-SIM order and e-KYC (A08) ----
+  s6_consent:
+    REASONING: false
+    MAX_ATTEMPTS: 2
+    ON_EXHAUSTED: s5_declined
+    SET:
+      idem_key = UNIQUE_ID(16)
+    RESPOND: "To confirm: move your number to {{offer.output.plan_name}} postpaid at {{offer.output.price}}, with {{offer.output.benefit}}. Your SIM and number stay the same, and your first bill will come {{offer.output.first_bill}}. Do you agree?"
+    ON_INPUT:
+      - IF: input matches "(^|[^a-z])(yes|i agree|agree|yeah|yep|sure|okay|ok|haan|ha|han|ji|manzoor)([^a-z]|$)"
+        THEN: s6_record_consent
+      - IF: input matches "(^|[^a-z])(no|nahi|nahin|don't|dont|cancel)([^a-z]|$)"
+        SET:
+          disposition = "DECLINED_SMS_SENT"
+          outcome = "declined_at_consent"
+        THEN: s5_declined
+      - ELSE:
+        RESPOND: "Please say yes if you agree to switch, or no to cancel."
+        THEN: s6_consent
+
+  s6_record_consent:
+    REASONING: false
+    CALL: a08_record_consent
+      WITH:
+        msisdn: msisdn
+        action: offer.output.plan_id
+        price: offer.output.price
+      AS: consent
+    THEN: s6_send_otp
+
+  s6_send_otp:
+    REASONING: false
+    CALL: a04_send_otp
+      WITH:
+        msisdn: msisdn
+        purpose: "Prepaid to postpaid migration"
+      AS: otp
+    ON_RESULT:
+      - IF: otp.output.sent == true
+        THEN: s6_ask_otp
+      - ELSE:
+        THEN: x_system_failure
+
+  s6_ask_otp:
+    REASONING: false
+    RESPOND: "I've sent a six-digit OTP to your Vi number. Please read it out."
+    ON_INPUT:
+      - IF: input matches "[0-9]"
+        SET: otp_said = REGEX_REPLACE(input, "\\D", "")
+        THEN: s6_verify_otp
+      - ELSE:
+        RESPOND: "Please read out the six digits of the OTP."
+        THEN: s6_ask_otp
+
+  s6_verify_otp:
+    REASONING: false
+    CALL: a04_verify_otp
+      WITH:
+        msisdn: msisdn
+        otp_ref: otp.output.otp_ref
+        otp: otp_said
+      AS: otp_check
+    ON_RESULT:
+      - IF: otp_check.output.verified == true
+        THEN: s6_order
+      - IF: otp_attempts >= 2
+        THEN: x1_otp_failed
+      - ELSE:
+        SET:
+          otp_attempts = ADD(otp_attempts, 1)
+        THEN: s6_otp_retry
+
+  s6_otp_retry:
+    REASONING: false
+    RESPOND: "That OTP didn't match. Please read out the six digits again."
+    ON_INPUT:
+      - IF: input matches "[0-9]"
+        SET: otp_said = REGEX_REPLACE(input, "\\D", "")
+        THEN: s6_verify_otp
+      - ELSE:
+        THEN: s6_otp_retry
+
+  s6_order:
+    REASONING: false
+    CALL: a08_create_migration_order
+      WITH:
+        msisdn: msisdn
+        plan_id: offer.output.plan_id
+        consent_ref: consent.output.consent_ref
+        otp_ref: otp.output.otp_ref
+        idempotency_key: idem_key
+      AS: order
+    ON_RESULT:
+      - IF: order.output.success == true
+        SET:
+          disposition = "ORDER_CREATED"
+          outcome = "migration_order_created"
+        THEN: s7_sms
+      - ELSE:
+        SET:
+          handoff_reason = "Migration order could not be created"
+          handoff_next_step = "Create the consented same-SIM migration order"
+          disposition = "HANDOFF_SYSTEM_FAILURE"
+        THEN: x1_handoff
+
+  # ---- S7 Confirm migration and first bill ----
+  s7_sms:
+    REASONING: false
+    CALL: a08_send_sms
+      WITH:
+        msisdn: msisdn
+        template: "order_confirmation"
+        ref_id: order.output.order_ref
+      AS: sms
+    THEN: s7_confirm
+
+  s7_confirm:
+    REASONING: false
+    RESPOND: "Done. Your order reference is {{order.output.order_ref}}. I've sent you an SMS with a secure e-KYC link; once you complete it, your number moves to postpaid {{order.output.migration_window}}, and your first bill will come {{offer.output.first_bill}}. Thank you for choosing Vi postpaid."
+    THEN: s9_track
+
+  # ---- S9 Post-call: activation tracking and 30-day check-in (A11) ----
+  s9_track:
+    REASONING: false
+    CALL: a11_schedule_activation_tracking
+      WITH:
+        msisdn: msisdn
+        order_ref: order.output.order_ref
+      AS: tracking
+    THEN: s9_write
+
+  s9_write:
+    REASONING: false
+    CALL: a11_write_post_call
+      WITH:
+        msisdn: msisdn
+        disposition: disposition
+        summary: "UC7 upgrade call. Current {{offer.output.current_plan}} at {{offer.output.current_spend}}. Offered {{offer.output.plan_id}} {{offer.output.price}}. Order {{order.output.order_ref}}. Outcome {{outcome}}."
+        outcome: outcome
+      AS: post_call
+    THEN: COMPLETE
+
+  # ---- Exception states ----
+  x1_handoff:
+    REASONING: false
+    CALL: a09_create_handoff
+      WITH:
+        msisdn: msisdn
+        queue: "POSTPAID_TELESALES"
+        reason: handoff_reason
+        summary: "UC7 upgrade call. Current {{offer.output.current_plan}} at {{offer.output.current_spend}}. Offered {{offer.output.plan_name}} {{offer.output.price}}. Reason: {{handoff_reason}}."
+        recommended_next_step: handoff_next_step
+      AS: handoff
+    RESPOND: "I'm connecting you to a Vi postpaid advisor now, who will have the details of this call. Please stay on the line."
+    THEN: x1_post_call
+
+  x1_post_call:
+    REASONING: false
+    CALL: a11_write_post_call
+      WITH:
+        msisdn: msisdn
+        disposition: disposition
+        summary: "UC7 upgrade call hot-transferred: {{handoff_reason}}"
+        outcome: "handoff"
+      AS: post_call
+    THEN: ESCALATE with REASON: "Postpaid telesales hot transfer"
+
+  x1_hot_transfer:
+    REASONING: false
+    SET:
+      handoff_reason = "Customer wants to speak to an advisor"
+      handoff_next_step = "Continue the upgrade conversation"
+      disposition = "HOT_TRANSFERRED"
+    THEN: x1_handoff
+
+  x1_otp_failed:
+    REASONING: false
+    SET:
+      handoff_reason = "OTP verification failed three times"
+      handoff_next_step = "Re-verify the customer before creating the consented order"
+      disposition = "HANDOFF_OTP_FAILED"
+    THEN: x1_handoff
+
+  x2_fallback:
+    REASONING: false
+    SET:
+      handoff_reason = "Clarification failed twice"
+      handoff_next_step = "Continue the upgrade conversation"
+      disposition = "HANDOFF_CLARIFY_FAILED"
+    THEN: x1_handoff
+
+  x3_wrong_party:
+    REASONING: false
+    RESPOND: "Sorry for the trouble. Thank you for your time. Goodbye."
+    THEN: s9_write
+
+  x4_opt_out:
+    REASONING: false
+    CALL: a06_record_opt_out
+      WITH:
+        msisdn: msisdn
+        campaign: campaign
+      AS: opt_out
+    SET:
+      disposition = "OPT_OUT"
+      outcome = "opted_out"
+    RESPOND: "Understood. I've recorded that you don't want these calls, and we won't call you about this again. Goodbye."
+    THEN: s9_write
+
+  x_system_failure:
+    REASONING: false
+    SET:
+      handoff_reason = "System call failed"
+      handoff_next_step = "Complete the upgrade manually"
+      disposition = "HANDOFF_SYSTEM_FAILURE"
+    THEN: x1_handoff

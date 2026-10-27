@@ -1,0 +1,23 @@
+{
+  "workflows": {
+    "a09_supervisor_join": "01a17d1e-76c9-7cbd-915c-0d779554abaa",
+    "a11_record_outcome": "01a17d1e-7e47-7a44-96dd-1914125d80c0",
+    "a25_get_precall_brief": "01a17d1e-85d4-7824-aef6-983fd60cecb1",
+    "a26_enable_dial": "01a17d1f-6730-7927-ab5a-fff725a34aed",
+    "a26_get_call_script": "01a17d1f-6eb7-733f-bfda-e83a36ac430d",
+    "a27_append_live_log": "01a17d20-51a6-79f3-9d23-c320f93cc4ca",
+    "a27_score_segment": "01a17d20-59e0-78c1-b1af-7acef596b48d",
+    "a28_next_best_action": "01a17d20-618f-71ca-b801-bb34864e07d1"
+  },
+  "workflow_versions": {
+    "a09_supervisor_join": "v1.0.3",
+    "a11_record_outcome": "v1.0.3",
+    "a25_get_precall_brief": "v1.0.3",
+    "a26_enable_dial": "v1.0.3",
+    "a26_get_call_script": "v1.0.3",
+    "a27_append_live_log": "v1.0.3",
+    "a27_score_segment": "v1.0.3",
+    "a28_next_best_action": "v1.0.3"
+  },
+  "projectId": "01a17d1e-6cee-7e45-bb2a-c3e8f0269129"
+}

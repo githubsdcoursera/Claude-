@@ -1,0 +1,10 @@
+{
+  "name": "Vi UC9 Prepaid Network Call Assistant",
+  "description": "UC9 Prepaid Network-Side Call Assistant: opt-in and CFB/CFNRy/CFNRc provisioning; forwarded-call disclosure, rules, reputation/VIP check, spam block, message capture, urgent push with tap-to-take, summary read-back and delivery to app/SMS, entitlement metering. Backend systems are MOCK workflows.",
+  "entry_agent": "UC9_Call_Assistant",
+  "model": "gemma4",
+  "agents": { "UC9_Call_Assistant": "agents/uc9_call_assistant.agent.abl" },
+  "shared_mocks": ["a11_write_post_call"],
+  "smoke_inputs": { "subscriber": "9850000001", "caller": "9853333333", "reason": "smoke", "purpose": "smoke", "caller_name": "Test", "summary": "smoke", "category": "other", "callback_requested": "false", "outcome": "smoke", "msisdn": "9850000001", "disposition": "SMOKE" },
+  "deployment_label": "uc9-v1"
+}

@@ -1,0 +1,39 @@
+{
+  "workflows": {
+    "a03_get_customer_360": "01a17d2f-f5ae-71a8-8aaa-84817f1e659f",
+    "a12_get_recent_charges": "01a17d2f-fcf6-75a2-9245-1c18d6ccfeb4",
+    "a12_send_recharge_link": "01a17d30-0462-743e-9163-d38fc2fa98b7",
+    "a13_get_plans": "01a17d30-e9f1-7c3e-8568-6f688c90fc68",
+    "a13_buy_data_pack": "01a17d30-f709-78ee-8ac7-d0ee9b36f6ad",
+    "a14_list_vas": "01a17d31-ce0d-7be4-a081-5fcb2c133e2d",
+    "a14_deactivate_vas": "01a17d31-dc88-7fc1-8428-8546b1fb834f",
+    "a14_network_status": "01a17d31-e41b-73c7-b7c3-47b67f247da4",
+    "a14_raise_complaint": "01a17d32-c086-7abd-866c-87ada485cd92",
+    "a10_kb_answer": "01a17d32-d078-77d5-a7ab-3d02fe0d3d4f",
+    "a04_send_otp": "01a17d33-af95-704f-b470-8b9900db462e",
+    "a04_verify_otp": "01a17d33-b7c5-7e49-b2c6-387ff5aed14c",
+    "a08_record_consent": "01a17d33-c50f-76a9-b1a4-b0392405ad15",
+    "a11_record_csat": "01a17d34-a0a1-7a74-b319-98311c4ede3a",
+    "a09_create_handoff": "01a17d34-a8d0-7542-acb3-147220628b01",
+    "a11_write_post_call": "01a17d3a-8649-7cd2-8704-aed198daff2f"
+  },
+  "workflow_versions": {
+    "a03_get_customer_360": "v1.0.1",
+    "a12_get_recent_charges": "v1.0.1",
+    "a12_send_recharge_link": "v1.0.1",
+    "a13_get_plans": "v1.0.1",
+    "a13_buy_data_pack": "v1.0.1",
+    "a14_list_vas": "v1.0.1",
+    "a14_deactivate_vas": "v1.0.1",
+    "a14_network_status": "v1.0.1",
+    "a14_raise_complaint": "v1.0.1",
+    "a10_kb_answer": "v1.0.1",
+    "a04_send_otp": "v1.0.1",
+    "a04_verify_otp": "v1.0.1",
+    "a08_record_consent": "v1.0.1",
+    "a11_record_csat": "v1.0.1",
+    "a09_create_handoff": "v1.0.1",
+    "a11_write_post_call": "v1.0.0"
+  },
+  "projectId": "01a17d2f-eaaa-7cc9-9bf7-4ebd99921c79"
+}

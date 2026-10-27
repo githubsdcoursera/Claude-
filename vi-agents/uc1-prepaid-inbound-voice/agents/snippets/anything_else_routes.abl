@@ -1,0 +1,43 @@
+ON_INPUT:
+  - IF: input matches "(deduct|deducted|cut|charged|why.*balance|balance.*less|kat gaya)"
+    SET:
+      intent = "subscriptions"
+      stated_request = input
+    THEN: s5_charges
+  - IF: input matches "(hello tune|caller tune|subscription|vas|movies|stop service|deactivate)"
+    SET:
+      intent = "subscriptions"
+      stated_request = input
+    THEN: s5_vas
+  - IF: input matches "(network|signal|call drop|no service|coverage|tower|range)"
+    SET:
+      intent = "network"
+      stated_request = input
+    THEN: s5_network
+  - IF: input matches "(sim|port|upc|lost my phone|replacement)"
+    SET:
+      intent = "SIM"
+      stated_request = input
+    THEN: s5_sim
+  - IF: input matches "(data|internet|gb|net pack)"
+    SET:
+      intent = "data"
+      stated_request = input
+    THEN: s5_data
+  - IF: input matches "(recharge|plan|pack|offer)"
+    SET:
+      intent = "recharge"
+      stated_request = input
+    THEN: s5_recharge
+  - IF: input matches "(balance|validity|expiry|expire|kitna|main account)"
+    SET:
+      intent = "balance"
+      stated_request = input
+    THEN: s5_balance
+  - IF: input matches "(^|[^a-z])(no|nahi|nahin|nothing|that's all|thats all|bas|that is all|no thanks)([^a-z]|$)"
+    THEN: s7_csat
+  - IF: input matches "(^|[^a-z])(yes|yeah|haan|ha|ji)([^a-z]|$)"
+    THEN: s4_ask_again
+  - ELSE:
+    SET: stated_request = input
+    THEN: s4_classify

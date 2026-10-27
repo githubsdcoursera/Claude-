@@ -1,0 +1,10 @@
+{
+  "name": "Vi UC1 Prepaid Inbound Care Voice",
+  "description": "UC1 Inbound Customer Service Voice Agent (prepaid): 360 context, intent with max two clarifications, A12 Recharge & Billing, A13 Plans & Data, A14 VAS & Complaints, A10 knowledge, OTP for changes, CSAT, warm transfer. Backend systems are MOCK workflows.",
+  "entry_agent": "UC1_Care_Supervisor",
+  "model": "gemma4",
+  "agents": { "UC1_Care_Supervisor": "agents/uc1_care_supervisor.agent.abl" },
+  "shared_mocks": ["a03_get_customer_360", "a12_get_recent_charges", "a12_send_recharge_link", "a13_get_plans", "a13_buy_data_pack", "a14_list_vas", "a14_deactivate_vas", "a14_network_status", "a14_raise_complaint", "a10_kb_answer", "a04_send_otp", "a04_verify_otp", "a08_record_consent", "a11_record_csat", "a09_create_handoff", "a11_write_post_call"],
+  "smoke_inputs": { "msisdn": "9830000001", "need": "recharge", "plan_id": "RC-299", "addon_id": "DP-19", "vas_id": "VAS-HT", "consent_ref": "CNS-TEST", "otp_ref": "OTP-TEST", "idempotency_key": "smoke-1", "issue": "no signal", "topic": "porting", "purpose": "smoke", "otp": "123456", "action": "smoke", "price": "₹19", "score": "5", "queue": "CARE_DESK", "reason": "smoke", "summary": "smoke", "recommended_next_step": "smoke", "disposition": "SMOKE", "outcome": "smoke" },
+  "deployment_label": "uc1-v1"
+}

@@ -1,0 +1,300 @@
+AGENT: UC9_Call_Assistant
+VERSION: "1.0"
+GOAL: |
+  Answer calls the Vi network forwards when an opted-in prepaid subscriber is busy, does not answer or is
+  unreachable. Disclose that the caller is speaking to an AI and that the call is transcribed, apply the
+  subscriber's greeting and rules, check the caller's reputation and the VIP list, block spam or fraud, or
+  capture the caller's name, purpose, message and callback request; push urgent or VIP calls to the
+  subscriber with a tap-to-take bridge; summarise and classify the message, read it back, and deliver it to
+  the Vi App and SMS within 30 seconds. Meter the entitlement. Also provisions call forwarding on opt-in.
+
+PERSONA: |
+  A polite personal call assistant answering on the subscriber's behalf. Brief, neutral and discreet: never
+  reveals the subscriber's whereabouts, schedule or other numbers, and never promises a call back on the
+  subscriber's behalf.
+
+LIMITATIONS:
+  - "Never shares where the subscriber is, what they are doing, or any other personal details"
+  - "Cannot promise that the subscriber will call back"
+  - "Does not take messages from numbers flagged as spam or fraud"
+
+EXECUTION:
+  session_idle_timeout: 120000
+  voice_latency_target: 800
+  tool_timeout: 6000
+
+TOOLS:
+  #include-tools: a16_get_subscriber_rules, a16_provision_call_forwarding, a16_check_caller_reputation, a16_block_call, a17_push_urgent, a17_deliver_summary, a11_meter_entitlement, a11_write_post_call
+
+MEMORY:
+  session:
+    - subscriber
+    - caller
+    - forward_reason
+    - mode
+    - rules
+    - provision
+    - reputation
+    - blocked
+    - caller_name
+    - purpose
+    - urgent
+    - push
+    - message_text
+    - callback_requested
+    - msg_summary
+    - msg_category
+    - delivery
+    - meter
+    - disposition
+    - outcome
+    - post_call
+
+FLOW:
+  # ---- Trigger: Vi App opt-in, or a call forwarded on busy / no-answer / unreachable ----
+  s0_trigger:
+    REASONING: false
+    SET:
+      subscriber = FIRST_NON_EMPTY(session.messageMetadata.subscriber, REGEX_EXTRACT(input, "subscriber=(\\d{10})", 1), "")
+      caller = FIRST_NON_EMPTY(session.messageMetadata.caller, REGEX_EXTRACT(input, "caller=(\\d{10})", 1), "")
+      forward_reason = FIRST_NON_EMPTY(session.messageMetadata.forward_reason, REGEX_EXTRACT(input, "reason=(\\w+)", 1), "no_answer")
+      mode = FIRST_NON_EMPTY(session.messageMetadata.mode, REGEX_EXTRACT(input, "mode=(\\w+)", 1), "forwarded_call")
+      callback_requested = false
+      urgent = false
+      disposition = "IN_PROGRESS"
+    THEN: s0_rules
+
+  s0_rules:
+    REASONING: false
+    CALL: a16_get_subscriber_rules
+      WITH:
+        subscriber: subscriber
+      AS: rules
+    ON_RESULT:
+      - IF: mode == "opt_in" AND rules.output.opted_in == true
+        THEN: s0_provision
+      - IF: rules.output.opted_in == true
+        THEN: s0_reputation
+      - ELSE:
+        SET:
+          disposition = "NOT_OPTED_IN"
+          outcome = "not_opted_in"
+        THEN: s9_write
+
+  # ---- Opt-in: provision CFB / CFNRy / CFNRc ----
+  s0_provision:
+    REASONING: false
+    CALL: a16_provision_call_forwarding
+      WITH:
+        subscriber: subscriber
+      AS: provision
+    ON_RESULT:
+      - IF: provision.output.provisioned == true
+        SET:
+          disposition = "FORWARDING_PROVISIONED"
+          outcome = "activation"
+        THEN: s0_provision_say
+      - ELSE:
+        SET:
+          disposition = "SYSTEM_FAILURE"
+          outcome = "provisioning_failed"
+        THEN: s9_write
+
+  s0_provision_say:
+    REASONING: false
+    RESPOND: "Your Vi call assistant is now on. Calls will come to the assistant when you're {{provision.output.forwarding_types}}, reference {{provision.output.provisioning_ref}}. Message summaries will appear in the Vi App."
+    THEN: s9_write
+
+  # ---- Reputation and VIP check (A16) ----
+  s0_reputation:
+    REASONING: false
+    CALL: a16_check_caller_reputation
+      WITH:
+        subscriber: subscriber
+        caller: caller
+      AS: reputation
+    ON_RESULT:
+      - IF: reputation.output.category == "spam" AND rules.output.block_spam == true
+        THEN: s1_block
+      - IF: reputation.output.category == "vip"
+        SET: urgent = true
+        THEN: s1_disclose_vip
+      - ELSE:
+        THEN: s1_disclose
+
+  # ---- AI and transcription disclosure (must-say) ----
+  s1_disclose:
+    REASONING: false
+    RESPOND: "Hello, you've reached {{rules.output.first_name}}'s Vi call assistant. I'm an AI, and this call is transcribed and recorded. {{rules.output.greeting}} May I have your name, and what the call is about?"
+    ON_INPUT:
+      - ELSE:
+        SET:
+          purpose = input
+          caller_name = FIRST_NON_EMPTY(REGEX_EXTRACT(input, "(?:this is|my name is|i am|it's|its) ([A-Za-z]+)", 1), "the caller")
+        THEN: s2_urgency
+
+  s1_disclose_vip:
+    REASONING: false
+    RESPOND: "Hello, you've reached {{rules.output.first_name}}'s Vi call assistant. I'm an AI, and this call is transcribed and recorded. I'm letting {{rules.output.first_name}} know you're calling right now. What would you like me to tell them?"
+    ON_INPUT:
+      - ELSE:
+        SET:
+          purpose = input
+          caller_name = FIRST_NON_EMPTY(reputation.output.caller_name, "your VIP contact")
+        THEN: s3_push
+
+  s1_block:
+    REASONING: false
+    CALL: a16_block_call
+      WITH:
+        subscriber: subscriber
+        caller: caller
+        reason: reputation.output.label
+      AS: blocked
+    SET:
+      disposition = "SPAM_BLOCKED"
+      outcome = "spam_blocked"
+    THEN: s1_block_say
+
+  s1_block_say:
+    REASONING: false
+    RESPOND: "This number has been reported for unwanted calls, so I'm unable to take a message. Goodbye."
+    THEN: s9_meter
+
+  # ---- Urgency: subscriber's urgent words or the caller says it's urgent ----
+  s2_urgency:
+    REASONING: false
+    RESPOND: "Thank you. Is it urgent?"
+    ON_INPUT:
+      - IF: input matches "(^|[^a-z])(yes|urgent|emergency|hospital|very important|immediately|haan)([^a-z]|$)"
+        SET: urgent = true
+        THEN: s3_push
+      - ELSE:
+        THEN: s4_message
+
+  # ---- Urgent / VIP push with tap-to-take bridge (A17) ----
+  s3_push:
+    REASONING: false
+    CALL: a17_push_urgent
+      WITH:
+        subscriber: subscriber
+        caller: caller
+        purpose: purpose
+      AS: push
+    ON_RESULT:
+      - IF: push.output.taken == true
+        SET:
+          disposition = "BRIDGED_TO_SUBSCRIBER"
+          outcome = "urgent_push_taken"
+        THEN: s3_bridged
+      - ELSE:
+        THEN: s3_not_taken
+
+  s3_bridged:
+    REASONING: false
+    RESPOND: "{{rules.output.first_name}} is picking up now. Please hold."
+    THEN: s9_meter
+
+  s3_not_taken:
+    REASONING: false
+    RESPOND: "I've sent {{rules.output.first_name}} an urgent alert, but they can't take the call right now. What message would you like me to pass on?"
+    ON_INPUT:
+      - ELSE:
+        SET: message_text = input
+        THEN: s4_callback
+
+  # ---- Capture message and callback ----
+  s4_message:
+    REASONING: false
+    RESPOND: "What message would you like me to pass on?"
+    ON_INPUT:
+      - ELSE:
+        SET: message_text = input
+        THEN: s4_callback
+
+  s4_callback:
+    REASONING: false
+    RESPOND: "Should {{rules.output.first_name}} call you back on the number you're calling from?"
+    ON_INPUT:
+      - IF: input matches "(^|[^a-z])(yes|yeah|please|sure|haan|ji)([^a-z]|$)"
+        SET: callback_requested = true
+        THEN: s5_summarise
+      - ELSE:
+        SET: callback_requested = false
+        THEN: s5_summarise
+
+  # ---- Summarise and classify (A17), then read back ----
+  s5_summarise:
+    REASONING: true
+    GOAL: |
+      Write msg_summary: one short sentence in the third person that tells {{rules.output.first_name}} who called
+      and what they want, using only what the caller said. Caller name: {{caller_name}}. Purpose: "{{purpose}}".
+      Message: "{{message_text}}". Callback requested: {{callback_requested}}. Also set msg_category to exactly
+      one of personal, work, delivery, appointment, sales or other. Set both with the context tool and do not
+      reply to the caller.
+    CONTEXT_UPDATES: [msg_summary, msg_category]
+    EXIT_WHEN: msg_summary IS SET AND msg_category IS SET
+    MAX_TURNS: 2
+    THEN: s5_read_back
+
+  s5_read_back:
+    REASONING: false
+    RESPOND: "I'll pass this on: {{msg_summary}} Is that right?"
+    ON_INPUT:
+      - IF: input matches "(^|[^a-z])(no|not right|wrong|change|actually)([^a-z]|$)"
+        THEN: s5_correct
+      - ELSE:
+        THEN: s6_deliver
+
+  s5_correct:
+    REASONING: false
+    RESPOND: "Sorry about that. Please tell me the message again in a sentence."
+    ON_INPUT:
+      - ELSE:
+        SET:
+          message_text = input
+          msg_summary = input
+        THEN: s6_deliver
+
+  # ---- Deliver to the Vi App and SMS within 30 seconds ----
+  s6_deliver:
+    REASONING: false
+    CALL: a17_deliver_summary
+      WITH:
+        subscriber: subscriber
+        caller: caller
+        caller_name: caller_name
+        summary: msg_summary
+        category: FIRST_NON_EMPTY(msg_category, "other")
+        callback_requested: callback_requested
+      AS: delivery
+    SET:
+      disposition = "MESSAGE_DELIVERED"
+      outcome = "message_delivered"
+    THEN: s6_bye
+
+  s6_bye:
+    REASONING: false
+    RESPOND: "Thank you. I've passed your message to {{rules.output.first_name}}. Goodbye."
+    THEN: s9_meter
+
+  # ---- Eval and entitlement metering (A11) ----
+  s9_meter:
+    REASONING: false
+    CALL: a11_meter_entitlement
+      WITH:
+        subscriber: subscriber
+        outcome: outcome
+      AS: meter
+    THEN: s9_write
+
+  s9_write:
+    REASONING: false
+    CALL: a11_write_post_call
+      WITH:
+        msisdn: subscriber
+        disposition: disposition
+        summary: "UC9 call assistant ({{mode}}, {{forward_reason}}). Caller category {{reputation.output.category}}. Urgent {{urgent}}. Summary: {{msg_summary}} Category {{msg_category}}. Callback {{callback_requested}}."
+        outcome: outcome
+      AS: post_call
+    THEN: COMPLETE

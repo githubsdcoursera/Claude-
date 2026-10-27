@@ -1,0 +1,10 @@
+{
+  "name": "Vi Prepaid Retention Outcall",
+  "description": "Prepaid customer retention outcall (extension of UC8, which v0.9 defines for postpaid): lapse-risk cohort, fix service first, signed offer authority, consent/OTP for chargeable actions, MNP safety, 30/90-day tracking. Backend systems are MOCK workflows.",
+  "entry_agent": "Prepaid_Retention_Supervisor",
+  "model": "gemma4",
+  "agents": { "Prepaid_Retention_Supervisor": "agents/prepaid_retention_supervisor.agent.abl" },
+  "shared_mocks": ["a04_send_otp", "a04_verify_otp", "a08_record_consent", "a06_record_opt_out", "a09_create_handoff", "a11_write_post_call"],
+  "smoke_inputs": { "msisdn": "9810000001", "direction": "outbound", "campaign": "PREPAID_LAPSE_RISK_30D", "reason": "network", "risk_band": "high", "issue": "call drops", "offer_id": "OF-NW-10GB", "action": "offer_applied", "template": "plan_details", "consent_ref": "CNS-TEST", "idempotency_key": "smoke-1", "otp_ref": "OTP-TEST", "otp": "123456", "purpose": "smoke", "price": "no charge", "queue": "RETENTION_DESK", "reason_text": "smoke", "summary": "smoke", "recommended_next_step": "smoke", "disposition": "SMOKE", "outcome": "smoke" },
+  "deployment_label": "prepaid-retention-v1"
+}

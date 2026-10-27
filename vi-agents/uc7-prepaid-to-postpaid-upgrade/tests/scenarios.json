@@ -1,0 +1,22 @@
+[
+  {"name": "accept_upgrade_same_sim_order_ekyc",
+   "turns": ["CALL_START msisdn=9840000001 campaign=UPGRADE_PREPAID_TO_POSTPAID", "English", "yes speaking", "yes, let's switch", "yes I agree", "123456"],
+   "expect": {"tools": ["a07_get_upgrade_lead", "a06_compliance_gate", "a15_get_upgrade_offer", "a08_record_consent", "a04_send_otp", "a04_verify_otp", "a08_create_migration_order", "a08_send_sms", "a11_schedule_activation_tracking", "a11_write_post_call"],
+              "disposition": "ORDER_CREATED", "exit": "complete",
+              "says": ["I am an AI", "spend about ₹640 a month", "Vi Max 501 is ₹501 per month", "same SIM and the same number", "Do you agree", "e-KYC link", "first bill will come on 28 November 2026"]}},
+  {"name": "decline_gets_sms",
+   "turns": ["CALL_START msisdn=9840000001 campaign=UPGRADE_PREPAID_TO_POSTPAID", "English", "yes", "no, not now"],
+   "expect": {"tools": ["a08_send_sms"], "no_tools": ["a08_create_migration_order"], "disposition": "DECLINED_SMS_SENT", "exit": "complete", "says": ["sent the details of Vi Max 501"]}},
+  {"name": "wants_human_hot_transfer",
+   "turns": ["CALL_START msisdn=9840000001 campaign=UPGRADE_PREPAID_TO_POSTPAID", "English", "yes", "can I talk to an advisor about this?"],
+   "expect": {"tools": ["a09_create_handoff"], "disposition": "HOT_TRANSFERRED", "exit": "escalate"}},
+  {"name": "pilot_circle_excluded_no_call",
+   "turns": ["CALL_START msisdn=9840000002 campaign=UPGRADE_PREPAID_TO_POSTPAID"],
+   "expect": {"tools": ["a06_compliance_gate", "a11_write_post_call"], "no_tools": ["a15_get_upgrade_offer"], "disposition": "COMPLIANCE_STOP", "exit": "complete", "never_says": ["virtual assistant"]}},
+  {"name": "credit_check_not_passed",
+   "turns": ["CALL_START msisdn=9840000003 campaign=UPGRADE_PREPAID_TO_POSTPAID", "English", "yes"],
+   "expect": {"tools": ["a15_get_upgrade_offer"], "no_tools": ["a08_record_consent"], "disposition": "NOT_ELIGIBLE_CREDIT", "exit": "complete", "never_says": ["₹501"]}},
+  {"name": "wrong_party",
+   "turns": ["CALL_START msisdn=9840000001 campaign=UPGRADE_PREPAID_TO_POSTPAID", "English", "no, wrong number"],
+   "expect": {"no_tools": ["a15_get_upgrade_offer"], "disposition": "WRONG_PARTY", "exit": "complete"}}
+]
