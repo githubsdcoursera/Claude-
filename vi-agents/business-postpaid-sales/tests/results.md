@@ -1,20 +1,20 @@
 # Test results: Vi Business Postpaid Sales Outcall
 
-6/7 scenarios passed. Run 2026-10-27 14:35 UTC against the draft agent through Arch debug sessions; backend systems are mock workflows.
+7/7 scenarios passed. Run 2026-10-27 20:16 UTC against the draft agent through Arch debug sessions; backend systems are mock workflows.
 
 | Scenario | Result | Disposition | End | Slowest turn | Notes |
 |---|---|---|---|---:|---|
-| qualified_document_link_sent | FAIL | DOCUMENT_LINK_SENT | complete | 279 ms | never said: Is this a good time |
-| objection_answered_from_approved_knowledge_then_visit | PASS | APPOINTMENT_BOOKED | complete | 531 ms |  |
-| not_a_good_time_callback | PASS | CALLBACK | complete | 491 ms |  |
-| dnd_lead_not_called | PASS | OPT_OUT | complete | 448 ms |  |
-| individual_not_eligible | PASS | NOT_ELIGIBLE | complete | 538 ms |  |
-| not_interested | PASS | NOT_INTERESTED | complete | 337 ms |  |
-| discount_request_goes_to_sales_advisor | PASS | HOT_TRANSFERRED | escalate | 512 ms |  |
+| qualified_document_link_sent | PASS | DOCUMENT_LINK_SENT | complete | 536 ms |  |
+| objection_answered_from_approved_knowledge_then_visit | PASS | APPOINTMENT_BOOKED | complete | 602 ms |  |
+| not_a_good_time_callback | PASS | CALLBACK | complete | 506 ms |  |
+| dnd_lead_not_called | PASS | OPT_OUT | complete | 447 ms |  |
+| individual_not_eligible | PASS | NOT_ELIGIBLE | complete | 473 ms |  |
+| not_interested | PASS | NOT_INTERESTED | complete | 307 ms |  |
+| discount_request_goes_to_sales_advisor | PASS | HOT_TRANSFERRED | escalate | 571 ms |  |
 
 ## qualified_document_link_sent
 
-Session `13f0116e-78c8-4859-a0ce-c594312ba43e`. Tools: bps01_get_lead, bps01_compliance_gate, bps03_get_plan_options, bps04_send_document_link, a11_write_post_call.
+Session `cd7fd209-0924-4a59-9b1a-187105b6d4aa`. Tools: bps01_get_lead, bps01_compliance_gate, bps03_get_plan_options, bps04_send_document_link, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -29,7 +29,7 @@ Session `13f0116e-78c8-4859-a0ce-c594312ba43e`. Tools: bps01_get_lead, bps01_com
 
 ## objection_answered_from_approved_knowledge_then_visit
 
-Session `ea0478ab-7cbb-4bc5-a7cc-84cf956e4144`. Tools: bps01_get_lead, bps01_compliance_gate, bps03_get_plan_options, a10_kb_answer, bps05_book_appointment, a11_write_post_call.
+Session `712021a2-63d8-46a8-a6ce-47a32701f3e9`. Tools: bps01_get_lead, bps01_compliance_gate, bps03_get_plan_options, a10_kb_answer, bps05_book_appointment, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -46,7 +46,7 @@ Session `ea0478ab-7cbb-4bc5-a7cc-84cf956e4144`. Tools: bps01_get_lead, bps01_com
 
 ## not_a_good_time_callback
 
-Session `4e9d1556-1708-4777-bd36-50c6ed9548a7`. Tools: bps01_get_lead, bps01_compliance_gate, bps01_schedule_callback, a11_write_post_call.
+Session `1a6a63fb-a702-4934-b2f3-7b4a39f47891`. Tools: bps01_get_lead, bps01_compliance_gate, bps01_schedule_callback, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -56,7 +56,7 @@ Session `4e9d1556-1708-4777-bd36-50c6ed9548a7`. Tools: bps01_get_lead, bps01_com
 
 ## dnd_lead_not_called
 
-Session `377b98a2-4422-4b6e-8237-ae08f6f9e408`. Tools: bps01_get_lead, bps01_compliance_gate, a11_write_post_call.
+Session `6fbe6017-b1c9-44fe-954a-eddef3220c4b`. Tools: bps01_get_lead, bps01_compliance_gate, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -64,7 +64,7 @@ Session `377b98a2-4422-4b6e-8237-ae08f6f9e408`. Tools: bps01_get_lead, bps01_com
 
 ## individual_not_eligible
 
-Session `5a6ca864-2176-4f02-bd1f-301a4935bfa6`. Tools: bps01_get_lead, bps01_compliance_gate, a11_write_post_call.
+Session `9b04d024-e88d-485c-a18f-4f4ca1e49baa`. Tools: bps01_get_lead, bps01_compliance_gate, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -77,7 +77,7 @@ Session `5a6ca864-2176-4f02-bd1f-301a4935bfa6`. Tools: bps01_get_lead, bps01_com
 
 ## not_interested
 
-Session `362d8821-58e9-4c96-ade1-cd1ee85e08e7`. Tools: bps01_get_lead, bps01_compliance_gate, bps03_get_plan_options, a11_write_post_call.
+Session `6f7b9d79-27ac-4578-9aac-0ec3707276e2`. Tools: bps01_get_lead, bps01_compliance_gate, bps03_get_plan_options, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -91,7 +91,7 @@ Session `362d8821-58e9-4c96-ade1-cd1ee85e08e7`. Tools: bps01_get_lead, bps01_com
 
 ## discount_request_goes_to_sales_advisor
 
-Session `13b5fe0b-0124-4e22-a905-a757e744e60f`. Tools: bps01_get_lead, bps01_compliance_gate, bps03_get_plan_options, bps06_create_sales_handoff, a11_write_post_call.
+Session `394b89e9-74d5-45f4-8342-5549706e548e`. Tools: bps01_get_lead, bps01_compliance_gate, bps03_get_plan_options, bps06_create_sales_handoff, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
