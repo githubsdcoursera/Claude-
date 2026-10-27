@@ -5,7 +5,7 @@ GOAL: |
   unreachable. Disclose that the caller is speaking to an AI and that the call is transcribed, apply the
   subscriber's greeting and rules, check the caller's reputation and the VIP list, block spam or fraud, or
   capture the caller's name, purpose, message and callback request; push urgent or VIP calls to the
-  subscriber with a tap-to-take bridge; summarise and classify the message, read it back, and deliver it to
+  subscriber with a tap-to-take bridge; read the message back, and deliver it to
   the Vi App and SMS within 30 seconds. Meter the entitlement. Also provisions call forwarding on opt-in.
 
 PERSONA: |
@@ -42,8 +42,6 @@ MEMORY:
     - push
     - message_text
     - callback_requested
-    - msg_summary
-    - msg_category
     - delivery
     - meter
     - disposition
@@ -218,28 +216,15 @@ FLOW:
     ON_INPUT:
       - IF: input matches "(^|[^a-z])(yes|yeah|please|sure|haan|ji)([^a-z]|$)"
         SET: callback_requested = true
-        THEN: s5_summarise
+        THEN: s5_read_back
       - ELSE:
         SET: callback_requested = false
-        THEN: s5_summarise
+        THEN: s5_read_back
 
-  # ---- Summarise and classify (A17), then read back ----
-  s5_summarise:
-    REASONING: true
-    GOAL: |
-      Write msg_summary: one short sentence in the third person that tells {{rules.output.first_name}} who called
-      and what they want, using only what the caller said. Caller name: {{caller_name}}. Purpose: "{{purpose}}".
-      Message: "{{message_text}}". Callback requested: {{callback_requested}}. Also set msg_category to exactly
-      one of personal, work, delivery, appointment, sales or other. Set both with the context tool and do not
-      reply to the caller.
-    CONTEXT_UPDATES: [msg_summary, msg_category]
-    EXIT_WHEN: msg_summary IS SET AND msg_category IS SET
-    MAX_TURNS: 2
-    THEN: s5_read_back
-
+  # ---- Read back the message in the caller's own words (A17 classifies on delivery) ----
   s5_read_back:
     REASONING: false
-    RESPOND: "I'll pass this on: {{msg_summary}} Is that right?"
+    RESPOND: "I'll pass this on: {{caller_name}} called about: {{purpose}}. The message is: {{message_text}}. {{#if callback_requested}}You'd like a call back on this number. {{/if}}Is that right?"
     ON_INPUT:
       - IF: input matches "(^|[^a-z])(no|not right|wrong|change|actually)([^a-z]|$)"
         THEN: s5_correct
@@ -251,9 +236,7 @@ FLOW:
     RESPOND: "Sorry about that. Please tell me the message again in a sentence."
     ON_INPUT:
       - ELSE:
-        SET:
-          message_text = input
-          msg_summary = input
+        SET: message_text = input
         THEN: s6_deliver
 
   # ---- Deliver to the Vi App and SMS within 30 seconds ----
@@ -264,8 +247,7 @@ FLOW:
         subscriber: subscriber
         caller: caller
         caller_name: caller_name
-        summary: msg_summary
-        category: FIRST_NON_EMPTY(msg_category, "other")
+        summary: "{{caller_name}} called about: {{purpose}}. Message: {{message_text}}."
         callback_requested: callback_requested
       AS: delivery
     SET:
@@ -294,7 +276,7 @@ FLOW:
       WITH:
         msisdn: subscriber
         disposition: disposition
-        summary: "UC9 call assistant ({{mode}}, {{forward_reason}}). Caller category {{reputation.output.category}}. Urgent {{urgent}}. Summary: {{msg_summary}} Category {{msg_category}}. Callback {{callback_requested}}."
+        summary: "UC9 call assistant ({{mode}}, {{forward_reason}}). Caller category {{reputation.output.category}}. Urgent {{urgent}}. Category {{delivery.output.category}}. Callback {{callback_requested}}."
         outcome: outcome
       AS: post_call
     THEN: COMPLETE

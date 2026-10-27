@@ -258,40 +258,6 @@ FLOW:
     RESPOND: "Sure. What else can I help you with?"
     #include-snippet: intent_routes
 
-  s4_classify:
-    REASONING: true
-    GOAL: |
-      The caller said: "{{stated_request}}". Choose exactly one intent for it: balance, recharge, data,
-      subscriptions, network or SIM. Use subscriptions for value-added services, caller tunes or unexpected
-      deductions; use SIM for SIM replacement, lost SIM or porting. If none fits, use other.
-      Set intent with the context tool and do not reply to the caller.
-    CONTEXT_UPDATES: [intent]
-    EXIT_WHEN: intent IS SET
-    MAX_TURNS: 2
-    THEN: s4_confirm_intent
-
-  s4_confirm_intent:
-    REASONING: false
-    RESPOND: "Just to confirm, is this about your {{intent}}?"
-    ON_INPUT:
-      - IF: input matches "(^|[^a-z])(yes|yeah|yep|right|correct|haan|ha|han|ji|sahi)([^a-z]|$)" AND intent == "balance"
-        THEN: s5_balance
-      - IF: input matches "(^|[^a-z])(yes|yeah|yep|right|correct|haan|ha|han|ji|sahi)([^a-z]|$)" AND intent == "recharge"
-        THEN: s5_recharge
-      - IF: input matches "(^|[^a-z])(yes|yeah|yep|right|correct|haan|ha|han|ji|sahi)([^a-z]|$)" AND intent == "data"
-        THEN: s5_data
-      - IF: input matches "(^|[^a-z])(yes|yeah|yep|right|correct|haan|ha|han|ji|sahi)([^a-z]|$)" AND intent == "subscriptions"
-        THEN: s5_vas
-      - IF: input matches "(^|[^a-z])(yes|yeah|yep|right|correct|haan|ha|han|ji|sahi)([^a-z]|$)" AND intent == "network"
-        THEN: s5_network
-      - IF: input matches "(^|[^a-z])(yes|yeah|yep|right|correct|haan|ha|han|ji|sahi)([^a-z]|$)" AND intent == "SIM"
-        THEN: s5_sim
-      - ELSE:
-        SET:
-          clarify_count = ADD(clarify_count, 1)
-          stated_request = input
-        THEN: s4_clarify
-
   s4_clarify:
     REASONING: false
     MAX_ATTEMPTS: 2

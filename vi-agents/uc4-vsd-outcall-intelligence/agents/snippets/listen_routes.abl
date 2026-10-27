@@ -3,6 +3,7 @@ ON_INPUT:
     SET:
       seg_speaker = "cust"
       seg_text = REGEX_REPLACE(input, "^[Ss][Ee][Gg] [Cc]ustomer:? *", "")
+      last_cust_text = REGEX_REPLACE(input, "^[Ss][Ee][Gg] [Cc]ustomer:? *", "")
     THEN: s3_score
   - IF: input matches "^seg agent"
     SET:

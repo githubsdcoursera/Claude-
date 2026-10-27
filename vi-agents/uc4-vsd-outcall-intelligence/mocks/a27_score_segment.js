@@ -10,4 +10,4 @@ const pos = (t.match(/thank|great|fixed|working now|resolved|better|happy|good/g
 const score = Math.max(-1, Math.min(1, (pos - neg) / 3));
 const label = score <= -0.3 ? "negative" : score >= 0.3 ? "positive" : "neutral";
 return { label, score: Math.round(score * 100) / 100, confidence: neg + pos ? 0.75 : 0.5,
-  shift: input.speaker === "customer" && (label !== "neutral") };
+  shift: ["customer", "cust"].includes(String(input.speaker)) && (label !== "neutral") };

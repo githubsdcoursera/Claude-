@@ -176,6 +176,7 @@ def main():
     ap.add_argument("--skip-mocks", action="store_true", help="reuse cached workflow ids")
     ap.add_argument("--no-publish", action="store_true")
     ap.add_argument("--env", default="dev", choices=ENVS)
+    ap.add_argument("--mocks", default="", help="comma-separated mock names to redeploy; others reuse cached workflows")
     ap.add_argument("--prune", action="store_true", help="delete project agents and tools that are not in the package")
     a = ap.parse_args()
 
@@ -211,7 +212,8 @@ def main():
 
     tools_manifest = {}
     for name, spec in specs.items():
-        if a.skip_mocks and name in state["workflows"]:
+        only = [m for m in a.mocks.split(",") if m]
+        if name in state["workflows"] and (a.skip_mocks or (only and name not in only)):
             wid = state["workflows"][name]
         else:
             wid = ensure_mock(pid, spec, state, a.env)

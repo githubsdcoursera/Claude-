@@ -203,27 +203,19 @@ FLOW:
         THEN: s5_no_issue
       - ELSE:
         SET: stated_issue = input
-        THEN: s4_classify
+        THEN: s4_clarify
 
-  s4_classify:
-    REASONING: true
-    GOAL: |
-      The customer said: "{{stated_issue}}". Classify why they may stop using Vi into exactly one
-      churn_reason: network, price, data, service, port or other. Set churn_reason with the context tool.
-      Do not reply to the customer.
-    CONTEXT_UPDATES: [churn_reason]
-    EXIT_WHEN: churn_reason IS SET
-    MAX_TURNS: 2
-    THEN: s4_route
-
-  s4_route:
+  s4_clarify:
     REASONING: false
+    RESPOND: "Thanks for telling me. Is it mainly about the network, the price, or your data?"
     ON_INPUT:
-      - IF: churn_reason == "port"
+      - IF: input matches "(port|switch|move to|leave|change operator|mnp)"
         THEN: s5_mnp
-      - IF: churn_reason == "network" OR churn_reason == "service"
+      - IF: input matches "(network|signal|call drop|coverage|service|sim|blocked|not working)"
+        SET: churn_reason = "network"
         THEN: s5_network_check
-      - IF: churn_reason == "price" OR churn_reason == "data"
+      - IF: input matches "(data|gb|internet)"
+        SET: churn_reason = "data"
         THEN: s5_plan_fit
       - ELSE:
         SET: churn_reason = "price"

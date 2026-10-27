@@ -35,5 +35,7 @@ ON_INPUT:
       stated_request = input
     THEN: s5_balance
   - ELSE:
-    SET: stated_request = input
-    THEN: s4_classify
+    SET:
+      stated_request = input
+      clarify_count = ADD(clarify_count, 1)
+    THEN: s4_clarify

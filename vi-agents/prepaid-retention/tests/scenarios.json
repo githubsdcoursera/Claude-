@@ -214,22 +214,29 @@
   }
  },
  {
-  "name": "free_text_reason_classified_by_llm",
+  "name": "unclear_reason_clarified_then_service_fixed",
   "turns": [
    "CALL_START msisdn=9810000002 direction=outbound campaign=PREPAID_LAPSE_RISK_30D",
    "English",
    "yes",
    "my sim got blocked last week for no reason and it took days to fix",
-   "no",
+   "it's the service",
+   "no thanks",
    "no"
   ],
   "expect": {
    "tools": [
+    "a08_raise_network_ticket",
     "prt03_get_offer_authority",
     "a11_write_post_call"
    ],
+   "no_tools": [
+    "a08_apply_offer"
+   ],
    "exit": "complete",
-   "max_turn_ms": 4000
+   "says": [
+    "Is it mainly about the network, the price, or your data"
+   ]
   }
  },
  {

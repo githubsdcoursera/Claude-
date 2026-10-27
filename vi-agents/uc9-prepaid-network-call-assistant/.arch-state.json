@@ -1,0 +1,23 @@
+{
+  "workflows": {
+    "a11_meter_entitlement": "01a17d56-ce94-71d8-9a2f-a50d5954e0ce",
+    "a16_block_call": "01a17d57-9310-7597-8e58-c6efbb239f8d",
+    "a16_check_caller_reputation": "01a17d57-ba71-78ef-abd2-e77a56eb4e0a",
+    "a16_get_subscriber_rules": "01a17d58-84bc-7dc4-a5e8-ad2f18b50530",
+    "a16_provision_call_forwarding": "01a17d58-a392-75a9-befd-6744b15932c4",
+    "a17_deliver_summary": "01a17d59-74f5-7f85-8144-08cf0713c348",
+    "a17_push_urgent": "01a17d59-7d38-75d4-8958-c9fc7e902f68",
+    "a11_write_post_call": "01a17d59-9bd4-7936-abf1-370b2032ee99"
+  },
+  "workflow_versions": {
+    "a11_meter_entitlement": "v1.0.0",
+    "a16_block_call": "v1.0.0",
+    "a16_check_caller_reputation": "v1.0.0",
+    "a16_get_subscriber_rules": "v1.0.0",
+    "a16_provision_call_forwarding": "v1.0.0",
+    "a17_deliver_summary": "v1.0.1",
+    "a17_push_urgent": "v1.0.0",
+    "a11_write_post_call": "v1.0.0"
+  },
+  "projectId": "01a17d56-c5f5-70f5-832a-e00c4c05d6e1"
+}

@@ -40,9 +40,9 @@ MEMORY:
     - logged
     - escalation_reason
     - supervisor
-    - draft_summary
-    - draft_outcome
-    - qa_flags
+    - outcome_guess
+    - last_cust_text
+    - last_cue
     - final_summary
     - edited
     - audit
@@ -56,6 +56,9 @@ FLOW:
       campaign = UPPER(FIRST_NON_EMPTY(session.messageMetadata.campaign, REGEX_EXTRACT(input, "campaign=([A-Za-z_]+)", 1), "SERVICE_CONNECT"))
       agent_name = FIRST_NON_EMPTY(session.messageMetadata.agent_name, REGEX_EXTRACT(input, "agent=([A-Za-z]+)", 1), "Advisor")
       edited = false
+      outcome_guess = "FOLLOW_UP"
+      last_cust_text = "none"
+      last_cue = "none"
     THEN: s1_brief
 
   # ---- S3 Pre-call brief (A25) and grounded script (A26): no dial until both are visible ----
@@ -156,7 +159,20 @@ FLOW:
         text: seg_text
       AS: nba
     ON_RESULT:
+      - IF: nba.output.cue_type == "positive_resolution"
+        SET:
+          outcome_guess = "SIGNED_OFF"
+          last_cue = nba.output.cue_type
+        THEN: s3_log_cue
+      - IF: nba.output.cue_type == "unresolved_issue" OR nba.output.cue_type == "negative_shift"
+        SET:
+          outcome_guess = "ISSUE_REOPENED"
+          last_cue = nba.output.cue_type
+        THEN: s3_log_cue
       - IF: nba.output.has_suggestion == true
+        SET:
+          outcome_guess = "FOLLOW_UP"
+          last_cue = nba.output.cue_type
         THEN: s3_log_cue
       - ELSE:
         THEN: s3_log_plain
@@ -229,6 +245,7 @@ FLOW:
       AS: supervisor
     ON_RESULT:
       - IF: supervisor.output.authorised == true
+        SET: outcome_guess = "ESCALATED"
         THEN: s4_joined
       - ELSE:
         THEN: s4_denied
@@ -244,30 +261,18 @@ FLOW:
     #include-snippet: listen_routes
 
   # ---- After the call: A11 drafts summary, outcome and QA for one-click approval ----
+  # A11 draft built from call facts and cues; the VSD agent approves or edits it.
   s5_draft:
-    REASONING: true
-    GOAL: |
-      The outcall for {{brief.output.customer}} ({{account_id}}, campaign {{campaign}}, complaint
-      {{brief.output.complaint_ref}}: {{brief.output.complaint_issue}}) has ended. From the SEG customer / SEG agent
-      messages in this conversation, write draft_summary (two or three plain sentences: what the customer said,
-      what the agent did, what was agreed), draft_outcome (exactly one of SIGNED_OFF, ISSUE_REOPENED, FOLLOW_UP,
-      ESCALATED) and qa_flags (whether the must-say "{{script.output.must_say}}" was said by the agent, and any
-      promise made that is not in the script; write "none" if clean). Set all three with the context tool.
-      Do not reply with any other text.
-    CONTEXT_UPDATES: [draft_summary, draft_outcome, qa_flags]
-    EXIT_WHEN: draft_summary IS SET AND draft_outcome IS SET AND qa_flags IS SET
-    MAX_TURNS: 3
+    REASONING: false
     THEN: s5_review
 
   s5_review:
     REASONING: false
-    RESPOND: "DRAFT SUMMARY: {{draft_summary}} OUTCOME: {{draft_outcome}}. QA: {{qa_flags}}. Say APPROVE to save, or EDIT followed by your corrected summary."
+    RESPOND: "DRAFT SUMMARY: Outcall to {{brief.output.customer}} ({{campaign}}) about {{brief.output.complaint_ref}}, {{brief.output.complaint_issue}}. Last customer statement: {{last_cust_text}}. Last cue: {{last_cue}}. OUTCOME: {{outcome_guess}}. Say APPROVE to save, or EDIT followed by your corrected summary."
     ON_INPUT:
       - IF: input matches "^approve"
-        SET:
-          final_summary = draft_summary
-          edited = false
-        THEN: s5_write
+        SET: edited = false
+        THEN: s5_write_draft
       - IF: input matches "^edit"
         SET:
           final_summary = REGEX_REPLACE(input, "^[Ee][Dd][Ii][Tt]:? *", "")
@@ -276,13 +281,25 @@ FLOW:
       - ELSE:
         THEN: s5_review
 
+  s5_write_draft:
+    REASONING: false
+    CALL: a11_record_outcome
+      WITH:
+        call_ref: dial.output.call_ref
+        account_id: account_id
+        outcome: outcome_guess
+        summary: "Outcall to {{brief.output.customer}} ({{campaign}}) about {{brief.output.complaint_ref}}, {{brief.output.complaint_issue}}. Last customer statement: {{last_cust_text}}. Last cue: {{last_cue}}. Outcome {{outcome_guess}}."
+        edited: edited
+      AS: audit
+    THEN: s5_done
+
   s5_write:
     REASONING: false
     CALL: a11_record_outcome
       WITH:
         call_ref: dial.output.call_ref
         account_id: account_id
-        outcome: draft_outcome
+        outcome: outcome_guess
         summary: final_summary
         edited: edited
       AS: audit
@@ -290,5 +307,5 @@ FLOW:
 
   s5_done:
     REASONING: false
-    RESPOND: "Saved. Outcome {{draft_outcome}} recorded with audit reference {{audit.output.audit_ref}} (kept online for 12 months)."
+    RESPOND: "Saved. Outcome {{outcome_guess}} recorded with audit reference {{audit.output.audit_ref}} (kept online for 12 months)."
     THEN: COMPLETE

@@ -27,7 +27,6 @@
    "says": [
     "PRE-CALL BRIEF",
     "CMP-5531",
-    "Dialling is locked until you confirm",
     "Dial enabled",
     "advisory",
     "CUE positive_resolution",
@@ -41,15 +40,18 @@
   "turns": [
    "BRIEF account=ACC1001 campaign=SERVICE_CONNECT agent=Asha",
    "SEG customer: hello?",
-   "DIAL"
+   "DIAL",
+   "END",
+   "APPROVE"
   ],
   "expect": {
    "tools": [
     "a25_get_precall_brief",
     "a26_get_call_script",
-    "a26_enable_dial"
+    "a26_enable_dial",
+    "a11_record_outcome"
    ],
-   "exit": "prompt",
+   "exit": "complete",
    "says": [
     "Dialling is still locked",
     "Dial enabled"
@@ -87,13 +89,16 @@
   "turns": [
    "BRIEF account=ACC1002 campaign=RETENTION agent=Ravi",
    "DIAL",
-   "SEG customer: honestly I am thinking of moving to airtel"
+   "SEG customer: honestly I am thinking of moving to airtel",
+   "END",
+   "APPROVE"
   ],
   "expect": {
    "tools": [
-    "a28_next_best_action"
+    "a28_next_best_action",
+    "a11_record_outcome"
    ],
-   "exit": "prompt",
+   "exit": "complete",
    "says": [
     "CUE churn_signal",
     "Do not argue or delay"

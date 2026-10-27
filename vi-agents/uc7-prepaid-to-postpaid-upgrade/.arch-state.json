@@ -1,0 +1,31 @@
+{
+  "workflows": {
+    "a06_compliance_gate": "01a17d52-11c2-7fd9-8de6-75c0974e9e5f",
+    "a07_get_upgrade_lead": "01a17d52-e299-7110-8448-7760060b4d23",
+    "a08_create_migration_order": "01a17d52-eae8-7753-a0bc-4741be9b0d48",
+    "a08_send_sms": "01a17d52-ff7a-7c2d-aeca-fe7089e5ac56",
+    "a11_schedule_activation_tracking": "01a17d53-d7b1-7536-abce-7236b90e56cf",
+    "a15_get_upgrade_offer": "01a17d53-ec75-75f5-88d8-57e317c41e01",
+    "a06_record_opt_out": "01a17d54-c3a4-7168-956d-97ae1b0a51f5",
+    "a08_record_consent": "01a17d54-d73b-7159-8213-7d67459cff78",
+    "a04_send_otp": "01a17d54-df50-7960-9781-8b1e83ea3088",
+    "a04_verify_otp": "01a17d55-b71f-72e1-8554-913f9d3ae146",
+    "a09_create_handoff": "01a17d55-ca4f-7ae7-a4e0-ef7cd681e003",
+    "a11_write_post_call": "01a17d56-a352-7513-ae30-91c626975120"
+  },
+  "workflow_versions": {
+    "a06_compliance_gate": "v1.0.0",
+    "a07_get_upgrade_lead": "v1.0.0",
+    "a08_create_migration_order": "v1.0.0",
+    "a08_send_sms": "v1.0.0",
+    "a11_schedule_activation_tracking": "v1.0.0",
+    "a15_get_upgrade_offer": "v1.0.0",
+    "a06_record_opt_out": "v1.0.0",
+    "a08_record_consent": "v1.0.0",
+    "a04_send_otp": "v1.0.0",
+    "a04_verify_otp": "v1.0.0",
+    "a09_create_handoff": "v1.0.0",
+    "a11_write_post_call": "v1.0.0"
+  },
+  "projectId": "01a17d52-0a0e-7f2a-a833-9ac569df8aff"
+}

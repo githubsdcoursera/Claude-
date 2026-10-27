@@ -39,5 +39,7 @@ ON_INPUT:
   - IF: input matches "(^|[^a-z])(yes|yeah|haan|ha|ji)([^a-z]|$)"
     THEN: s4_ask_again
   - ELSE:
-    SET: stated_request = input
-    THEN: s4_classify
+    SET:
+      stated_request = input
+      clarify_count = ADD(clarify_count, 1)
+    THEN: s4_clarify
