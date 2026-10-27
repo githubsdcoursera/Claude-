@@ -203,11 +203,12 @@ def main():
     ok("platform_config", {"action": "set_model_selection", "projectId": pid,
                            "selected": [binding], "defaultBinding": binding})
 
-    mock_files = sorted((pdir / "mocks").glob("*.js")) + [ROOT / "shared" / "mocks" / f"{n}.js" for n in cfg.get("shared_mocks", [])]
+    extra = [f for d in cfg.get("extra_mock_dirs", []) for f in sorted((pdir / d).glob("*.js"))]
+    mock_files = sorted((pdir / "mocks").glob("*.js")) + extra + [ROOT / "shared" / "mocks" / f"{n}.js" for n in cfg.get("shared_mocks", [])]
     specs = {s["name"]: s for s in (parse_mock(p) for p in mock_files)}
     if cfg.get("mock_prelude"):  # project data module replaces the shared personas for the project's own mocks
         prelude = (pdir / cfg["mock_prelude"]).read_text()
-        for p in (pdir / "mocks").glob("*.js"):
+        for p in list((pdir / "mocks").glob("*.js")) + extra:
             specs[p.stem]["prelude"] = prelude
     build = pdir / ".build"
     for sub in ("agents", "tools"):

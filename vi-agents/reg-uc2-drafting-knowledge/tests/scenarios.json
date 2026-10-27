@@ -1,0 +1,208 @@
+[
+ {
+  "name": "E1_E3_E4_draft_all_questions_gap_options_current_positions",
+  "turns": [
+   "user=officer.asha draft our response to TRAI-SYN-CP-2026-11",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "rd01_scope",
+    "rd02_positions",
+    "rd03_consistency",
+    "rd04_draft",
+    "r_cite_verify",
+    "r_audit_log"
+   ],
+   "disposition": "DRAFT_PACKAGED",
+   "says": [
+    "AI first draft, for officer review. Not approved for external use.",
+    "Q1. Vi's position is that spectrum used to provide access services",
+    "[VI-SUB-SYN-2025-031, para 3.2]",
+    "Q6. [Officer decision required] Vi has no prior position. Options:",
+    "GAP on Q6",
+    "STALE on Q5",
+    "6 supported, 0 partial, 0 unsupported"
+   ],
+   "never_says": [
+    "satellite backhaul only"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "E6_restricted_note_not_used_or_mentioned",
+  "turns": [
+   "user=officer.asha draft our response to TRAI-SYN-CP-2026-11",
+   "done"
+  ],
+  "expect": {
+   "disposition": "DRAFT_PACKAGED",
+   "never_says": [
+    "VI-SYN-AGR-NOTE-07",
+    "litigation",
+    "Related internal notes"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "E6b_authorised_user_sees_restricted_label",
+  "turns": [
+   "user=manager.neel draft our response to TRAI-SYN-CP-2026-11",
+   "done"
+  ],
+  "expect": {
+   "disposition": "DRAFT_PACKAGED",
+   "says": [
+    "Related internal notes you are authorised to see: VI-SYN-AGR-NOTE-07 [RESTRICTED]"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "E2_conflicting_positions_flagged_escalated",
+  "turns": [
+   "user=officer.asha prepare an internal memo on net neutrality",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "rd03_consistency",
+    "r_notify",
+    "rd_memo"
+   ],
+   "disposition": "MEMO_CONFLICT_ESCALATED",
+   "says": [
+    "CONFLICT between POS-SYN-NN-2022 and POS-SYN-NN-2023 (owner to resolve)",
+    "I have not picked either position"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "E8_internal_memo_template",
+  "turns": [
+   "user=officer.asha write a note to management on quality of service",
+   "done"
+  ],
+  "expect": {
+   "disposition": "MEMO_DRAFTED",
+   "says": [
+    "MEMO | To: Head, Regulatory",
+    "Vi supported circle-level QoS benchmarks measured quarterly",
+    "VI-SUB-SYN-2023-030 para 3.1"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "E10_what_did_we_say_in_2023",
+  "turns": [
+   "user=officer.asha what did we say on net neutrality in 2023?",
+   "done"
+  ],
+  "expect": {
+   "disposition": "POSITION_LOOKUP",
+   "says": [
+    "VI-MEMO-SYN-2023-044, para 1.3 (20 November 2023, approved, current)",
+    "draft, not a Vi position"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "E4b_superseded_labelled_in_lookup",
+  "turns": [
+   "user=officer.asha what did we say on satellite spectrum in 2021?",
+   "done"
+  ],
+  "expect": {
+   "disposition": "POSITION_LOOKUP",
+   "says": [
+    "VI-SUB-SYN-2021-014, para 2.3 (10 May 2021, approved, superseded)"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "E5_fake_citation_flagged",
+  "turns": [
+   "user=officer.asha verify: Vi has always supported auction for all spectrum [VI-SUB-SYN-2019-999, para 4]",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "r_cite_verify"
+   ],
+   "disposition": "UNSUPPORTED_FLAGGED",
+   "says": [
+    "UNSUPPORTED",
+    "citation VI-SUB-SYN-2019-999 4 not found in the corpus",
+    "[unverified]"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "E7_head_files_final_register_updated",
+  "turns": [
+   "user=head.reg approve and file final VIDRAFT-155IMFC",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "rd06_file_final"
+   ],
+   "disposition": "FINAL_FILED_REGISTER_UPDATED",
+   "says": [
+    "Position register updated",
+    "marked superseded and linked to VIDRAFT-155IMFC"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "E7b_officer_cannot_file_final",
+  "turns": [
+   "user=officer.asha file the approved final VIDRAFT-155IMFC",
+   "done"
+  ],
+  "expect": {
+   "disposition": "FILE_REFUSED",
+   "says": [
+    "Only the Head, Regulatory (U2-2 approver) can declare an approved Vi position"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "E9_heavy_edits_captured",
+  "turns": [
+   "user=officer.asha record edits on VIDRAFT-155IMFC: 45% changed, reason position_changed",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "rd06_capture_edits"
+   ],
+   "disposition": "EDITS_CAPTURED",
+   "says": [
+    "45% materially changed, reason position_changed",
+    "Flagged as a heavy edit"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ }
+]

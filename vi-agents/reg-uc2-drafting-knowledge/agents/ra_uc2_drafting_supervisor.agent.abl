@@ -1,0 +1,363 @@
+AGENT: RA_UC2_Drafting_Supervisor
+VERSION: "1.0"
+GOAL: |
+  RA-UC2 AI-Powered Drafting & Institutional Knowledge Management (R00 Supervisor). Turn Vi's past
+  submissions and notes into a living institutional memory and produce referenced first drafts aligned to
+  Vi's approved positions: scope the request (RD01), retrieve positions (RD02), check consistency for
+  CONFLICT, DRIFT, GAP and STALE (RD03), draft in regulator numbering with inline citations (RD04), verify
+  every claim (R-CV) and package for review (RD05), and curate the position register (RD06). Substantive
+  drafts stay at autonomy L1 permanently: the officer reviews, a named human approves and files.
+
+PERSONA: |
+  A careful drafting assistant for Vi's Regulatory & Corporate Affairs officers. Formal Indian-English
+  regulatory register, consistent defined terms, regulator question numbering preserved. Separates what the
+  source says, Vi's past position and its own analysis.
+
+LIMITATIONS:
+  - "Produces drafts, never final positions; never files or sends anything"
+  - "Never presents a draft or unapproved note as Vi's position, and never silently resolves conflicting positions"
+  - "Never invents citations; unsupported claims are marked [unverified]"
+  - "Never uses or mentions restricted documents for users outside the authorised group"
+  - "Uses a synthetic corpus in this build"
+
+EXECUTION:
+  session_idle_timeout: 600000
+  tool_timeout: 8000
+
+TOOLS:
+  #include-tools: rd_parse, rd01_scope, rd02_positions, rd03_consistency, rd04_draft, rd06_file_final, rd06_capture_edits, rd_lookup, rd_memo, r_cite_verify, r_notify, r_audit_log
+
+MEMORY:
+  session:
+    - user
+    - request
+    - req
+    - brief
+    - pos
+    - cons
+    - draft
+    - cv
+    - ntf
+    - memo
+    - look
+    - filed
+    - edits
+    - disposition
+    - audit
+
+FLOW:
+  s0_start:
+    REASONING: false
+    SET:
+      user = FIRST_NON_EMPTY(session.messageMetadata.user, REGEX_EXTRACT(input, "user=([a-z]+\\.[a-z]+)", 1), "officer.asha")
+      request = input
+      disposition = "IN_PROGRESS"
+    THEN: s1_parse
+
+  s1_parse:
+    REASONING: false
+    CALL: rd_parse
+      WITH:
+        text: request
+      AS: req
+    ON_RESULT:
+      - IF: req.output.intent == "draft" AND req.output.doc_id != ""
+        THEN: d1_scope
+      - IF: req.output.intent == "memo" AND req.output.topic != ""
+        THEN: m1_consistency
+      - IF: req.output.intent == "lookup" AND req.output.topic != ""
+        THEN: l1_lookup
+      - IF: req.output.intent == "file_final"
+        THEN: f1_file
+      - IF: req.output.intent == "edits"
+        THEN: e1_edits
+      - IF: req.output.intent == "verify"
+        THEN: v1_verify
+      - IF: req.output.intent == "done"
+        THEN: s9_end
+      - ELSE:
+        THEN: s2_help
+
+  s2_help:
+    REASONING: false
+    RESPOND: "I can prepare a first draft of a consultation response (for example: draft our response to TRAI-SYN-CP-2026-11), an internal memo on a topic, find what Vi said on a topic in a given year, verify citations in a passage, capture your edits on a draft, or file an approved final (Head, Regulatory only). What would you like?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- Step 1-5: scope, positions, consistency, draft, verify and package ----
+  d1_scope:
+    REASONING: false
+    CALL: rd01_scope
+      WITH:
+        user: user
+        doc_id: req.output.doc_id
+      AS: brief
+    ON_RESULT:
+      - IF: brief.output.found == true
+        THEN: d2_positions
+      - ELSE:
+        THEN: d1_not_found
+
+  d1_not_found:
+    REASONING: false
+    RESPOND: "I can't find a consultation document {{req.output.doc_id}} that you are authorised to see. What would you like to draft?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  d2_positions:
+    REASONING: false
+    CALL: rd02_positions
+      WITH:
+        user: user
+        topic: brief.output.topic
+      AS: pos
+    THEN: d3_consistency
+
+  d3_consistency:
+    REASONING: false
+    CALL: rd03_consistency
+      WITH:
+        topic: brief.output.topic
+        doc_id: req.output.doc_id
+        requested: ""
+      AS: cons
+    THEN: d4_draft
+
+  d4_draft:
+    REASONING: false
+    CALL: rd04_draft
+      WITH:
+        user: user
+        doc_id: req.output.doc_id
+      AS: draft
+    THEN: d5_verify
+
+  d5_verify:
+    REASONING: false
+    CALL: r_cite_verify
+      WITH:
+        claims: draft.output.claims
+      AS: cv
+    SET:
+      disposition = "DRAFT_PACKAGED"
+    THEN: d6_audit
+
+  d6_audit:
+    REASONING: false
+    CALL: r_audit_log
+      WITH:
+        user: user
+        disposition: disposition
+        object: draft.output.draft_id
+        detail: "Draft for {{req.output.doc_id}}; consistency: {{cons.output.flags}}; R-CV {{cv.output.supported}} supported, {{cv.output.unsupported}} unsupported"
+      AS: audit
+    THEN: d7_say
+
+  d7_say:
+    REASONING: false
+    RESPOND: "{{draft.output.label}}\n\nDrafting brief: {{brief.output.draft_type}} to {{brief.output.audience}} on {{brief.output.title}}; comments due {{brief.output.deadline}}; questions {{brief.output.questions}}.{{#if brief.output.clarifying}} Clarifying question: {{brief.output.clarifying}}{{/if}}\n\nDraft {{draft.output.draft_id}}: {{draft.output.draft}}\n\nConsistency report: {{cons.output.flags}}\nOfficer decisions required: {{draft.output.decisions}}\nClosest past submission: {{draft.output.closest}}\n{{#if pos.output.related_notes}}Related internal notes you are authorised to see: {{pos.output.related_notes}}\n{{/if}}Verification (R-CV): {{cv.output.supported}} supported, {{cv.output.partial}} partial, {{cv.output.unsupported}} unsupported. {{cv.output.table}}\n\nAnything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- Internal memo (template), with conflict escalation ----
+  m1_consistency:
+    REASONING: false
+    CALL: rd03_consistency
+      WITH:
+        topic: req.output.topic
+        doc_id: ""
+        requested: ""
+      AS: cons
+    ON_RESULT:
+      - IF: cons.output.escalate == true
+        THEN: m2_escalate
+      - ELSE:
+        THEN: m3_memo
+
+  m2_escalate:
+    REASONING: false
+    CALL: r_notify
+      WITH:
+        to: "head.reg"
+        message: "Position conflict needs your decision before drafting: {{cons.output.flags}}"
+      AS: ntf
+    THEN: m3_memo
+
+  m3_memo:
+    REASONING: false
+    CALL: rd_memo
+      WITH:
+        user: user
+        topic: req.output.topic
+      AS: memo
+    ON_RESULT:
+      - IF: cons.output.conflict == true
+        SET: disposition = "MEMO_CONFLICT_ESCALATED"
+        THEN: m4_audit
+      - ELSE:
+        SET: disposition = "MEMO_DRAFTED"
+        THEN: m4_audit
+
+  m4_audit:
+    REASONING: false
+    CALL: r_audit_log
+      WITH:
+        user: user
+        disposition: disposition
+        object: req.output.topic
+        detail: cons.output.flags
+      AS: audit
+    THEN: m5_say
+
+  m5_say:
+    REASONING: false
+    RESPOND: "AI draft, for officer review. {{memo.output.memo}}\n\nConsistency report: {{cons.output.flags}}{{#if cons.output.conflict}} The conflict has been escalated to the Head, Regulatory; I have not picked either position.{{/if}} Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- "What did we say on X in YEAR" ----
+  l1_lookup:
+    REASONING: false
+    CALL: rd_lookup
+      WITH:
+        user: user
+        topic: req.output.topic
+        year: req.output.year
+      AS: look
+    SET:
+      disposition = "POSITION_LOOKUP"
+    THEN: l2_audit
+
+  l2_audit:
+    REASONING: false
+    CALL: r_audit_log
+      WITH:
+        user: user
+        disposition: disposition
+        object: req.output.topic
+        detail: look.output.answer
+      AS: audit
+    THEN: l3_say
+
+  l3_say:
+    REASONING: false
+    RESPOND: "{{look.output.answer}} Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- RD06: file approved final (U2-2 approver only) ----
+  f1_file:
+    REASONING: false
+    CALL: rd06_file_final
+      WITH:
+        user: user
+        draft_id: req.output.draft_id
+      AS: filed
+    ON_RESULT:
+      - IF: filed.output.filed == true
+        SET: disposition = "FINAL_FILED_REGISTER_UPDATED"
+        THEN: f2_audit
+      - ELSE:
+        SET: disposition = "FILE_REFUSED"
+        THEN: f2_audit
+
+  f2_audit:
+    REASONING: false
+    CALL: r_audit_log
+      WITH:
+        user: user
+        disposition: disposition
+        object: req.output.draft_id
+        detail: filed.output.message
+      AS: audit
+    THEN: f3_say
+
+  f3_say:
+    REASONING: false
+    RESPOND: "{{filed.output.message}} Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- RD06: capture officer edits ----
+  e1_edits:
+    REASONING: false
+    CALL: rd06_capture_edits
+      WITH:
+        draft_id: req.output.draft_id
+        depth: req.output.depth
+        reason: req.output.reason
+        user: user
+      AS: edits
+    SET:
+      disposition = "EDITS_CAPTURED"
+    THEN: e2_audit
+
+  e2_audit:
+    REASONING: false
+    CALL: r_audit_log
+      WITH:
+        user: user
+        disposition: disposition
+        object: req.output.draft_id
+        detail: edits.output.message
+      AS: audit
+    THEN: e3_say
+
+  e3_say:
+    REASONING: false
+    RESPOND: "{{edits.output.message}} Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- R-CV on a passage the officer gives ----
+  v1_verify:
+    REASONING: false
+    CALL: r_cite_verify
+      WITH:
+        claims: req.output.claims
+      AS: cv
+    ON_RESULT:
+      - IF: cv.output.unsupported > 0
+        SET: disposition = "UNSUPPORTED_FLAGGED"
+        THEN: v2_audit
+      - ELSE:
+        SET: disposition = "CITATIONS_VERIFIED"
+        THEN: v2_audit
+
+  v2_audit:
+    REASONING: false
+    CALL: r_audit_log
+      WITH:
+        user: user
+        disposition: disposition
+        object: "R-CV"
+        detail: cv.output.table
+      AS: audit
+    THEN: v3_say
+
+  v3_say:
+    REASONING: false
+    RESPOND: "Verification: {{cv.output.supported}} supported, {{cv.output.partial}} partial, {{cv.output.unsupported}} unsupported. {{cv.output.table}}{{#if cv.output.unsupported}} Unsupported claims must be removed or shown as [unverified].{{/if}} Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  s9_end:
+    REASONING: false
+    RESPOND: "Closing the session. Every draft and decision is in the audit trail."
+    THEN: COMPLETE

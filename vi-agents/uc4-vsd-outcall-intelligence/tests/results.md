@@ -1,18 +1,18 @@
 # Test results: Vi UC4 VSD Outcall Intelligence
 
-3/5 scenarios passed. Run 2026-10-27 12:53 UTC against the draft agent through Arch debug sessions; backend systems are mock workflows.
+5/5 scenarios passed. Run 2026-10-27 15:39 UTC against the draft agent through Arch debug sessions; backend systems are mock workflows.
 
 | Scenario | Result | Disposition | End | Slowest turn | Notes |
 |---|---|---|---|---:|---|
-| service_connect_signed_off_one_click_approve | FAIL | ISSUE_REOPENED | complete | 499 ms | disposition ISSUE_REOPENED != SIGNED_OFF; never said: CUE positive_resolution; never said: Saved. Outcome SIGNED_OFF |
-| dial_stays_locked_until_confirmed | PASS | FOLLOW_UP | complete | 396 ms |  |
-| frustration_cue_supervisor_join_and_edit | PASS | ESCALATED | complete | 486 ms |  |
-| retention_port_signal_cue | FAIL | FOLLOW_UP | complete | 276 ms | tool a28_next_best_action not called; never said: CUE churn_signal; never said: Do not argue or delay |
-| unknown_account_dial_locked | PASS | - | complete | 215 ms |  |
+| service_connect_signed_off_one_click_approve | PASS | SIGNED_OFF | complete | 450 ms |  |
+| dial_stays_locked_until_confirmed | PASS | FOLLOW_UP | complete | 269 ms |  |
+| frustration_cue_supervisor_join_and_edit | PASS | ESCALATED | complete | 369 ms |  |
+| retention_port_signal_cue | PASS | FOLLOW_UP | complete | 401 ms |  |
+| unknown_account_dial_locked | PASS | - | complete | 429 ms |  |
 
 ## service_connect_signed_off_one_click_approve
 
-Session `5e9328c4-4c5c-443e-9584-8547565f683b`. Tools: a25_get_precall_brief, a26_get_call_script, a26_enable_dial, a27_score_segment, a28_next_best_action, a27_append_live_log, a27_score_segment, a28_next_best_action, a11_record_outcome.
+Session `27015d80-cde0-43ba-ad53-3bbc80530bd0`. Tools: a25_get_precall_brief, a26_get_call_script, a26_enable_dial, a27_score_segment, a28_next_best_action, a27_append_live_log, a27_score_segment, a28_next_best_action, a11_record_outcome.
 
 | Caller | Agent |
 |---|---|
@@ -20,15 +20,15 @@ Session `5e9328c4-4c5c-443e-9584-8547565f683b`. Tools: a25_get_precall_brief, a2
 Open complaint: CMP-5531 - frequent call drops at home (9 days). Recent: 2... |
 | DIAL | Dial enabled, call VSD-1RF2Y4H. Listening in listen-only mode. Remember the must-say: This call is recorded for quality and training. |
 | SEG agent: Hello, this is Asha from Vi. I'm calling about your complaint CMP-5531. This call is recorded for quality and training. | Logged. |
-| SEG customer: yes it is working now, the call drops are fixed since last week | Sentiment positive (advisory, confidence 0.75). CUE unresolved_issue: Do not record sign-off. Re-open the complaint with the latest symptoms and give the customer the new reference. |
+| SEG customer: yes it is working now, the call drops are fixed since last week | Sentiment positive (advisory, confidence 0.75). CUE positive_resolution: Ask for explicit confirmation that the issue is resolved, then record sign-off. |
 | SEG agent: That's great. Can I record your confirmation that the issue is resolved? | Logged. |
 | SEG customer: yes please, thank you | Sentiment positive (advisory). |
-| END | DRAFT SUMMARY: Outcall to Nikhil Verma (SERVICE_CONNECT) about CMP-5531, frequent call drops at home. Last customer statement: yes please, thank you. Last cue: unresolved_issue. OUTCOME: ISSUE_REOPENED. Say APPROVE to save, or EDIT followed by your corrected summary. |
-| APPROVE | Saved. Outcome ISSUE_REOPENED recorded with audit reference AUD-03FZODG (kept online for 12 months). |
+| END | DRAFT SUMMARY: Outcall to Nikhil Verma (SERVICE_CONNECT) about CMP-5531, frequent call drops at home. Last customer statement: yes please, thank you. Last cue: positive_resolution. OUTCOME: SIGNED_OFF. Say APPROVE to save, or EDIT followed by your corrected summary. |
+| APPROVE | Saved. Outcome SIGNED_OFF recorded with audit reference AUD-1JXG9TA (kept online for 12 months). |
 
 ## dial_stays_locked_until_confirmed
 
-Session `9463bc11-7a37-446c-8e5e-afb33fff03d7`. Tools: a25_get_precall_brief, a26_get_call_script, a26_enable_dial, a11_record_outcome.
+Session `865ffbf8-1667-4629-9560-178b757c1608`. Tools: a25_get_precall_brief, a26_get_call_script, a26_enable_dial, a11_record_outcome.
 
 | Caller | Agent |
 |---|---|
@@ -41,7 +41,7 @@ Open complaint: CMP-5531 - frequent call drops at home (9 days). Recent: 2... |
 
 ## frustration_cue_supervisor_join_and_edit
 
-Session `6d76f71b-66db-4f37-ba07-746177c207bb`. Tools: a25_get_precall_brief, a26_get_call_script, a26_enable_dial, a27_score_segment, a28_next_best_action, a27_append_live_log, a09_supervisor_join, a27_score_segment, a11_record_outcome.
+Session `facb0eb6-d2d9-4a62-a52c-f727d26f3dce`. Tools: a25_get_precall_brief, a26_get_call_script, a26_enable_dial, a27_score_segment, a28_next_best_action, a27_append_live_log, a09_supervisor_join, a27_score_segment, a11_record_outcome.
 
 | Caller | Agent |
 |---|---|
@@ -56,20 +56,20 @@ Open complaint: CMP-5531 - frequent call drops at home (9 days). Recent: 2... |
 
 ## retention_port_signal_cue
 
-Session `6e1c2431-bafc-4573-a55c-f700bba10ee3`. Tools: a25_get_precall_brief, a26_get_call_script, a26_enable_dial, a27_score_segment, a11_record_outcome.
+Session `e1bc9e42-3618-4923-9160-85222520cb9f`. Tools: a25_get_precall_brief, a26_get_call_script, a26_enable_dial, a27_score_segment, a28_next_best_action, a27_append_live_log, a11_record_outcome.
 
 | Caller | Agent |
 |---|---|
 | BRIEF account=ACC1002 campaign=RETENTION agent=Ravi | PRE-CALL BRIEF - Pooja Bansal (ACC1002), Vi Max 701 (MOCK), 14 months, health red, ARPU ₹780, network good.
 Open complaint: CMP-5602 - disputed roaming charge of ₹1,240 (4 days). Recent: 2026-10-20 po... |
 | DIAL | Dial enabled, call VSD-1RF2Y4I. Listening in listen-only mode. Remember the must-say: This call is recorded for quality and training. |
-| SEG customer: honestly I am thinking of moving to airtel | Sentiment neutral (advisory). |
-| END | DRAFT SUMMARY: Outcall to Pooja Bansal (RETENTION) about CMP-5602, disputed roaming charge of ₹1,240. Last customer statement: honestly I am thinking of moving to airtel. Last cue: none. OUTCOME: FOLLOW_UP. Say APPROVE to save, or EDIT followed by your corrected summary. |
+| SEG customer: honestly I am thinking of moving to airtel | Sentiment negative (advisory, confidence 0.75). CUE churn_signal: Do not argue or delay. Acknowledge, ask what would change their mind, and if they still want to port, give the approved UPC steps. |
+| END | DRAFT SUMMARY: Outcall to Pooja Bansal (RETENTION) about CMP-5602, disputed roaming charge of ₹1,240. Last customer statement: honestly I am thinking of moving to airtel. Last cue: churn_signal. OUTCOME: FOLLOW_UP. Say APPROVE to save, or EDIT followed by your corrected summary. |
 | APPROVE | Saved. Outcome FOLLOW_UP recorded with audit reference AUD-1Y1XY08 (kept online for 12 months). |
 
 ## unknown_account_dial_locked
 
-Session `2420befc-e39d-472a-828e-a632fe499d87`. Tools: a25_get_precall_brief.
+Session `3265de6e-010f-4e1f-b3ec-8e9b7416ceff`. Tools: a25_get_precall_brief.
 
 | Caller | Agent |
 |---|---|

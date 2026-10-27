@@ -1,0 +1,12 @@
+{
+  "name": "Vi RA-UC1 Research and Policy Intelligence",
+  "description": "Regulatory AI RA-UC1: RP01 source monitor with RA-UC3 deadline hand-off, RP02 issue-by-issue document summariser, RP03 precedent and international comparison, RP04 public competitor position mapper, RP05 research brief writer, shared R-KB permission-trimmed retrieval, R-CV citation verifier, R-NT and R-GOV. Autonomy L0-L1. SYNTHETIC corpus.",
+  "entry_agent": "RA_UC1_Research_Supervisor",
+  "model": "gemma4",
+  "agents": { "RA_UC1_Research_Supervisor": "agents/ra_uc1_research_supervisor.agent.abl" },
+  "mock_prelude": "../regulatory-common/reg-data.js",
+  "extra_mock_dirs": ["../regulatory-common/mocks"],
+  "shared_mocks": [],
+  "smoke_inputs": { "text": "research brief on TRAI-SYN-CP-2026-11", "user": "officer.asha", "doc_id": "TRAI-SYN-CP-2026-11", "topic": "satellite_spectrum", "question": "Q3", "deadline": "10 November 2026", "query": "satellite spectrum", "claims": "the paper proposes a period of 5 years [TRAI-SYN-CP-2026-11, p. 47]", "to": "officer.asha", "message": "smoke", "disposition": "SMOKE", "object": "smoke", "detail": "smoke" },
+  "deployment_label": "ra-uc1-v1"
+}

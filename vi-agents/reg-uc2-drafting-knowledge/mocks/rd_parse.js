@@ -1,0 +1,20 @@
+// @description R00 Supervisor (RA-UC2): read the officer's request and return the intent (draft, memo, lookup, file_final, edits, verify, done, help) with document id, topic, year, draft id, edit depth, reason and claims.
+// @effect read_only
+// @in text:string "Officer request, verbatim"
+// @out intent doc_id topic year draft_id depth reason claims
+const t = String(input.text || ""), l = t.toLowerCase();
+const doc = ((t.match(/([A-Z]+-SYN-[A-Z]+-\d{4}-\d+)/) || [])[1] || "");
+const draft = ((t.match(/(VIDRAFT-[A-Z0-9]{7})/i) || [])[1] || "").toUpperCase();
+const year = ((l.match(/\b(20\d\d)\b/) || [])[1] || "");
+const topic = /(satellite|spectrum assignment)/.test(l) ? "satellite_spectrum" : /(net neutrality|zero.rat|traffic management)/.test(l) ? "net_neutrality" : /(qos|quality of service)/.test(l) ? "quality_of_service" : /(agr|licence fee|license fee)/.test(l) ? "licence_fee" : "";
+const depth = ((l.match(/(\d{1,3})\s*%/) || [])[1] || "");
+const reason = ((t.match(/reason[:=]?\s*([a-z_ ]+)/i) || [])[1] || "").trim();
+let intent = "help";
+if (/^\s*(done|exit|thanks|thank you|that's all|thats all)\b/.test(l)) intent = "done";
+else if (/^\s*verify/.test(l) || /\[[A-Z0-9-]+[, ]+(para|p\.)/i.test(t)) intent = "verify";
+else if (/(record|captur).*edit|edited/.test(l)) intent = "edits";
+else if (/(approve|file).*(final)/.test(l)) intent = "file_final";
+else if (/(what did we say|what was our position|did we say)/.test(l)) intent = "lookup";
+else if (/(memo|note to management|internal note)/.test(l)) intent = "memo";
+else if (/(draft|response|counter-comment|reply)/.test(l)) intent = "draft";
+return { intent: intent, doc_id: doc, topic: topic, year: year, draft_id: draft, depth: depth, reason: reason, claims: t.replace(/^\s*verify:?\s*/i, "") };

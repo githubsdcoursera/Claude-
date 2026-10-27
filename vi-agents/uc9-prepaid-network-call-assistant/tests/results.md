@@ -1,19 +1,19 @@
 # Test results: Vi UC9 Prepaid Network Call Assistant
 
-5/6 scenarios passed. Run 2026-10-27 13:01 UTC against the draft agent through Arch debug sessions; backend systems are mock workflows.
+6/6 scenarios passed. Run 2026-10-27 15:34 UTC against the draft agent through Arch debug sessions; backend systems are mock workflows.
 
 | Scenario | Result | Disposition | End | Slowest turn | Notes |
 |---|---|---|---|---:|---|
-| unknown_caller_message_delivered | PASS | MESSAGE_DELIVERED | complete | 421 ms |  |
-| spam_caller_blocked_no_message | FAIL | - | prompt | 1546 ms | tool a16_block_call not called; tool a11_meter_entitlement not called; disposition None != SPAM_BLOCKED; exit prompt != complete; never said: reported for unwanted calls; slowest turn 1546 ms > 1200 ms |
-| vip_caller_urgent_push_then_message | PASS | MESSAGE_DELIVERED | complete | 388 ms |  |
-| urgent_unknown_caller_push | PASS | MESSAGE_DELIVERED | complete | 539 ms |  |
-| opt_in_provisions_forwarding | PASS | FORWARDING_PROVISIONED | complete | 600 ms |  |
-| not_opted_in_no_handling | PASS | NOT_OPTED_IN | complete | 491 ms |  |
+| unknown_caller_message_delivered | PASS | MESSAGE_DELIVERED | complete | 457 ms |  |
+| spam_caller_blocked_no_message | PASS | SPAM_BLOCKED | complete | 862 ms |  |
+| vip_caller_urgent_push_then_message | PASS | MESSAGE_DELIVERED | complete | 456 ms |  |
+| urgent_unknown_caller_push | PASS | MESSAGE_DELIVERED | complete | 349 ms |  |
+| opt_in_provisions_forwarding | PASS | FORWARDING_PROVISIONED | complete | 410 ms |  |
+| not_opted_in_no_handling | PASS | NOT_OPTED_IN | complete | 468 ms |  |
 
 ## unknown_caller_message_delivered
 
-Session `0f99ab44-33a4-4106-9b5b-45e114359665`. Tools: a16_get_subscriber_rules, a16_check_caller_reputation, a17_deliver_summary, a11_meter_entitlement, a11_write_post_call.
+Session `26ca6cab-df82-4d32-be02-05848e4d13d8`. Tools: a16_get_subscriber_rules, a16_check_caller_reputation, a17_deliver_summary, a11_meter_entitlement, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -26,15 +26,15 @@ Session `0f99ab44-33a4-4106-9b5b-45e114359665`. Tools: a16_get_subscriber_rules,
 
 ## spam_caller_blocked_no_message
 
-Session `f24830ca-7612-42b5-8fb4-8e96b1f383fa`. Tools: a16_get_subscriber_rules, a16_check_caller_reputation.
+Session `2e4e443a-4159-45d6-ae96-12f1dfd70828`. Tools: a16_get_subscriber_rules, a16_check_caller_reputation, a16_block_call, a11_meter_entitlement, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
-| CALL_FORWARDED subscriber=9850000001 caller=9852222222 reason=busy | Hello, you've reached Sunil's Vi call assistant. I'm an AI, and this call is transcribed and recorded. Sunil can't take your call right now. May I have your name, and what the call is about? |
+| CALL_FORWARDED subscriber=9850000001 caller=9852222222 reason=busy | This number has been reported for unwanted calls, so I'm unable to take a message. Goodbye. |
 
 ## vip_caller_urgent_push_then_message
 
-Session `0dc577c7-59e2-4e28-8d5c-553d486a17ca`. Tools: a16_get_subscriber_rules, a16_check_caller_reputation, a17_push_urgent, a17_deliver_summary, a11_meter_entitlement, a11_write_post_call.
+Session `af7816a4-e670-4c83-9367-76804523ed2c`. Tools: a16_get_subscriber_rules, a16_check_caller_reputation, a17_push_urgent, a17_deliver_summary, a11_meter_entitlement, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -46,7 +46,7 @@ Session `0dc577c7-59e2-4e28-8d5c-553d486a17ca`. Tools: a16_get_subscriber_rules,
 
 ## urgent_unknown_caller_push
 
-Session `49780dec-2e99-4e32-8dc0-32a2dee6e72b`. Tools: a16_get_subscriber_rules, a16_check_caller_reputation, a17_push_urgent, a17_deliver_summary, a11_meter_entitlement, a11_write_post_call.
+Session `ee843449-84ff-468b-a484-4ce37b1a2dca`. Tools: a16_get_subscriber_rules, a16_check_caller_reputation, a17_push_urgent, a17_deliver_summary, a11_meter_entitlement, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -59,7 +59,7 @@ Session `49780dec-2e99-4e32-8dc0-32a2dee6e72b`. Tools: a16_get_subscriber_rules,
 
 ## opt_in_provisions_forwarding
 
-Session `fa68ed21-4f43-4073-9f36-bf659f83d2f3`. Tools: a16_get_subscriber_rules, a16_provision_call_forwarding, a11_write_post_call.
+Session `654413c3-487b-448b-8bae-49ed6d27687d`. Tools: a16_get_subscriber_rules, a16_provision_call_forwarding, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -67,7 +67,7 @@ Session `fa68ed21-4f43-4073-9f36-bf659f83d2f3`. Tools: a16_get_subscriber_rules,
 
 ## not_opted_in_no_handling
 
-Session `b7cdc61e-5768-4c71-972e-35b751a3ee65`. Tools: a16_get_subscriber_rules, a11_write_post_call.
+Session `9ed2f53c-e471-4b6b-b0f0-b1b6b770a1cf`. Tools: a16_get_subscriber_rules, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|

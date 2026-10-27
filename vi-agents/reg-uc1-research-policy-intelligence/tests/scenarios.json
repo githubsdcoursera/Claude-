@@ -1,0 +1,186 @@
+[
+ {
+  "name": "E1_brief_all_questions_exact_deadlines_verified",
+  "turns": [
+   "user=officer.asha research brief on TRAI-SYN-CP-2026-11",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "rp02_summarise",
+    "rp03_precedents",
+    "rp04_competitor_map",
+    "rp05_brief",
+    "r_cite_verify",
+    "r_audit_log"
+   ],
+   "disposition": "BRIEF_READY",
+   "says": [
+    "AI research brief BRIEF-",
+    "Q1 (p. 38)",
+    "Q6 (p. 63)",
+    "Comments due 17 November 2026; counter-comments due 1 December 2026",
+    "[AI analysis, for officer review]",
+    "5 supported, 0 partial, 0 unsupported"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "E9_followup_grounded_in_brief_sources",
+  "turns": [
+   "user=officer.asha summarise TRAI-SYN-CP-2026-11",
+   "what does Q3 propose?",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "rp_followup"
+   ],
+   "disposition": "FOLLOWUP_ANSWERED",
+   "says": [
+    "Q3 (TRAI-SYN-CP-2026-11, p. 47) asks: Should the assignment period be 5, 10 or 20 years? The paper proposes a period of 5 years, subject to review."
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "E2_seeded_false_claim_unsupported",
+  "turns": [
+   "user=officer.asha verify: TRAI proposes a 20-year assignment period [TRAI-SYN-CP-2026-11, p. 47]",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "r_cite_verify"
+   ],
+   "disposition": "UNSUPPORTED_FLAGGED",
+   "says": [
+    "UNSUPPORTED",
+    "number 20 is not in the source passage",
+    "[unverified]"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "E3_E10_precedents_and_3plus_jurisdictions",
+  "turns": [
+   "user=officer.asha show precedents and international comparison on satellite spectrum",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "rp03_precedents"
+   ],
+   "disposition": "PRECEDENTS_READY",
+   "says": [
+    "TDSAT-SYN-2024-118 (TDSAT, 18 September 2024)",
+    "4 jurisdictions",
+    "United Kingdom | Ofcom",
+    "Singapore | IMDA"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "E4_competitor_map_no_inferred_stances",
+  "turns": [
+   "user=officer.asha competitor map for TRAI-SYN-CP-2026-11",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "rp04_competitor_map"
+   ],
+   "disposition": "POSITION_MAP_READY",
+   "says": [
+    "published responses only",
+    "Operator-A (SYNTHETIC): unclear (response does not state a stance)",
+    "Operator-B (SYNTHETIC): silent (not addressed)"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "E5_restricted_document_no_content",
+  "turns": [
+   "user=officer.asha summarise VI-SYN-AGR-NOTE-07",
+   "done"
+  ],
+  "expect": {
+   "no_tools": [
+    "rp03_precedents"
+   ],
+   "disposition": "NO_CONTENT",
+   "says": [
+    "I found no document VI-SYN-AGR-NOTE-07 that you are authorised to see."
+   ],
+   "never_says": [
+    "litigation",
+    "licence-fee treatment",
+    "Restricted"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "E6_new_notification_alert_and_uc3_handoff",
+  "turns": [
+   "user=officer.asha check the sources for anything new",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "rp01_source_poll",
+    "rp01_propose_obligation",
+    "r_notify"
+   ],
+   "disposition": "NEW_DOCUMENT_ALERTED",
+   "says": [
+    "DOT-SYN-NOTIF-2026-10-27",
+    "Relevance to Vi 0.86",
+    "sent to RA-UC3 as candidate obligation CAND-"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "E7_superseded_regulation_labelled",
+  "turns": [
+   "user=officer.asha summarise DOT-SYN-LIC-2025-03",
+   "done"
+  ],
+  "expect": {
+   "disposition": "SUMMARY_READY",
+   "says": [
+    "SUPERSEDED by DOT-SYN-LIC-2026-01"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "E8_poor_scan_fields_flagged_not_guessed",
+  "turns": [
+   "user=officer.asha summarise VI-SYN-INWARD-0912",
+   "done"
+  ],
+  "expect": {
+   "disposition": "SUMMARY_READY",
+   "says": [
+    "Low-confidence OCR, returned as null: issue date (page 1, top right); response deadline (page 2, para 3)",
+    "These fields were not guessed"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ }
+]
