@@ -3,7 +3,7 @@
 // @in text:string "Officer request, verbatim"
 // @out intent doc_id topic question claims
 const t = String(input.text || ""), l = t.toLowerCase();
-const doc = ((t.match(/([A-Z]+-SYN-[A-Z]+-[\d-]+)/) || [])[1] || "").replace(/-$/, "");
+const doc = ((t.match(/([A-Z]+-SYN-[A-Z]+(?:-[A-Z]+)*-[\d-]+)/) || [])[1] || "").replace(/-$/, "");
 const topic = /(satellite|spectrum assignment)/.test(l) ? "satellite_spectrum" : /(spectrum sharing)/.test(l) ? "spectrum_sharing" : /(qos|quality of service)/.test(l) ? "quality_of_service" : /(agr|licence fee|license fee)/.test(l) ? "licence_fee" : "";
 const q = ((t.match(/\b(Q\d)\b/i) || [])[1] || "").toUpperCase();
 let intent = "help";
