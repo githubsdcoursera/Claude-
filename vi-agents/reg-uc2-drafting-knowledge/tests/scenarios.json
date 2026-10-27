@@ -9,7 +9,7 @@
    "tools": [
     "rd01_scope",
     "rd02_positions",
-    "rd03_consistency",
+    "rd03_check_consistency",
     "rd04_draft",
     "r_cite_verify",
     "r_audit_log"
@@ -71,7 +71,7 @@
   ],
   "expect": {
    "tools": [
-    "rd03_consistency",
+    "rd03_check_consistency",
     "r_notify",
     "rd_memo"
    ],

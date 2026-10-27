@@ -13,14 +13,15 @@
     "r_cite_verify": "01a17e06-87ae-710e-9331-b71b68957408",
     "r_doc_extract": "01a17e06-9036-7d27-a228-db2426f6fb84",
     "r_kb_search": "01a17e06-98ae-7b5a-8ace-1ed216a623ce",
-    "r_notify": "01a17e07-7906-7af2-8a70-339653b6ec08"
+    "r_notify": "01a17e07-7906-7af2-8a70-339653b6ec08",
+    "rd03_check_consistency": "01a17e74-ea14-76bc-a8df-ecfa3f659dae"
   },
   "workflow_versions": {
     "rd01_scope": "v1.0.0",
     "rd02_positions": "v1.0.0",
     "rd03_consistency": "v1.0.1",
     "rd04_draft": "v1.0.0",
-    "rd06_capture_edits": "v1.0.1",
+    "rd06_capture_edits": "v1.0.2",
     "rd06_file_final": "v1.0.0",
     "rd_lookup": "v1.0.1",
     "rd_memo": "v1.0.0",
@@ -29,7 +30,8 @@
     "r_cite_verify": "v1.0.0",
     "r_doc_extract": "v1.0.0",
     "r_kb_search": "v1.0.0",
-    "r_notify": "v1.0.0"
+    "r_notify": "v1.0.0",
+    "rd03_check_consistency": "v1.0.0"
   },
   "projectId": "01a17e02-c98e-7aff-ada8-d0acd8cdfa34"
 }

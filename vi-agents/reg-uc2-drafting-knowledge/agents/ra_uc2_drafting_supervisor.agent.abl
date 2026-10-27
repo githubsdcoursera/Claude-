@@ -25,7 +25,7 @@ EXECUTION:
   tool_timeout: 8000
 
 TOOLS:
-  #include-tools: rd_parse, rd01_scope, rd02_positions, rd03_consistency, rd04_draft, rd06_file_final, rd06_capture_edits, rd_lookup, rd_memo, r_cite_verify, r_notify, r_audit_log
+  #include-tools: rd_parse, rd01_scope, rd02_positions, rd03_check_consistency, rd04_draft, rd06_file_final, rd06_capture_edits, rd_lookup, rd_memo, r_cite_verify, r_notify, r_audit_log
 
 MEMORY:
   session:
@@ -119,7 +119,7 @@ FLOW:
 
   d3_consistency:
     REASONING: false
-    CALL: rd03_consistency
+    CALL: rd03_check_consistency
       WITH:
         topic: brief.output.topic
         doc_id: req.output.doc_id
@@ -167,7 +167,7 @@ FLOW:
   # ---- Internal memo (template), with conflict escalation ----
   m1_consistency:
     REASONING: false
-    CALL: rd03_consistency
+    CALL: rd03_check_consistency
       WITH:
         topic: req.output.topic
       AS: cons
