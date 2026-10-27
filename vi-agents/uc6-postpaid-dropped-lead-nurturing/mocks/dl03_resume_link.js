@@ -8,5 +8,5 @@
 // @out sent link_ref masked_msisdn expiry attribution_tag
 const c = customer(input.msisdn);
 if (!c) return { sent: false, link_ref: "", masked_msisdn: "", expiry: "", attribution_tag: "" };
-return { sent: true, link_ref: ref("RSM", input.lead_id, input.step, input.plan_id || ""), masked_msisdn: "your number ending " + c.msisdn.slice(-4),
+return { sent: true, link_ref: ref("RSM", input.lead_id, input.step, (/^none$/i.test(String(input.plan_id || "")) ? "" : input.plan_id || "")), masked_msisdn: "your number ending " + c.msisdn.slice(-4),
   expiry: "48 hours", attribution_tag: "UC6-" + (input.campaign || "UNSET") };

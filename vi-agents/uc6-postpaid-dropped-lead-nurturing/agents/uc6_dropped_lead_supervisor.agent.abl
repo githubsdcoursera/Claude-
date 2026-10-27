@@ -121,6 +121,8 @@ FLOW:
       neg_count = 0
       lang_hi = false
       callback_reason = "busy"
+      chosen_plan_id = "none"
+      resume_step = "journey"
     THEN: s0_gate
 
   # ---- A06 pre-dial gate: fail closed ----
@@ -293,7 +295,7 @@ FLOW:
     REASONING: false
     RESPOND: "{{plans.output.plan_1_name}} is ₹{{plans.output.plan_1_rental}} a month plus taxes, with {{plans.output.plan_1_benefits}}. {{plans.output.plan_1_deposit_line}} {{#if plans.output.plan_2_name}}Or {{plans.output.plan_2_name}} is ₹{{plans.output.plan_2_rental}} a month plus taxes, with {{plans.output.plan_2_benefits}}. {{plans.output.plan_2_deposit_line}} {{/if}}{{plans.output.family_note}} Which would you like?"
     ON_INPUT:
-      - IF: input matches "(\\?|what about|does it|does that|is there|wait|hold on|what is the|what's the|how much is the deposit|deposit)"
+      - IF: input matches "([?]|what about|does it|does that|is there|wait|hold on|what is the|what's the|how much is the deposit|deposit)"
         SET: faq_question = input
         THEN: s5_plan_barge_in
       - IF: input matches "(second|other one|2nd|cheaper one|the latter)"
@@ -698,7 +700,7 @@ FLOW:
     CALL: a02_sentiment_event
       WITH:
         msisdn: msisdn
-        count: neg_count
+        count: "{{neg_count}}"
         phrase: input
       AS: sentiment
     ON_RESULT:

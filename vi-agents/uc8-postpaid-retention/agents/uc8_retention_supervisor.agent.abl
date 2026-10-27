@@ -524,7 +524,7 @@ FLOW:
     REASONING: false
     RESPOND: "{{#if offer_alt}}One alternative I can offer: {{/if}}{{offer_name}}: {{offer_terms}}. It applies for {{offer_duration}}. Would you like me to add that?"
     ON_INPUT:
-      - IF: input matches "(\\?|what happens|what about|does it|does this|is there|wait|hold on|after that|can i)"
+      - IF: input matches "([?]|what happens|what about|does it|does this|is there|wait|hold on|after that|can i)"
         SET: offer_question = input
         THEN: s5_offer_barge_in
       - IF: input matches "(^|[^a-z])(no|nahi|nahin|not interested|don't want|dont want|no thanks)([^a-z]|$)"
@@ -943,7 +943,7 @@ FLOW:
     CALL: a02_sentiment_event
       WITH:
         msisdn: msisdn
-        count: neg_count
+        count: "{{neg_count}}"
         phrase: input
       AS: sentiment
     ON_RESULT:
