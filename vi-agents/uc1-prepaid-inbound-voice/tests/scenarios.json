@@ -226,7 +226,8 @@
     "a09_create_handoff"
    ],
    "disposition": "HANDOFF_VULNERABILITY",
-   "exit": "escalate"
+   "exit": "escalate",
+   "max_turn_ms": 2000
   }
  },
  {
@@ -241,7 +242,8 @@
     "a09_create_handoff"
    ],
    "disposition": "HANDOFF_CUSTOMER_REQUEST",
-   "exit": "escalate"
+   "exit": "escalate",
+   "max_turn_ms": 2000
   }
  }
 ]

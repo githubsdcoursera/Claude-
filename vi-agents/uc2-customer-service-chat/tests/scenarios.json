@@ -116,7 +116,8 @@
    "exit": "escalate",
    "says": [
     "see this whole conversation"
-   ]
+   ],
+   "max_turn_ms": 2000
   }
  }
 ]

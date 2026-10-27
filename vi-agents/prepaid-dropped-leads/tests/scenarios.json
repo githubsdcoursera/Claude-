@@ -205,7 +205,8 @@
    "says": [
     "payment of ₹349 didn't go through, and no money was deducted",
     "connecting you to a Vi advisor"
-   ]
+   ],
+   "max_turn_ms": 2000
   }
  }
 ]

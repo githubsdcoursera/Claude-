@@ -247,7 +247,8 @@
    "exit": "escalate",
    "says": [
     "connecting you to our international roaming specialist"
-   ]
+   ],
+   "max_turn_ms": 2000
   }
  },
  {
@@ -274,7 +275,8 @@
    "exit": "escalate",
    "never_says": [
     "is now active"
-   ]
+   ],
+   "max_turn_ms": 2000
   }
  },
  {
@@ -290,7 +292,8 @@
     "a09_create_handoff"
    ],
    "disposition": "HANDOFF_CUSTOMER_REQUEST",
-   "exit": "escalate"
+   "exit": "escalate",
+   "max_turn_ms": 2000
   }
  },
  {
@@ -316,7 +319,8 @@
     "a08_activate_ir_pack"
    ],
    "disposition": "HANDOFF_OTP_FAILED",
-   "exit": "escalate"
+   "exit": "escalate",
+   "max_turn_ms": 2000
   }
  },
  {
@@ -336,7 +340,8 @@
     "a08_activate_ir_pack"
    ],
    "disposition": "HANDOFF_MULTI_COUNTRY",
-   "exit": "escalate"
+   "exit": "escalate",
+   "max_turn_ms": 2000
   }
  }
 ]
