@@ -1,22 +1,22 @@
 # Test results: Vi RA-UC1 Research and Policy Intelligence
 
-7/9 scenarios passed. Run 2026-10-27 18:18 UTC against the draft agent through Arch debug sessions; backend systems are mock workflows.
+9/9 scenarios passed. Run 2026-10-27 22:12 UTC against the draft agent through Arch debug sessions; backend systems are mock workflows.
 
 | Scenario | Result | Disposition | End | Slowest turn | Notes |
 |---|---|---|---|---:|---|
-| E1_brief_all_questions_exact_deadlines_verified | FAIL | BRIEF_READY | complete | 1138 ms | never said: 5 supported, 0 partial, 0 unsupported |
-| E9_followup_grounded_in_brief_sources | PASS | FOLLOWUP_ANSWERED | complete | 540 ms |  |
-| E2_seeded_false_claim_unsupported | PASS | UNSUPPORTED_FLAGGED | complete | 936 ms |  |
-| E3_E10_precedents_and_3plus_jurisdictions | PASS | PRECEDENTS_READY | complete | 601 ms |  |
-| E4_competitor_map_no_inferred_stances | PASS | POSITION_MAP_READY | complete | 627 ms |  |
-| E5_restricted_document_no_content | FAIL | - | complete | 193 ms | disposition None != NO_CONTENT; never said: I found no document VI-SYN-AGR-NOTE-07 that you are authorised to see. |
-| E6_new_notification_alert_and_uc3_handoff | PASS | NEW_DOCUMENT_ALERTED | complete | 611 ms |  |
-| E7_superseded_regulation_labelled | PASS | SUMMARY_READY | complete | 584 ms |  |
-| E8_poor_scan_fields_flagged_not_guessed | PASS | SUMMARY_READY | complete | 629 ms |  |
+| E1_brief_all_questions_exact_deadlines_verified | PASS | BRIEF_READY | complete | 1153 ms |  |
+| E9_followup_grounded_in_brief_sources | PASS | FOLLOWUP_ANSWERED | complete | 448 ms |  |
+| E2_seeded_false_claim_unsupported | PASS | UNSUPPORTED_FLAGGED | complete | 371 ms |  |
+| E3_E10_precedents_and_3plus_jurisdictions | PASS | PRECEDENTS_READY | complete | 516 ms |  |
+| E4_competitor_map_no_inferred_stances | PASS | POSITION_MAP_READY | complete | 380 ms |  |
+| E5_restricted_document_no_content | PASS | NO_CONTENT | complete | 602 ms |  |
+| E6_new_notification_alert_and_uc3_handoff | PASS | NEW_DOCUMENT_ALERTED | complete | 676 ms |  |
+| E7_superseded_regulation_labelled | PASS | SUMMARY_READY | complete | 602 ms |  |
+| E8_poor_scan_fields_flagged_not_guessed | PASS | SUMMARY_READY | complete | 571 ms |  |
 
 ## E1_brief_all_questions_exact_deadlines_verified
 
-Session `f4cce47a-cea4-4b94-b413-0c567beedfde`. Tools: rp_parse, rp02_summarise, rp03_precedents, rp04_competitor_map, rp05_brief, r_cite_verify, r_audit_log, rp_parse.
+Session `c5954ed4-bf2e-4fa1-9f2a-ebd2af87507b`. Tools: rp_parse, rp02_summarise, rp03_precedents, rp04_competitor_map, rp05_brief, r_cite_verify, r_audit_log, rp_parse.
 
 | Caller | Agent |
 |---|---|
@@ -25,7 +25,7 @@ Session `f4cce47a-cea4-4b94-b413-0c567beedfde`. Tools: rp_parse, rp02_summarise,
 
 ## E9_followup_grounded_in_brief_sources
 
-Session `8fdf52d4-153e-401f-8525-599c9a9994c8`. Tools: rp_parse, rp02_summarise, rp_parse, rp_followup, r_audit_log, rp_parse.
+Session `4ff274ae-eb24-4cd5-bde6-8cc75bfe6314`. Tools: rp_parse, rp02_summarise, rp_parse, rp_followup, r_audit_log, rp_parse.
 
 | Caller | Agent |
 |---|---|
@@ -35,7 +35,7 @@ Session `8fdf52d4-153e-401f-8525-599c9a9994c8`. Tools: rp_parse, rp02_summarise,
 
 ## E2_seeded_false_claim_unsupported
 
-Session `7c5768c3-caf8-47d7-8585-6d0ba7808fce`. Tools: rp_parse, r_cite_verify, r_audit_log, rp_parse.
+Session `af4e58eb-2809-4313-b498-35777d67bc1c`. Tools: rp_parse, r_cite_verify, r_audit_log, rp_parse.
 
 | Caller | Agent |
 |---|---|
@@ -44,7 +44,7 @@ Session `7c5768c3-caf8-47d7-8585-6d0ba7808fce`. Tools: rp_parse, r_cite_verify, 
 
 ## E3_E10_precedents_and_3plus_jurisdictions
 
-Session `bc73e517-443b-4b78-a1b0-cef3102a8421`. Tools: rp_parse, rp03_precedents, r_audit_log, rp_parse.
+Session `6f98361e-4b7b-40c0-9c86-08854154e0b5`. Tools: rp_parse, rp03_precedents, r_audit_log, rp_parse.
 
 | Caller | Agent |
 |---|---|
@@ -53,7 +53,7 @@ Session `bc73e517-443b-4b78-a1b0-cef3102a8421`. Tools: rp_parse, rp03_precedents
 
 ## E4_competitor_map_no_inferred_stances
 
-Session `12f5f77b-ae3e-4e41-ba35-fe571cc52dc3`. Tools: rp_parse, rp04_competitor_map, r_audit_log, rp_parse.
+Session `8bf9e6a4-43f7-4f0e-b970-da2e988b4f81`. Tools: rp_parse, rp04_competitor_map, r_audit_log, rp_parse.
 
 | Caller | Agent |
 |---|---|
@@ -62,16 +62,16 @@ Session `12f5f77b-ae3e-4e41-ba35-fe571cc52dc3`. Tools: rp_parse, rp04_competitor
 
 ## E5_restricted_document_no_content
 
-Session `0a8c2528-0521-40c6-9e1b-aaf4a06eed5c`. Tools: rp_parse, rp_parse.
+Session `ea718dcc-ccbe-4847-8b8f-4ed0e18e563a`. Tools: rp_parse, rp02_summarise, r_audit_log, rp_parse.
 
 | Caller | Agent |
 |---|---|
-| user=officer.asha summarise VI-SYN-AGR-NOTE-07 | I can prepare a cited research brief on a document (for example: research brief on TRAI-SYN-CP-2026-11), summarise a document issue by issue, show precedents and international comparisons on a topic, ... |
+| user=officer.asha summarise VI-SYN-AGR-NOTE-07 | I found no document VI-SYN-AGR-NOTE-07 that you are authorised to see. Anything else? |
 | done | Closing the session. Every brief and source is in the audit trail. |
 
 ## E6_new_notification_alert_and_uc3_handoff
 
-Session `47687afb-4880-465c-95f8-9c4a1e5a89be`. Tools: rp_parse, rp01_source_poll, rp01_propose_obligation, r_notify, r_audit_log, rp_parse.
+Session `f223356b-bc82-429a-8f51-ffafd123131e`. Tools: rp_parse, rp01_source_poll, rp01_propose_obligation, r_notify, r_audit_log, rp_parse.
 
 | Caller | Agent |
 |---|---|
@@ -80,7 +80,7 @@ Session `47687afb-4880-465c-95f8-9c4a1e5a89be`. Tools: rp_parse, rp01_source_pol
 
 ## E7_superseded_regulation_labelled
 
-Session `276fe023-b60d-413d-ac9b-c32bb6eca4af`. Tools: rp_parse, rp02_summarise, r_audit_log, rp_parse.
+Session `81838198-47fe-4128-b7ca-ace2601b9531`. Tools: rp_parse, rp02_summarise, r_audit_log, rp_parse.
 
 | Caller | Agent |
 |---|---|
@@ -89,7 +89,7 @@ Session `276fe023-b60d-413d-ac9b-c32bb6eca4af`. Tools: rp_parse, rp02_summarise,
 
 ## E8_poor_scan_fields_flagged_not_guessed
 
-Session `25aa566b-a4b9-4a33-96c5-0aac915a35b6`. Tools: rp_parse, rp02_summarise, r_audit_log, rp_parse.
+Session `dd5e909a-73c9-4603-8548-bf9c2352e060`. Tools: rp_parse, rp02_summarise, r_audit_log, rp_parse.
 
 | Caller | Agent |
 |---|---|
