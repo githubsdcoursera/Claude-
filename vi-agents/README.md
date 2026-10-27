@@ -15,6 +15,13 @@ Platform ("Artemis") at `https://ind-agents.kore.ai` and deployed through the Ar
 | `prepaid-retention` | Vi Prepaid Retention Outcall | Prepaid extension of UC8 | Voice (outbound) | `Prepaid_Retention_Supervisor` |
 | `prepaid-dropped-leads` | Vi Prepaid Dropped Leads Outcall | Prepaid extension of UC6 | Voice (outbound) | `Prepaid_Dropped_Leads_Supervisor` |
 | `business-postpaid-sales` | Vi Business Postpaid Sales Outcall | BPS01-BPS06 (needs a UC ID) | Voice (outbound) | `Business_Sales_Supervisor` |
+| `uc6-postpaid-dropped-lead-nurturing` | Vi UC6 Postpaid Dropped-Lead Nurturing | UC6 (DL01-DL03) | Voice (outbound) | `UC6_Dropped_Lead_Supervisor` |
+| `uc8-postpaid-retention` | Vi UC8 Postpaid Retention | UC8 (RT01-RT04) | Voice (outbound) | `UC8_Retention_Supervisor` |
+| `towerco-management` | Vi TowerCo Management | Tower Co agent mesh (A00-A53) | Finance/Network chat and events | `TowerCo_Supervisor` |
+| `reg-uc1-research-policy-intelligence` | Vi RA-UC1 Research and Policy Intelligence | Regulatory RA-UC1 (RP01-RP05) | Officer chat | `RA_UC1_Research_Supervisor` |
+| `reg-uc2-drafting-knowledge` | Vi RA-UC2 Drafting and Institutional Knowledge | Regulatory RA-UC2 (RD01-RD06) | Officer chat | `RA_UC2_Drafting_Supervisor` |
+| `reg-uc3-comms-compliance` | Vi RA-UC3 Communications Compliance Manager | Regulatory RA-UC3 (RC01-RC06) | Inbox events, officer chat | `RA_UC3_Compliance_Supervisor` |
+| `vi-legal-workflow` | Vi Legal End-to-End Workflow | Legal W0-W9 (LG00-LG07) | Lawyer chat | `Legal_Supervisor` |
 
 Each project folder has `agents/` (ABL source), `mocks/` (mock backend systems), `tests/scenarios.json`
 (one scenario per outcome path), `tests/results.md` (latest run), `arch.json` (build config) and
@@ -125,6 +132,32 @@ tool never drift) and `#include-snippet:` (shared routing blocks) before validat
 The tenant allows 60 API requests a minute (the client waits out HTTP 429) and a small number of concurrent
 sessions (the test runner waits for a free slot).
 
+
+## Back-office projects: Tower Co, Regulatory AI and Legal
+
+These use the same pattern as the voice agents (one scripted supervisor, deterministic tools, must-say from
+tool output) but run as chat or event-driven case agents. Each project's data module replaces the shared
+personas (`arch.json` `mock_prelude`); the three Regulatory projects also share `regulatory-common/`
+(`extra_mock_dirs`).
+
+- **Tower Co (`towerco-management`).** `data/build_data.py` turns the supplied synthetic reconciliation file and
+  agreement into `towerco-data.js`. The package listed sites, orders, EB bills and disputes files that were not
+  supplied, so the minimum Digital Twin (RFS, exit and non-BTS dates, frozen CLT quantity, EB amounts) is derived
+  from the labelled expected values, and three fixtures are added for golden tests GOLD-002 (duplicate line),
+  GOLD-004 (reused consumer number) and GOLD-005 (missing documents), plus one open dispute for de-duplication.
+  The shadow-bill engine reproduces all 541 labelled lines (amount, classification and reason), and the
+  `tc_golden_regression` tool runs that check on the platform as the A53 release gate. Payment release, SAP
+  posting, DN/CN approval, settlement and contract changes are blocked and turned into approval tasks.
+- **Regulatory AI (`reg-uc1..3`, `regulatory-common`).** A synthetic corpus (documents marked `[SYNTHETIC]`,
+  anonymised stakeholders Operator-A/B and Industry Body-X, a position register, sender register, ownership
+  matrix and obligations register) with shared R-KB (permission-trimmed retrieval), R-DI, R-CV (citation
+  verifier: fake citations and numbers not in the source are UNSUPPORTED), R-NT and R-GOV tools. RA-UC3 runs at
+  pilot autonomy L2: it never sends to a Government body, and an approved reply waits in the approver's drafts.
+- **Legal (`vi-legal-workflow`).** Built from the `vi-legal` package (playbooks, clause library, skills and
+  fixtures copied under `data/`). `data/build_data.py` strips the Gold lines from the fixtures the agent reads.
+  The rules pass reproduces all 32 gold labels (`lg_eval`); the W5 gate records approvals only from an
+  authorised approver (RED needs senior counsel / GC), and nothing is signed or sent.
+
 ## Platform behaviours found while building
 
 | Behaviour | How the agents handle it |
@@ -138,6 +171,7 @@ sessions (the test runner waits for a free slot).
 | PII redaction can replace tool inputs such as a pincode with `[REDACTED]` | Address-type lookups take the phone number and resolve server-side |
 | Workflow function outputs cannot use the key `trigger` | Renamed (`cue_type`) |
 | Specialist handoff with return can drop the specialist's reply | Single orchestrator per call |
+| A workflow function node's output key `steps` (or a variable named `steps`) fails with "Cannot overwrite immutable context property" | Mocks use `porting_steps` |
 
 ## Not done yet / decisions for Vi
 
