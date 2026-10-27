@@ -1,34 +1,34 @@
 # Test results: Vi Legal End-to-End Workflow
 
-19/21 scenarios passed. Run 2026-10-27 18:59 UTC against the draft agent through Arch debug sessions; backend systems are mock workflows.
+21/21 scenarios passed. Run 2026-10-27 22:53 UTC against the draft agent through Arch debug sessions; backend systems are mock workflows.
 
 | Scenario | Result | Disposition | End | Slowest turn | Notes |
 |---|---|---|---|---:|---|
-| NDA-01_vi_template_green | PASS | TRIAGED_GREEN | complete | 1153 ms |  |
-| NDA-02_residuals_foreign_law_red | PASS | TRIAGED_RED | complete | 918 ms |  |
-| NDA-03_hidden_non_compete_found | PASS | TRIAGED_RED | complete | 972 ms |  |
-| NDA-05_minor_deviations_yellow | PASS | TRIAGED_YELLOW | complete | 1050 ms |  |
-| NDA-08_personal_data_publicity_ai_flag | PASS | TRIAGED_RED | complete | 1041 ms |  |
-| MOU-01_draft_S1_S16_and_obligations | PASS | MOU_DRAFTED | complete | 1023 ms |  |
-| MOU-02_hyperscaler_markup_duplicate_matter | PASS | REVIEWED_YELLOW | complete | 1196 ms |  |
-| MOU-03_rai_deleted_exclusivity_red | PASS | REVIEWED_RED | complete | 1018 ms |  |
-| VC-01_no_llm_claim_gracie_reinstated | PASS | REVIEWED_RED | complete | 887 ms |  |
-| VC-06_vendor_framework_equivalent_yellow | PASS | REVIEWED_YELLOW | complete | 1068 ms |  |
-| VC-10_no_ai_conditional_clause_green | PASS | REVIEWED_GREEN | complete | 824 ms |  |
-| NDA-07_execution_defects_fail | FAIL | EXECUTION_CHECKED | complete | 367 ms | tool lg05_execution_check not called; disposition EXECUTION_CHECKED != EXECUTION_FAIL; never said: X2 Parties: FAIL; never said: X7 Dates and placeholders: FAIL; never said: X8 Internal material: FAIL; never said: X9 Stamp duty: FAIL; never said: Not prepared until the exceptions are cleared. |
-| E2E_MOU-04_review_then_unauthorised_then_senior_approval_execution | PASS | APPROVAL_REFUSED | complete | 1279 ms |  |
-| E2E_MOU-04_senior_counsel_approves_W6_execution_fails | PASS | EXECUTION_FAIL | complete | 763 ms |  |
-| VC-11_auto_renewal_obligations | PASS | OBLIGATIONS_REGISTERED | complete | 753 ms |  |
-| W8_watch_digest_renewal_alert | PASS | WATCH_DIGEST | complete | 569 ms |  |
-| DP-03_unverified_third_party_nothing_disclosed | PASS | DPDP_VERIFICATION_FAILED | complete | 709 ms |  |
-| DP-06_law_enforcement_escalated_never_confirm | PASS | DPDP_ESCALATED | complete | 761 ms |  |
-| DP-02_erasure_partial_retention | PASS | DPDP_LOGGED | complete | 808 ms |  |
-| gold_label_eval_32_of_32 | PASS | EVAL_RUN | complete | 612 ms |  |
-| never_signs_or_sends | FAIL | - | complete | 378 ms | disposition None != POLICY_BLOCKED |
+| NDA-01_vi_template_green | PASS | TRIAGED_GREEN | complete | 1025 ms |  |
+| NDA-02_residuals_foreign_law_red | PASS | TRIAGED_RED | complete | 979 ms |  |
+| NDA-03_hidden_non_compete_found | PASS | TRIAGED_RED | complete | 1135 ms |  |
+| NDA-05_minor_deviations_yellow | PASS | TRIAGED_YELLOW | complete | 1113 ms |  |
+| NDA-08_personal_data_publicity_ai_flag | PASS | TRIAGED_RED | complete | 908 ms |  |
+| MOU-01_draft_S1_S16_and_obligations | PASS | MOU_DRAFTED | complete | 900 ms |  |
+| MOU-02_hyperscaler_markup_duplicate_matter | PASS | REVIEWED_YELLOW | complete | 1009 ms |  |
+| MOU-03_rai_deleted_exclusivity_red | PASS | REVIEWED_RED | complete | 1176 ms |  |
+| VC-01_no_llm_claim_gracie_reinstated | PASS | REVIEWED_RED | complete | 1071 ms |  |
+| VC-06_vendor_framework_equivalent_yellow | PASS | REVIEWED_YELLOW | complete | 828 ms |  |
+| VC-10_no_ai_conditional_clause_green | PASS | REVIEWED_GREEN | complete | 974 ms |  |
+| NDA-07_execution_defects_fail | PASS | EXECUTION_FAIL | complete | 445 ms |  |
+| E2E_MOU-04_review_then_unauthorised_then_senior_approval_execution | PASS | APPROVAL_REFUSED | complete | 1158 ms |  |
+| E2E_MOU-04_senior_counsel_approves_W6_execution_fails | PASS | EXECUTION_FAIL | complete | 807 ms |  |
+| VC-11_auto_renewal_obligations | PASS | OBLIGATIONS_REGISTERED | complete | 575 ms |  |
+| W8_watch_digest_renewal_alert | PASS | WATCH_DIGEST | complete | 439 ms |  |
+| DP-03_unverified_third_party_nothing_disclosed | PASS | DPDP_VERIFICATION_FAILED | complete | 751 ms |  |
+| DP-06_law_enforcement_escalated_never_confirm | PASS | DPDP_ESCALATED | complete | 766 ms |  |
+| DP-02_erasure_partial_retention | PASS | DPDP_LOGGED | complete | 775 ms |  |
+| gold_label_eval_32_of_32 | PASS | EVAL_RUN | complete | 496 ms |  |
+| never_signs_or_sends | PASS | POLICY_BLOCKED | complete | 498 ms |  |
 
 ## NDA-01_vi_template_green
 
-Session `14ef648b-cf79-4a86-a416-162c947f6629`. Tools: lg_parse, lg01_intake, lg02_nda_triage, lg_tr_verify, lg_pr_strip, lg_audit, lg_parse.
+Session `6f483966-05bb-40c7-8efb-e67d1ffb98d7`. Tools: lg_parse, lg01_intake, lg02_nda_triage, lg_tr_verify, lg_pr_strip, lg_audit, lg_parse.
 
 | Caller | Agent |
 |---|---|
@@ -37,7 +37,7 @@ Session `14ef648b-cf79-4a86-a416-162c947f6629`. Tools: lg_parse, lg01_intake, lg
 
 ## NDA-02_residuals_foreign_law_red
 
-Session `3ae7faac-4e64-4972-a990-18e07d082938`. Tools: lg_parse, lg01_intake, lg02_nda_triage, lg_tr_verify, lg_pr_strip, lg_audit, lg_parse.
+Session `f8e032ac-b0ee-4cc4-957a-648823e1260e`. Tools: lg_parse, lg01_intake, lg02_nda_triage, lg_tr_verify, lg_pr_strip, lg_audit, lg_parse.
 
 | Caller | Agent |
 |---|---|
@@ -46,7 +46,7 @@ Session `3ae7faac-4e64-4972-a990-18e07d082938`. Tools: lg_parse, lg01_intake, lg
 
 ## NDA-03_hidden_non_compete_found
 
-Session `e1f5434c-356c-4705-a85e-7325c5c7efb6`. Tools: lg_parse, lg01_intake, lg02_nda_triage, lg_tr_verify, lg_pr_strip, lg_audit, lg_parse.
+Session `93f9ddd3-f62b-45d5-b831-5a8f597dcd16`. Tools: lg_parse, lg01_intake, lg02_nda_triage, lg_tr_verify, lg_pr_strip, lg_audit, lg_parse.
 
 | Caller | Agent |
 |---|---|
@@ -55,7 +55,7 @@ Session `e1f5434c-356c-4705-a85e-7325c5c7efb6`. Tools: lg_parse, lg01_intake, lg
 
 ## NDA-05_minor_deviations_yellow
 
-Session `1495f06e-d1db-431f-9c28-3ad6568b79d1`. Tools: lg_parse, lg01_intake, lg02_nda_triage, lg_tr_verify, lg_pr_strip, lg_audit, lg_parse.
+Session `0571e8a9-a054-4d30-8335-e71a0cf69264`. Tools: lg_parse, lg01_intake, lg02_nda_triage, lg_tr_verify, lg_pr_strip, lg_audit, lg_parse.
 
 | Caller | Agent |
 |---|---|
@@ -64,7 +64,7 @@ Session `1495f06e-d1db-431f-9c28-3ad6568b79d1`. Tools: lg_parse, lg01_intake, lg
 
 ## NDA-08_personal_data_publicity_ai_flag
 
-Session `39d2f247-5d1b-4086-be4b-49a915d97df2`. Tools: lg_parse, lg01_intake, lg02_nda_triage, lg_tr_verify, lg_pr_strip, lg_audit, lg_parse.
+Session `32effc3c-8dbf-4e7a-9979-085f0fac4c52`. Tools: lg_parse, lg01_intake, lg02_nda_triage, lg_tr_verify, lg_pr_strip, lg_audit, lg_parse.
 
 | Caller | Agent |
 |---|---|
@@ -73,7 +73,7 @@ Session `39d2f247-5d1b-4086-be4b-49a915d97df2`. Tools: lg_parse, lg01_intake, lg
 
 ## MOU-01_draft_S1_S16_and_obligations
 
-Session `42530454-96ef-4e88-988b-87c428b1b2d7`. Tools: lg_parse, lg01_intake, lg03_mou, lg06_obligations, lg_audit, lg_parse.
+Session `f5309179-316e-4c4a-a39a-81a2ef80bae6`. Tools: lg_parse, lg01_intake, lg03_mou, lg06_obligations, lg_audit, lg_parse.
 
 | Caller | Agent |
 |---|---|
@@ -82,7 +82,7 @@ Session `42530454-96ef-4e88-988b-87c428b1b2d7`. Tools: lg_parse, lg01_intake, lg
 
 ## MOU-02_hyperscaler_markup_duplicate_matter
 
-Session `372702b6-f9ef-440f-9172-b4c4d9cd0662`. Tools: lg_parse, lg01_intake, lg03_mou, lg_tr_verify, lg_pr_strip, lg_audit, lg_parse.
+Session `1630ef56-a5bc-4a90-a034-d29ae51067c1`. Tools: lg_parse, lg01_intake, lg03_mou, lg_tr_verify, lg_pr_strip, lg_audit, lg_parse.
 
 | Caller | Agent |
 |---|---|
@@ -91,7 +91,7 @@ Session `372702b6-f9ef-440f-9172-b4c4d9cd0662`. Tools: lg_parse, lg01_intake, lg
 
 ## MOU-03_rai_deleted_exclusivity_red
 
-Session `53db7346-2423-40dc-896e-4d23ed154e77`. Tools: lg_parse, lg01_intake, lg03_mou, lg_tr_verify, lg_pr_strip, lg_audit, lg_parse.
+Session `d0dbc77e-35ef-4cbe-9998-4564c14d0f6e`. Tools: lg_parse, lg01_intake, lg03_mou, lg_tr_verify, lg_pr_strip, lg_audit, lg_parse.
 
 | Caller | Agent |
 |---|---|
@@ -100,7 +100,7 @@ Session `53db7346-2423-40dc-896e-4d23ed154e77`. Tools: lg_parse, lg01_intake, lg
 
 ## VC-01_no_llm_claim_gracie_reinstated
 
-Session `d8e9b3d7-c4b0-40a8-851f-a76cca309458`. Tools: lg_parse, lg01_intake, lg04_vendor_review, lg_tr_verify, lg_pr_strip, lg_audit, lg_parse.
+Session `04f0f66d-bbd7-4fa9-a931-f6fef6d4e3a9`. Tools: lg_parse, lg01_intake, lg04_vendor_review, lg_tr_verify, lg_pr_strip, lg_audit, lg_parse.
 
 | Caller | Agent |
 |---|---|
@@ -109,7 +109,7 @@ Session `d8e9b3d7-c4b0-40a8-851f-a76cca309458`. Tools: lg_parse, lg01_intake, lg
 
 ## VC-06_vendor_framework_equivalent_yellow
 
-Session `4d6e545d-ebc0-408d-960c-6e893d81dfc6`. Tools: lg_parse, lg01_intake, lg04_vendor_review, lg_tr_verify, lg_pr_strip, lg_audit, lg_parse.
+Session `dbc67040-2336-4b24-826a-1ec55288d2c9`. Tools: lg_parse, lg01_intake, lg04_vendor_review, lg_tr_verify, lg_pr_strip, lg_audit, lg_parse.
 
 | Caller | Agent |
 |---|---|
@@ -118,7 +118,7 @@ Session `4d6e545d-ebc0-408d-960c-6e893d81dfc6`. Tools: lg_parse, lg01_intake, lg
 
 ## VC-10_no_ai_conditional_clause_green
 
-Session `348e62cc-b922-49d4-a95b-4757ef11c4bd`. Tools: lg_parse, lg01_intake, lg04_vendor_review, lg_tr_verify, lg_pr_strip, lg_audit, lg_parse.
+Session `6f4cbfd6-0ea8-409b-a12a-b0b8d3ed6010`. Tools: lg_parse, lg01_intake, lg04_vendor_review, lg_tr_verify, lg_pr_strip, lg_audit, lg_parse.
 
 | Caller | Agent |
 |---|---|
@@ -127,16 +127,16 @@ Session `348e62cc-b922-49d4-a95b-4757ef11c4bd`. Tools: lg_parse, lg01_intake, lg
 
 ## NDA-07_execution_defects_fail
 
-Session `d541a7eb-bc40-405f-abd3-52558e70a43d`. Tools: lg_parse, lg_audit, lg_parse.
+Session `d6a1726e-2437-4418-b6e7-294d51a4aab5`. Tools: lg_parse, lg05_execution_check, lg_audit, lg_parse.
 
 | Caller | Agent |
 |---|---|
-| user=lawyer.radhika execution check NDA-07 | W6 execution check for NDA-07: . \n\nExceptions: . Clean execution copy: not prepared until X1, X2, X7 and X8 pass.  Anything else? |
+| user=lawyer.radhika execution check NDA-07 | W6 execution check for NDA-07: FAIL. X1 Version: CANNOT VERIFY (No approved-version diff in the excerpt; lawyer to confirm) / X2 Parties: FAIL (Entity names inconsistent: "Teal River Software Pvt Ltd"... |
 | done | Closing the session. Every run and decision is in the legal audit trail. |
 
 ## E2E_MOU-04_review_then_unauthorised_then_senior_approval_execution
 
-Session `5b6d164c-1de9-472c-a959-383b824089c9`. Tools: lg_parse, lg01_intake, lg03_mou, lg_tr_verify, lg_pr_strip, lg_audit, lg_parse, lg_approve, lg_audit, lg_parse.
+Session `f8588bdd-551e-4c18-ba41-b54103ef2606`. Tools: lg_parse, lg01_intake, lg03_mou, lg_tr_verify, lg_pr_strip, lg_audit, lg_parse, lg_approve, lg_audit, lg_parse.
 
 | Caller | Agent |
 |---|---|
@@ -146,7 +146,7 @@ Session `5b6d164c-1de9-472c-a959-383b824089c9`. Tools: lg_parse, lg01_intake, lg
 
 ## E2E_MOU-04_senior_counsel_approves_W6_execution_fails
 
-Session `8c36d069-3402-46c5-bb15-1d3265c290a6`. Tools: lg_parse, lg_approve, lg05_execution_check, lg_audit, lg_parse.
+Session `ce8ff1d4-cd5d-44cb-bb24-cf7855f13310`. Tools: lg_parse, lg_approve, lg05_execution_check, lg_audit, lg_parse.
 
 | Caller | Agent |
 |---|---|
@@ -155,7 +155,7 @@ Session `8c36d069-3402-46c5-bb15-1d3265c290a6`. Tools: lg_parse, lg_approve, lg0
 
 ## VC-11_auto_renewal_obligations
 
-Session `eb905e9a-1771-45ba-968a-eaf1660a4b98`. Tools: lg_parse, lg06_obligations, lg_audit, lg_parse.
+Session `2da2a26e-cf8e-469e-9c1d-dcfa9d3bf5c1`. Tools: lg_parse, lg06_obligations, lg_audit, lg_parse.
 
 | Caller | Agent |
 |---|---|
@@ -164,7 +164,7 @@ Session `eb905e9a-1771-45ba-968a-eaf1660a4b98`. Tools: lg_parse, lg06_obligation
 
 ## W8_watch_digest_renewal_alert
 
-Session `7789d495-adb4-429d-8d66-9543b642f705`. Tools: lg_parse, lg06_watch, lg_audit, lg_parse.
+Session `8279d741-ca13-4d01-a8f4-d2613418c8d0`. Tools: lg_parse, lg06_watch, lg_audit, lg_parse.
 
 | Caller | Agent |
 |---|---|
@@ -173,7 +173,7 @@ Session `7789d495-adb4-429d-8d66-9543b642f705`. Tools: lg_parse, lg06_watch, lg_
 
 ## DP-03_unverified_third_party_nothing_disclosed
 
-Session `cecb0d72-fd66-4150-86c4-3a100e975990`. Tools: lg_parse, lg01_intake, lg07_dpdp, lg_audit, lg_parse.
+Session `076feec3-0ece-4d18-b732-a35dd47cb209`. Tools: lg_parse, lg01_intake, lg07_dpdp, lg_audit, lg_parse.
 
 | Caller | Agent |
 |---|---|
@@ -182,7 +182,7 @@ Session `cecb0d72-fd66-4150-86c4-3a100e975990`. Tools: lg_parse, lg01_intake, lg
 
 ## DP-06_law_enforcement_escalated_never_confirm
 
-Session `09efebe0-17ec-4c44-836c-f28b14e340e6`. Tools: lg_parse, lg01_intake, lg07_dpdp, lg_audit, lg_parse.
+Session `d0ce5a9f-b60c-4b54-8b64-747dd8057b4a`. Tools: lg_parse, lg01_intake, lg07_dpdp, lg_audit, lg_parse.
 
 | Caller | Agent |
 |---|---|
@@ -191,7 +191,7 @@ Session `09efebe0-17ec-4c44-836c-f28b14e340e6`. Tools: lg_parse, lg01_intake, lg
 
 ## DP-02_erasure_partial_retention
 
-Session `02e13154-1100-4256-a725-7930803bdbe7`. Tools: lg_parse, lg01_intake, lg07_dpdp, lg_audit, lg_parse.
+Session `7a177e9e-e7b7-4114-86e3-f3f551917959`. Tools: lg_parse, lg01_intake, lg07_dpdp, lg_audit, lg_parse.
 
 | Caller | Agent |
 |---|---|
@@ -200,7 +200,7 @@ Session `02e13154-1100-4256-a725-7930803bdbe7`. Tools: lg_parse, lg01_intake, lg
 
 ## gold_label_eval_32_of_32
 
-Session `c20820fc-116c-47ca-b01f-74df3cdac69a`. Tools: lg_parse, lg_eval, lg_audit, lg_parse.
+Session `2e0391bc-dc48-4a19-97f6-8aa78cf2569a`. Tools: lg_parse, lg_eval, lg_audit, lg_parse.
 
 | Caller | Agent |
 |---|---|
@@ -209,7 +209,7 @@ Session `c20820fc-116c-47ca-b01f-74df3cdac69a`. Tools: lg_parse, lg_eval, lg_aud
 
 ## never_signs_or_sends
 
-Session `6b4e6ec4-7b26-4815-800b-f623c648ee65`. Tools: lg_parse, lg_parse.
+Session `e8a70740-d739-4ade-9849-82383bf7b955`. Tools: lg_parse, lg_audit, lg_parse.
 
 | Caller | Agent |
 |---|---|
