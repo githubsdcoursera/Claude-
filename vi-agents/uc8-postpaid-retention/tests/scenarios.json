@@ -1,0 +1,429 @@
+[
+ {
+  "name": "E9_in_collections_suppressed_pre_dial",
+  "turns": [
+   "CALL_START msisdn=9900000006 direction=outbound trigger=T1"
+  ],
+  "expect": {
+   "disposition": "COMPLIANCE_STOP",
+   "exit": "complete",
+   "tools": [
+    "a06_u8_gate",
+    "a11_write_post_call"
+   ],
+   "no_tools": [
+    "a03_u8_account_context",
+    "a04_u8_verify_factor"
+   ]
+  }
+ },
+ {
+  "name": "open_nodal_complaint_not_called",
+  "turns": [
+   "CALL_START msisdn=9900000007 direction=outbound trigger=T3"
+  ],
+  "expect": {
+   "disposition": "COMPLIANCE_STOP",
+   "exit": "complete",
+   "no_tools": [
+    "a03_u8_account_context"
+   ]
+  }
+ },
+ {
+  "name": "cooldown_not_called",
+  "turns": [
+   "CALL_START msisdn=9900000010 direction=outbound trigger=T1"
+  ],
+  "expect": {
+   "disposition": "COMPLIANCE_STOP",
+   "exit": "complete",
+   "no_tools": [
+    "a03_u8_account_context"
+   ]
+  }
+ },
+ {
+  "name": "E1_network_ticket_eta_read_no_offer",
+  "turns": [
+   "CALL_START msisdn=9900000001 direction=outbound trigger=T3",
+   "yes speaking",
+   "the 5th",
+   "my data is really slow at home",
+   "ok that's fine"
+  ],
+  "expect": {
+   "tools": [
+    "a06_u8_gate",
+    "a04_u8_verify_factor",
+    "a03_u8_account_context",
+    "rt01_classify_cause",
+    "a11_write_post_call"
+   ],
+   "no_tools": [
+    "rt03_offer_eligible",
+    "rt02_plan_fit"
+   ],
+   "disposition": "RETAINED_SERVICE_FIX",
+   "exit": "complete",
+   "says": [
+    "This is Vi's AI assistant. This call may be recorded for quality and training.",
+    "To protect your account, can you confirm your billing cycle date?",
+    "I can see you've raised a couple of network issues recently",
+    "I can see your request TKT-90011 for slow data at home in Indiranagar",
+    "our team's current estimate is 31 October 2026"
+   ],
+   "never_says": [
+    "off your rental",
+    "bonus data"
+   ]
+  }
+ },
+ {
+  "name": "E2_bill_shock_roaming_drivers_verbatim_fit_before_offer",
+  "turns": [
+   "CALL_START msisdn=9900000002 direction=outbound trigger=T2",
+   "yes",
+   "12th",
+   "my last bill was huge because of the roaming charges",
+   "ok that makes sense, thanks"
+  ],
+  "expect": {
+   "tools": [
+    "rt02_billing_explain",
+    "rt02_plan_fit"
+   ],
+   "no_tools": [
+    "rt03_offer_eligible"
+   ],
+   "disposition": "RETAINED_PLAN_FIT",
+   "exit": "complete",
+   "says": [
+    "Your last bill was ₹4,862. The main items were international roaming in the UAE, ₹3,450; your Vi Max 701 rental, ₹701; and a ₹299 data add-on.",
+    "for the UAE, 7 days with 5 GB data, 150 minutes of calls and 100 SMS is ₹2,999",
+    "your Vi Max 701 plan fits your usage"
+   ]
+  }
+ },
+ {
+  "name": "E3_E4_over_plan_cheaper_fit_readback_yes_otp_ref",
+  "turns": [
+   "CALL_START msisdn=9900000003 direction=outbound trigger=T5",
+   "yes",
+   "the 20th",
+   "I barely use my data, I'm paying for things I don't use",
+   "yes switch",
+   "yes I agree",
+   "123456"
+  ],
+  "expect": {
+   "tools": [
+    "rt02_plan_fit",
+    "rt02_plan_quote",
+    "a08_record_consent",
+    "a04_send_otp",
+    "a04_verify_otp",
+    "a08_u8_plan_change"
+   ],
+   "no_tools": [
+    "rt03_offer_eligible"
+   ],
+   "disposition": "RETAINED_PLAN_FIT",
+   "exit": "complete",
+   "says": [
+    "Vi Max 401 would cover your usage at ₹401 a month",
+    "That's ₹700 less than your current plan",
+    "To confirm: I'll change your plan from Vi Max 1101 to Vi Max 401 at ₹401 a month plus taxes, from 20th November 2026. Do you agree?",
+    "That's done. Your reference number is PCH-"
+   ]
+  }
+ },
+ {
+  "name": "E5_just_tell_me_how_to_port_no_obstruction",
+  "turns": [
+   "CALL_START msisdn=9900000004 direction=outbound trigger=T7",
+   "yes",
+   "8th",
+   "just tell me how to port",
+   "no, I've made up my mind"
+  ],
+  "expect": {
+   "tools": [
+    "rt04_mnp_script"
+   ],
+   "no_tools": [
+    "rt03_offer_eligible",
+    "a08_u8_offer_apply"
+   ],
+   "disposition": "PORT_INFO_GIVEN",
+   "exit": "complete",
+   "says": [
+    "it's completely your choice",
+    "send an SMS with the word PORT, a space and your 10-digit mobile number to 1900"
+   ],
+   "never_says": [
+    "are you sure",
+    "can't port",
+    "cannot port",
+    "outstanding dues",
+    "refused"
+   ]
+  }
+ },
+ {
+  "name": "RT04_port_one_question_one_offer_then_stop",
+  "turns": [
+   "CALL_START msisdn=9900000004 direction=outbound trigger=T7",
+   "yes",
+   "8th",
+   "I want to port to another operator",
+   "well the price is too high",
+   "no thanks"
+  ],
+  "expect": {
+   "tools": [
+    "rt04_mnp_script",
+    "rt03_offer_eligible"
+   ],
+   "no_tools": [
+    "a08_u8_offer_apply"
+   ],
+   "disposition": "PORT_INFO_GIVEN",
+   "exit": "complete",
+   "says": [
+    "Before you go, is there anything Vi could fix for you?",
+    "One thing I can offer: 15% off your rental"
+   ]
+  }
+ },
+ {
+  "name": "E7_declines_offer_twice_stops_offering",
+  "turns": [
+   "CALL_START msisdn=9900000005 direction=outbound trigger=T1",
+   "yes",
+   "15th",
+   "it's too expensive for what I get",
+   "no thanks",
+   "no"
+  ],
+  "expect": {
+   "tools": [
+    "rt02_plan_fit",
+    "rt03_offer_eligible",
+    "rt03_record_response"
+   ],
+   "no_tools": [
+    "a08_u8_offer_apply"
+   ],
+   "disposition": "DECLINED_NO_ACTION",
+   "exit": "complete",
+   "says": [
+    "15% off your rental: 15% off your monthly rental",
+    "One alternative I can offer: 20 GB bonus data",
+    "Understood, I won't make any more offers."
+   ]
+  }
+ },
+ {
+  "name": "E12_barge_in_offer_terms_reread_then_consent_otp",
+  "turns": [
+   "CALL_START msisdn=9900000005 direction=outbound trigger=T1",
+   "yes",
+   "15th",
+   "it's too expensive for what I get",
+   "wait, what happens after that?",
+   "yes",
+   "yes I agree",
+   "123456"
+  ],
+  "expect": {
+   "tools": [
+    "rt03_offer_faq",
+    "a08_record_consent",
+    "a04_verify_otp",
+    "a08_u8_offer_apply"
+   ],
+   "disposition": "RETAINED_OFFER_R2",
+   "exit": "complete",
+   "says": [
+    "After your next 3 bill cycles, your bill goes back to your plan's normal rental",
+    "To read the terms in full again: 15% off your rental",
+    "That's done. Your reference number is OFR-"
+   ]
+  }
+ },
+ {
+  "name": "E8_verification_fails_twice_no_account_data",
+  "turns": [
+   "CALL_START msisdn=9900000003 direction=outbound trigger=T5",
+   "yes",
+   "the 3rd",
+   "111111"
+  ],
+  "expect": {
+   "tools": [
+    "a04_u8_verify_factor",
+    "a04_send_otp",
+    "a04_verify_otp"
+   ],
+   "no_tools": [
+    "a03_u8_account_context"
+   ],
+   "disposition": "VERIFY_FAIL",
+   "exit": "complete",
+   "says": [
+    "I can't discuss this account on this call"
+   ],
+   "never_says": [
+    "Vi Max",
+    "₹",
+    "bill was"
+   ]
+  }
+ },
+ {
+  "name": "E10_vulnerability_cue_callback",
+  "turns": [
+   "CALL_START msisdn=9900000009 direction=outbound trigger=T6",
+   "yes",
+   "25th",
+   "my father passed away last week, I can't deal with this now",
+   "call me another time"
+  ],
+  "expect": {
+   "tools": [
+    "a07_u8_book_callback"
+   ],
+   "disposition": "CALLBACK_BOOKED",
+   "exit": "complete",
+   "says": [
+    "I'm so sorry to hear that."
+   ],
+   "never_says": [
+    "offer"
+   ]
+  }
+ },
+ {
+  "name": "E13_hindi_then_english_follows_customer",
+  "turns": [
+   "CALL_START msisdn=9900000009 direction=outbound trigger=T6",
+   "haan ji",
+   "25th",
+   "everything is fine, no issues at all"
+  ],
+  "expect": {
+   "disposition": "HAPPY_NO_RISK",
+   "exit": "complete",
+   "says": [
+    "billing cycle ki tareekh",
+    "Glad to hear it's working well for you."
+   ]
+  }
+ },
+ {
+  "name": "E14_competitor_question_no_disparagement",
+  "turns": [
+   "CALL_START msisdn=9900000009 direction=outbound trigger=T6",
+   "yes",
+   "25th",
+   "is Jio better than Vi?",
+   "no, all good"
+  ],
+  "expect": {
+   "disposition": "HAPPY_NO_RISK",
+   "exit": "complete",
+   "says": [
+    "I can't comment on other operators."
+   ],
+   "never_says": [
+    "Jio is worse",
+    "Airtel is worse",
+    "Jio's network"
+   ]
+  }
+ },
+ {
+  "name": "driving_callback_and_end",
+  "turns": [
+   "CALL_START msisdn=9900000001 direction=outbound trigger=T3",
+   "sorry, I'm driving"
+  ],
+  "expect": {
+   "tools": [
+    "a07_u8_book_callback"
+   ],
+   "no_tools": [
+    "a03_u8_account_context"
+   ],
+   "disposition": "CALLBACK_BOOKED",
+   "exit": "complete"
+  }
+ },
+ {
+  "name": "stop_calling_opt_out",
+  "turns": [
+   "CALL_START msisdn=9900000001 direction=outbound trigger=T3",
+   "yes",
+   "the 5th",
+   "stop calling me"
+  ],
+  "expect": {
+   "tools": [
+    "a06_record_opt_out"
+   ],
+   "disposition": "DND_OPT_OUT",
+   "exit": "complete"
+  }
+ },
+ {
+  "name": "E6_demands_beyond_r2_warm_transfer_r3",
+  "turns": [
+   "CALL_START msisdn=9900000005 direction=outbound trigger=T1",
+   "yes",
+   "15th",
+   "it's too expensive for what I get",
+   "that's not enough, I want a 50% discount"
+  ],
+  "expect": {
+   "tools": [
+    "rt03_offer_eligible",
+    "a09_create_handoff"
+   ],
+   "no_tools": [
+    "a08_u8_offer_apply"
+   ],
+   "disposition": "TRANSFERRED_RETENTION_DESK",
+   "exit": "escalate",
+   "says": [
+    "That's beyond what I can offer on this call, and I can't promise it."
+   ]
+  }
+ },
+ {
+  "name": "E11_plan_change_api_fails_twice_not_told_done",
+  "turns": [
+   "CALL_START msisdn=9900000008 direction=outbound trigger=T5",
+   "yes",
+   "3rd",
+   "I don't use much of my data",
+   "yes",
+   "yes I agree",
+   "123456"
+  ],
+  "expect": {
+   "tools": [
+    "a08_u8_plan_change",
+    "a09_create_handoff"
+   ],
+   "disposition": "TECH_FAIL",
+   "exit": "escalate",
+   "says": [
+    "nothing has been changed on your account"
+   ],
+   "never_says": [
+    "That's done"
+   ]
+  }
+ }
+]

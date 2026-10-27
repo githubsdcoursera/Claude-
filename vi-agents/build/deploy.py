@@ -136,7 +136,7 @@ def smoke_mock(pid, wid, spec, sample):
     r = ok("platform_workflows", {"action": "execute", "projectId": pid, "workflowId": wid, "input": sample})
     e = wait_execution(pid, wid, r["executionId"])
     if e.get("status") != "completed":
-        raise ArchError(f"mock {spec['name']} failed: {json.dumps(e)[:800]}")
+        raise ArchError(f"mock {spec['name']} failed: {json.dumps(e)[-2500:]}")
     return e.get("output")
 
 

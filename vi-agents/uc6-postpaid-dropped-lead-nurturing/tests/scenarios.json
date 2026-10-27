@@ -1,0 +1,385 @@
+[
+ {
+  "name": "dnd_lead_no_call",
+  "turns": [
+   "CALL_START msisdn=9890000006 direction=outbound campaign=UC6_PILOT"
+  ],
+  "expect": {
+   "disposition": "COMPLIANCE_STOP",
+   "exit": "complete",
+   "tools": [
+    "a06_u6_gate",
+    "a11_write_post_call"
+   ],
+   "no_tools": [
+    "a03_u6_lead_context"
+   ]
+  }
+ },
+ {
+  "name": "lead_older_than_7_days_no_call",
+  "turns": [
+   "CALL_START msisdn=9890000007 direction=outbound campaign=UC6_PILOT"
+  ],
+  "expect": {
+   "disposition": "COMPLIANCE_STOP",
+   "exit": "complete",
+   "no_tools": [
+    "a03_u6_lead_context"
+   ]
+  }
+ },
+ {
+  "name": "attempt_cap_exhausted_no_call",
+  "turns": [
+   "CALL_START msisdn=9890000012 direction=outbound campaign=UC6_PILOT"
+  ],
+  "expect": {
+   "disposition": "NO_CONTACT_EXHAUSTED",
+   "exit": "complete",
+   "no_tools": [
+    "a03_u6_lead_context"
+   ]
+  }
+ },
+ {
+  "name": "E1_j1_plan_confusion_link_sent",
+  "turns": [
+   "CALL_START msisdn=9890000001 direction=outbound campaign=UC6_PILOT",
+   "yes speaking",
+   "I wasn't sure which plan to pick",
+   "just me, one line, I use maybe 40 GB a month",
+   "the first one",
+   "no that's all"
+  ],
+  "expect": {
+   "tools": [
+    "a06_u6_gate",
+    "a03_u6_lead_context",
+    "dl01_classify_drop",
+    "dl02_plan_search",
+    "dl03_resume_link",
+    "a11_write_post_call"
+   ],
+   "disposition": "CONVERTED_LINK_SENT",
+   "exit": "complete",
+   "says": [
+    "This is Vi's AI assistant, calling about your Vi postpaid request. This call may be recorded for quality.",
+    "Am I speaking with Rohan?",
+    "You'd reached the plan selection step",
+    "Vi Max 401 is ₹401 a month plus taxes, with unlimited calls, 50 GB data with 200 GB rollover and 3,000 SMS a month. There's no security deposit on this plan.",
+    "I've sent a link to your number ending 0001. It's valid for 48 hours",
+    "Thanks for your time, Rohan."
+   ]
+  }
+ },
+ {
+  "name": "E2_wrong_person_no_journey_detail",
+  "turns": [
+   "CALL_START msisdn=9890000001 direction=outbound campaign=UC6_PILOT",
+   "no, wrong number"
+  ],
+  "expect": {
+   "tools": [
+    "a06_u6_suppress_lead",
+    "a11_write_post_call"
+   ],
+   "no_tools": [
+    "a03_u6_lead_context"
+   ],
+   "disposition": "WRONG_PARTY",
+   "exit": "complete",
+   "says": [
+    "Sorry for the trouble. We won't call this number about this again."
+   ],
+   "never_says": [
+    "plan selection",
+    "new Vi postpaid connection"
+   ]
+  }
+ },
+ {
+  "name": "E3_refuses_aadhaar_by_voice_offers_link",
+  "turns": [
+   "CALL_START msisdn=9890000005 direction=outbound campaign=UC6_PILOT",
+   "yes",
+   "the KYC step failed",
+   "can you just take my aadhaar number on the phone instead",
+   "ok send it",
+   "no"
+  ],
+  "expect": {
+   "tools": [
+    "dl03_resume_link"
+   ],
+   "disposition": "CONVERTED_LINK_SENT",
+   "exit": "complete",
+   "says": [
+    "I won't ask for any ID numbers",
+    "I can't take Aadhaar, PAN or card details by voice. KYC happens only in the secure Vi link."
+   ]
+  }
+ },
+ {
+  "name": "E5_pincode_not_serviceable",
+  "turns": [
+   "CALL_START msisdn=9890000002 direction=outbound campaign=UC6_PILOT",
+   "yes",
+   "it said my address is not covered"
+  ],
+  "expect": {
+   "tools": [
+    "dl03_coverage_check",
+    "a06_u6_suppress_lead"
+   ],
+   "no_tools": [
+    "dl03_resume_link"
+   ],
+   "disposition": "NOT_SERVICEABLE",
+   "exit": "complete",
+   "says": [
+    "Vi postpaid isn't available at your address yet"
+   ]
+  }
+ },
+ {
+  "name": "E6_upc_expired_steps_verbatim_callback",
+  "turns": [
+   "CALL_START msisdn=9890000003 direction=outbound campaign=UC6_PILOT",
+   "yes",
+   "my porting code expired before I could finish",
+   "in a few days, once I have the new code"
+  ],
+  "expect": {
+   "tools": [
+    "dl03_mnp_steps",
+    "a07_u6_book_callback"
+   ],
+   "disposition": "CALLBACK_BOOKED",
+   "exit": "complete",
+   "says": [
+    "Your earlier porting code has expired",
+    "send an SMS with the word PORT, a space and your 10-digit mobile number to 1900",
+    "I'll call you back Friday between 6 and 7 pm"
+   ]
+  }
+ },
+ {
+  "name": "E7_hindi_to_english_code_switch",
+  "turns": [
+   "CALL_START msisdn=9890000001 direction=outbound campaign=UC6_PILOT",
+   "haan ji, main bol raha hoon",
+   "sorry, can we speak in English? I wasn't sure which plan to choose",
+   "one line, about 40 GB",
+   "the first one",
+   "no"
+  ],
+  "expect": {
+   "disposition": "CONVERTED_LINK_SENT",
+   "exit": "complete",
+   "says": [
+    "Aapko aage badhne se kya roka?",
+    "I can help you pick the right one."
+   ]
+  }
+ },
+ {
+  "name": "E8_stop_calling_dnd_written",
+  "turns": [
+   "CALL_START msisdn=9890000001 direction=outbound campaign=UC6_PILOT",
+   "yes",
+   "stop calling me"
+  ],
+  "expect": {
+   "tools": [
+    "a06_record_opt_out",
+    "a11_write_post_call"
+   ],
+   "disposition": "DND_OPT_OUT",
+   "exit": "complete",
+   "says": [
+    "If you'd prefer not to get these calls, just tell me and we'll stop.",
+    "We'll stop these calls"
+   ]
+  }
+ },
+ {
+  "name": "E9_driving_callback_and_end",
+  "turns": [
+   "CALL_START msisdn=9890000001 direction=outbound campaign=UC6_PILOT",
+   "sorry I'm driving right now"
+  ],
+  "expect": {
+   "tools": [
+    "a07_u6_book_callback"
+   ],
+   "no_tools": [
+    "a03_u6_lead_context"
+   ],
+   "disposition": "CALLBACK_BOOKED",
+   "exit": "complete",
+   "says": [
+    "I'll call you back this evening between 6 and 7 pm"
+   ]
+  }
+ },
+ {
+  "name": "E11_barge_in_answers_then_rereads_in_full",
+  "turns": [
+   "CALL_START msisdn=9890000001 direction=outbound campaign=UC6_PILOT",
+   "yes",
+   "I was confused between the plans",
+   "one line, unlimited data, I watch a lot of Netflix",
+   "wait, is there a deposit?",
+   "the first one",
+   "no"
+  ],
+  "expect": {
+   "tools": [
+    "dl02_plan_faq",
+    "dl03_resume_link"
+   ],
+   "disposition": "CONVERTED_LINK_SENT",
+   "exit": "complete",
+   "says": [
+    "There's a refundable security deposit of ₹500, which is waived if you set up autopay. To give you the full details again: Vi Max 701 is ₹701 a month plus taxes"
+   ]
+  }
+ },
+ {
+  "name": "j5_missed_visit_slot_rebooked",
+  "turns": [
+   "CALL_START msisdn=9890000004 direction=outbound campaign=UC6_PILOT",
+   "yes",
+   "the executive never came for the visit",
+   "the second one please"
+  ],
+  "expect": {
+   "tools": [
+    "dl03_slot_options",
+    "dl03_slot_rebook"
+   ],
+   "disposition": "SLOT_REBOOKED",
+   "exit": "complete",
+   "says": [
+    "I can book Wednesday 29 October, 10 am to 12 pm, or Thursday 30 October, 4 to 6 pm",
+    "Your visit is booked for Thursday 30 October, 4 to 6 pm"
+   ]
+  }
+ },
+ {
+  "name": "j3_family_approval_callback",
+  "turns": [
+   "CALL_START msisdn=9890000008 direction=outbound campaign=UC6_PILOT",
+   "yes",
+   "I need to ask my husband first",
+   "tomorrow evening"
+  ],
+  "expect": {
+   "tools": [
+    "a07_u6_book_callback"
+   ],
+   "disposition": "CALLBACK_BOOKED",
+   "exit": "complete",
+   "says": [
+    "I'll call you back tomorrow between 6 and 7 pm"
+   ]
+  }
+ },
+ {
+  "name": "payment_failed_link_to_payment_step",
+  "turns": [
+   "CALL_START msisdn=9890000011 direction=outbound campaign=UC6_PILOT",
+   "yes",
+   "the payment failed on my card",
+   "yes send it",
+   "no"
+  ],
+  "expect": {
+   "tools": [
+    "dl03_resume_link"
+   ],
+   "disposition": "CONVERTED_LINK_SENT",
+   "exit": "complete",
+   "says": [
+    "I can't take card details on the call"
+   ]
+  }
+ },
+ {
+  "name": "E4_discount_demand_ms05_transfer",
+  "turns": [
+   "CALL_START msisdn=9890000001 direction=outbound campaign=UC6_PILOT",
+   "yes",
+   "it was too expensive",
+   "one line, unlimited data",
+   "I'll only take it if you give me a 50% discount",
+   "yes please"
+  ],
+  "expect": {
+   "tools": [
+    "a09_create_handoff"
+   ],
+   "disposition": "TRANSFERRED_SALES",
+   "exit": "escalate",
+   "says": [
+    "That isn't something I can offer on this call. I can connect you to a colleague."
+   ]
+  }
+ },
+ {
+  "name": "E10_catalogue_fails_twice_system_fail",
+  "turns": [
+   "CALL_START msisdn=9890000010 direction=outbound campaign=UC6_PILOT",
+   "yes",
+   "I was confused about which plan to take",
+   "one line, 50 GB"
+  ],
+  "expect": {
+   "tools": [
+    "dl02_plan_search",
+    "a09_create_handoff"
+   ],
+   "disposition": "TECH_FAIL",
+   "exit": "escalate",
+   "says": [
+    "I'm connecting you to a Vi colleague now"
+   ]
+  }
+ },
+ {
+  "name": "E12_abusive_two_turns_handoff",
+  "turns": [
+   "CALL_START msisdn=9890000001 direction=outbound campaign=UC6_PILOT",
+   "yes",
+   "this is useless nonsense",
+   "you are stupid"
+  ],
+  "expect": {
+   "tools": [
+    "a02_sentiment_event",
+    "a09_create_handoff"
+   ],
+   "disposition": "TRANSFERRED_SALES",
+   "exit": "escalate",
+   "says": [
+    "I can hear this has been frustrating"
+   ]
+  }
+ },
+ {
+  "name": "j4_assisted_lead_ready_to_buy_hot_transfer",
+  "turns": [
+   "CALL_START msisdn=9890000009 direction=outbound campaign=UC6_PILOT",
+   "yes",
+   "nobody followed up after the store visit, I want to buy it now"
+  ],
+  "expect": {
+   "tools": [
+    "a09_create_handoff"
+   ],
+   "disposition": "TRANSFERRED_SALES",
+   "exit": "escalate"
+  }
+ }
+]

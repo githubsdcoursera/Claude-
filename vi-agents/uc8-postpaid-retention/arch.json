@@ -1,0 +1,10 @@
+{
+  "name": "Vi UC8 Postpaid Retention",
+  "description": "UC8 Postpaid Retention voice agent (outbound): trigger matrix T1-T7 with suppression (collections, Nodal complaint, cooldown, DND), AI disclosure, A04 verification (name + billing cycle date or OTP) before any account detail, fixed order service fix -> plan fit -> offer, RT03 one offer and one alternative from the signed matrix (R3 to retention desk), RT04 MNP safety with porting steps verbatim, consent + OTP + one retry for changes. Backend systems are MOCK workflows.",
+  "entry_agent": "UC8_Retention_Supervisor",
+  "model": "gemma4",
+  "agents": { "UC8_Retention_Supervisor": "agents/uc8_retention_supervisor.agent.abl" },
+  "shared_mocks": ["a04_send_otp", "a04_verify_otp", "a08_record_consent", "a06_record_opt_out", "a02_sentiment_event", "a09_create_handoff", "a11_write_post_call"],
+  "smoke_inputs": { "msisdn": "9900000003", "trigger_code": "T5", "answer": "the 20th", "text": "I barely use my data", "root_cause": "PRICE_VALUE", "plan_id": "PP-401", "offer_id": "OF8-R1-DATA20", "question": "what happens after that", "response": "declined", "issue": "slow data", "consent_ref": "CNS-TEST", "otp_ref": "OTP-TEST", "idempotency_key": "smoke-1", "otp": "123456", "purpose": "smoke", "action": "smoke", "price": "₹401", "campaign": "UC8", "count": "0", "phrase": "smoke", "preference": "tomorrow morning", "reason": "smoke", "queue": "RETENTION_DESK", "summary": "smoke", "recommended_next_step": "smoke", "disposition": "SMOKE", "outcome": "smoke" },
+  "deployment_label": "uc8-v1"
+}
