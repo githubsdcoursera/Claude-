@@ -143,6 +143,9 @@ FLOW:
       clarify_count = 0
       otp_attempts = 0
       resolved_count = 0
+      outcome = "in_progress"
+      intent = "none"
+      csat_score = "none"
       disposition = "IN_PROGRESS"
     THEN: s1_disclose
 

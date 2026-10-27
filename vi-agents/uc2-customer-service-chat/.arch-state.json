@@ -38,8 +38,8 @@
   "projectId": "01a17d40-5a67-7bc6-829c-7a41b5fe03a4",
   "deployment": {
     "env": "dev",
-    "id": "01a17edd-e41b-7455-a606-eb564718d76f",
-    "endpointSlug": "01a17d40-dev-mvr37ehe-ba3bfc",
+    "id": "01a17f11-2e3d-7162-bfe6-90b63afe33ee",
+    "endpointSlug": "01a17d40-dev-mvr57g3a-cb2620",
     "agents": {
       "UC2_Chat_Supervisor": {
         "version": "1.0.0"
