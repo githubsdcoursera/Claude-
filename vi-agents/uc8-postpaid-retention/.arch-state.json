@@ -26,7 +26,7 @@
   "workflow_versions": {
     "a03_u8_account_context": "v1.0.0",
     "a04_u8_verify_factor": "v1.0.0",
-    "a06_u8_gate": "v1.0.0",
+    "a06_u8_gate": "v1.0.1",
     "a07_u8_book_callback": "v1.0.0",
     "a08_u8_offer_apply": "v1.0.0",
     "a08_u8_plan_change": "v1.0.0",

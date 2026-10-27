@@ -150,13 +150,13 @@ FLOW:
     REASONING: false
     RESPOND: "Hi, I'm Vi's virtual assistant, an AI. This chat is recorded for quality and training. Would you like to chat in English or Hindi?"
     ON_INPUT:
-      - IF: input matches "(hindi|हिंदी|hindee)" AND msisdn != ""
+      - IF: input matches "(hindi|हिंदी|hindee)" AND msisdn matches "^[0-9]{10}$"
         SET: spoken_language = "hi"
         THEN: s3_load_context
       - IF: input matches "(hindi|हिंदी|hindee)"
         SET: spoken_language = "hi"
         THEN: s2_capture_number
-      - IF: msisdn != ""
+      - IF: msisdn matches "^[0-9]{10}$"
         SET: spoken_language = "en"
         THEN: s3_load_context
       - ELSE:
