@@ -1,22 +1,22 @@
 # Test results: Vi UC3 Enterprise Collections
 
-6/9 scenarios passed. Run 2026-10-27 14:24 UTC against the draft agent through Arch debug sessions; backend systems are mock workflows.
+8/9 scenarios passed. Run 2026-10-27 20:26 UTC against the draft agent through Arch debug sessions; backend systems are mock workflows.
 
 | Scenario | Result | Disposition | End | Slowest turn | Notes |
 |---|---|---|---|---:|---|
-| verified_contact_pays_now | FAIL | PAYMENT_LINK_SENT | complete | 339 ms | never said: billing contact for Sharma Logistics Pvt Ltd |
-| promise_to_pay_within_policy | PASS | PTP_RECORDED | complete | 487 ms |  |
-| dispute_sr_token_and_dunning_paused | FAIL | DISPUTE_RAISED | complete | 605 ms | never said: reference token is SR- |
-| callback_scheduled | PASS | CALLBACK_SCHEDULED | complete | 286 ms |  |
-| paid_invoice_auto_closed_no_contact | PASS | PAID_AUTO_CLOSED | complete | 857 ms |  |
-| reminder_run_schedules_and_sends_link | PASS | REMINDERS_SCHEDULED | complete | 670 ms |  |
-| wrong_person_no_amount_disclosed | PASS | WRONG_PARTY | complete | 487 ms |  |
-| promise_beyond_policy_goes_to_desk | PASS | HANDOFF_PTP_BEYOND_POLICY | escalate | 941 ms |  |
-| waiver_request_to_collections_desk | FAIL | HANDOFF_WAIVER_REQUEST | escalate | 1694 ms | slowest turn 1694 ms > 1200 ms |
+| verified_contact_pays_now | PASS | PAYMENT_LINK_SENT | complete | 518 ms |  |
+| promise_to_pay_within_policy | PASS | PTP_RECORDED | complete | 507 ms |  |
+| dispute_sr_token_and_dunning_paused | FAIL | DISPUTE_RAISED | complete | 556 ms | never said: dispute reference number is SR- |
+| callback_scheduled | PASS | CALLBACK_SCHEDULED | complete | 279 ms |  |
+| paid_invoice_auto_closed_no_contact | PASS | PAID_AUTO_CLOSED | complete | 365 ms |  |
+| reminder_run_schedules_and_sends_link | PASS | REMINDERS_SCHEDULED | complete | 547 ms |  |
+| wrong_person_no_amount_disclosed | PASS | WRONG_PARTY | complete | 460 ms |  |
+| promise_beyond_policy_goes_to_desk | PASS | HANDOFF_PTP_BEYOND_POLICY | escalate | 458 ms |  |
+| waiver_request_to_collections_desk | PASS | HANDOFF_WAIVER_REQUEST | escalate | 299 ms |  |
 
 ## verified_contact_pays_now
 
-Session `1e42bd33-417a-48f0-b0e5-aac2c024ac5a`. Tools: a03_get_billing_status, a06_compliance_gate, a04_verify_billing_contact, a23_send_payment_link, a11_write_post_call.
+Session `1e6ba724-f3be-4d8d-8d4b-678abb51172b`. Tools: a03_get_billing_status, a06_compliance_gate, a04_verify_billing_contact, a23_send_payment_link, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -26,7 +26,7 @@ Session `1e42bd33-417a-48f0-b0e5-aac2c024ac5a`. Tools: a03_get_billing_status, a
 
 ## promise_to_pay_within_policy
 
-Session `d6e51eab-30ff-473b-a89c-d352dda0f362`. Tools: a03_get_billing_status, a06_compliance_gate, a04_verify_billing_contact, a23_record_ptp, a23_send_message, a11_write_post_call.
+Session `7f5d9126-492d-48a8-ab34-4aa27718596f`. Tools: a03_get_billing_status, a06_compliance_gate, a04_verify_billing_contact, a23_record_ptp, a23_send_message, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -36,7 +36,7 @@ Session `d6e51eab-30ff-473b-a89c-d352dda0f362`. Tools: a03_get_billing_status, a
 
 ## dispute_sr_token_and_dunning_paused
 
-Session `d31e1724-9b18-4ab0-87a8-2798c905d0a2`. Tools: a03_get_billing_status, a06_compliance_gate, a04_verify_billing_contact, a24_create_dispute_sr, a24_pause_dunning, a23_send_message, a11_write_post_call.
+Session `601b7547-8eb9-4e14-86a3-efdafaee963f`. Tools: a03_get_billing_status, a06_compliance_gate, a04_verify_billing_contact, a24_create_dispute_sr, a24_pause_dunning, a23_send_message, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -45,11 +45,11 @@ Session `d31e1724-9b18-4ab0-87a8-2798c905d0a2`. Tools: a03_get_billing_status, a
 | this bill is wrong, we were overcharged | I'm sorry to hear that. Is this a billing error, a service that wasn't delivered, a plan mismatch, or something else? |
 | it is a billing error | What amount are you disputing? |
 | 12,000 | Briefly, what is wrong with the charge? |
-| the data add-on was charged twice in September | I've raised your dispute of ₹12,000. Your reference token is [REDACTED], and we'll resolve it within 5 working days. Payment reminders for invoice INV-2026-09-5001 are paused until then, and I've sent the details on WhatsApp. Thank you. |
+| the data add-on was charged twice in September | I've raised your dispute of ₹12,000. Your dispute reference number is [REDACTED], and we'll resolve it within 5 working days. Payment reminders for invoice INV-2026-09-5001 are paused until then, and I've sent the details on WhatsApp. Thank you. |
 
 ## callback_scheduled
 
-Session `353774c8-ade5-46ee-be86-f351ecb1ff8a`. Tools: a03_get_billing_status, a06_compliance_gate, a04_verify_billing_contact, a23_schedule_callback, a11_write_post_call.
+Session `8cf22317-6f7f-4769-92c1-855ce7068605`. Tools: a03_get_billing_status, a06_compliance_gate, a04_verify_billing_contact, a23_schedule_callback, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -60,7 +60,7 @@ Session `353774c8-ade5-46ee-be86-f351ecb1ff8a`. Tools: a03_get_billing_status, a
 
 ## paid_invoice_auto_closed_no_contact
 
-Session `306599a1-f6ac-4608-85af-2e66e0019f88`. Tools: a03_get_billing_status, a11_write_post_call.
+Session `7b0eeb45-9428-4aa5-b102-c57ca71a1879`. Tools: a03_get_billing_status, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -68,7 +68,7 @@ Session `306599a1-f6ac-4608-85af-2e66e0019f88`. Tools: a03_get_billing_status, a
 
 ## reminder_run_schedules_and_sends_link
 
-Session `3ca0be36-6211-47b2-abbc-98091d876f01`. Tools: a03_get_billing_status, a22_schedule_reminders, a11_write_post_call.
+Session `1412b5f0-0906-4911-8e58-b8b656d01ce9`. Tools: a03_get_billing_status, a22_schedule_reminders, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -76,7 +76,7 @@ Session `3ca0be36-6211-47b2-abbc-98091d876f01`. Tools: a03_get_billing_status, a
 
 ## wrong_person_no_amount_disclosed
 
-Session `10292333-3fed-416c-a772-0c559096ffba`. Tools: a03_get_billing_status, a06_compliance_gate, a11_write_post_call.
+Session `c450f139-90cc-4054-baea-6e4caa1a613a`. Tools: a03_get_billing_status, a06_compliance_gate, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -85,7 +85,7 @@ Session `10292333-3fed-416c-a772-0c559096ffba`. Tools: a03_get_billing_status, a
 
 ## promise_beyond_policy_goes_to_desk
 
-Session `a3db6237-bded-4cd6-adf5-ddc28f1c2eb3`. Tools: a03_get_billing_status, a06_compliance_gate, a04_verify_billing_contact, a23_record_ptp, a09_create_handoff, a11_write_post_call.
+Session `21e15e25-4a70-4052-aa18-155dd6bf3555`. Tools: a03_get_billing_status, a06_compliance_gate, a04_verify_billing_contact, a23_record_ptp, a09_create_handoff, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -96,7 +96,7 @@ Session `a3db6237-bded-4cd6-adf5-ddc28f1c2eb3`. Tools: a03_get_billing_status, a
 
 ## waiver_request_to_collections_desk
 
-Session `a217108a-fd67-4b3d-8e54-f8f0beee3a38`. Tools: a03_get_billing_status, a06_compliance_gate, a04_verify_billing_contact, a09_create_handoff, a11_write_post_call.
+Session `dd50bc06-12ae-4123-a1c0-fe8f060d8e49`. Tools: a03_get_billing_status, a06_compliance_gate, a04_verify_billing_contact, a09_create_handoff, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|

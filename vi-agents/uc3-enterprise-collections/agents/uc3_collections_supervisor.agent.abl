@@ -398,7 +398,7 @@ FLOW:
       WITH:
         account_id: account_id
         invoice: billing.output.invoice
-        sr_token: sr.output.sr_token
+        sr_number: sr.output.sr_number
       AS: pause
     THEN: s5_dispute_ack
 
@@ -417,7 +417,7 @@ FLOW:
 
   s5_dispute_say:
     REASONING: false
-    RESPOND: "I've raised your dispute of ₹{{dispute_amount}}. Your dispute reference number is {{sr.output.sr_token}}, and we'll resolve it within {{sr.output.tat}}. Payment reminders for invoice {{billing.output.invoice}} are paused until then, and I've sent the details on WhatsApp. Thank you."
+    RESPOND: "I've raised your dispute of ₹{{dispute_amount}}. Your dispute reference number is {{sr.output.sr_number}}, and we'll resolve it within {{sr.output.tat}}. Payment reminders for invoice {{billing.output.invoice}} are paused until then, and I've sent the details on WhatsApp. Thank you."
     THEN: s9_write
 
   # ---- S9 Post-call: self-serve, PTP and dispute-TAT events (A11) ----
@@ -427,7 +427,7 @@ FLOW:
       WITH:
         msisdn: msisdn
         disposition: disposition
-        summary: "UC3 collections {{mode}} on {{channel}} for {{account_id}} ({{billing.output.company}}). Invoice {{billing.output.invoice}} {{billing.output.amount_due}}. PTP {{ptp.output.ptp_ref}}. Dispute {{sr.output.sr_token}} type {{dispute_type}} amount {{dispute_amount}}. Outcome {{outcome}}."
+        summary: "UC3 collections {{mode}} on {{channel}} for {{account_id}} ({{billing.output.company}}). Invoice {{billing.output.invoice}} {{billing.output.amount_due}}. PTP {{ptp.output.ptp_ref}}. Dispute {{sr.output.sr_number}} type {{dispute_type}} amount {{dispute_amount}}. Outcome {{outcome}}."
         outcome: outcome
       AS: post_call
     THEN: COMPLETE

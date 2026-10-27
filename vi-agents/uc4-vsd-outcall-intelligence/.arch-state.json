@@ -22,8 +22,8 @@
   "projectId": "01a17d1e-6cee-7e45-bb2a-c3e8f0269129",
   "deployment": {
     "env": "dev",
-    "id": "01a17ee1-3abc-75c8-a8da-9d96eca6c70d",
-    "endpointSlug": "01a17d1e-dev-mvr3c3as-d3c2e8",
+    "id": "01a17f0f-5e17-7763-8802-fe65f5610680",
+    "endpointSlug": "01a17d1e-dev-mvr54weq-5473b8",
     "agents": {
       "UC4_VSD_Assist": {
         "version": "1.0.0"
