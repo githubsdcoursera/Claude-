@@ -29,5 +29,16 @@
     "a09_create_handoff": "v1.0.0",
     "a11_write_post_call": "v1.0.0"
   },
-  "projectId": "01a17d46-22e7-7101-836a-adf54110a430"
+  "projectId": "01a17d46-22e7-7101-836a-adf54110a430",
+  "deployment": {
+    "env": "dev",
+    "id": "01a17ee0-6409-75cc-abba-053810ab876a",
+    "endpointSlug": "01a17d46-dev-mvr3aww0-fd2a45",
+    "agents": {
+      "UC3_Collections_Supervisor": {
+        "version": "1.0.0"
+      }
+    },
+    "preflight": "warnings"
+  }
 }
