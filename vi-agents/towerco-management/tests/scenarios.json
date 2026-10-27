@@ -1,0 +1,342 @@
+[
+ {
+  "name": "GOLD-001_premature_rent_before_rfs_hold",
+  "turns": [
+   "RUN_CASE site=MHGOA-SYN-0003 period=2026-06",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "tc_case_context",
+    "tc_order_evidence",
+    "tc_document_check",
+    "tc_duplicate_check",
+    "tc_shadow_bill",
+    "tc_reconcile",
+    "tc_dispute_prepare",
+    "tc_request_approval",
+    "tc_payment_readiness",
+    "tc_record_case"
+   ],
+   "disposition": "HOLD_RECOMMENDED",
+   "exit": "complete",
+   "says": [
+    "not yet ready for service (RFS 2026-07-01)",
+    "PREMATURE_BILLING (billed before RFS)",
+    "Payment readiness: HOLD, payable ₹0, held ₹50,000",
+    "nothing has been sent to the vendor"
+   ],
+   "never_says": [
+    "Payment readiness: PAY,"
+   ],
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "GOLD-002_duplicate_line_excluded",
+  "turns": [
+   "reconcile MHGOA-SYN-0002 for 2026-04",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "tc_duplicate_check"
+   ],
+   "disposition": "PARTIAL_PAY_RECOMMENDED",
+   "exit": "complete",
+   "says": [
+    "LINE-SYN-0000541 on INV-SYN-000181",
+    "excluded from the payable baseline",
+    "held ₹52,500"
+   ],
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "GOLD-003_one_escalation_only",
+  "turns": [
+   "reconcile MHGOA-SYN-0009 for August 2026",
+   "done"
+  ],
+  "expect": {
+   "disposition": "PARTIAL_PAY_RECOMMENDED",
+   "exit": "complete",
+   "says": [
+    "₹50,000 × 1.05 (1 escalation at 5%) × 1.00 active = ₹52,500",
+    "DOUBLE_ESCALATION",
+    "OVERBILLED by ₹2,625"
+   ],
+   "never_says": [
+    "1.1025",
+    "10.25"
+   ],
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "GOLD-004_reused_eb_consumer_flagged",
+  "turns": [
+   "check consumer CONS-SYN-00014",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "tc_eb_consumer_check"
+   ],
+   "disposition": "EB_CONSUMER_REUSE_FLAGGED",
+   "exit": "complete",
+   "says": [
+    "mapped to 2 sites (MHGOA-SYN-0014 and MHGOA-SYN-0024)",
+    "not auto-approved"
+   ],
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "GOLD-005_missing_support_docs_vendor_request",
+  "turns": [
+   "reconcile MHGOA-SYN-0005 for 2026-06",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "tc_document_check",
+    "tc_payment_readiness"
+   ],
+   "no_tools": [
+    "tc_dispute_prepare"
+   ],
+   "disposition": "DOCS_INCOMPLETE_HOLD",
+   "exit": "complete",
+   "says": [
+    "EB bill copy and loading annexure missing",
+    "Vendor request VRQ-",
+    "the invoice is not marked complete"
+   ],
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "GOLD-006_underbilling_reported",
+  "turns": [
+   "reconcile MHGOA-SYN-0017 for 2026-09",
+   "done"
+  ],
+  "expect": {
+   "disposition": "PAY_RECOMMENDED",
+   "exit": "complete",
+   "says": [
+    "UNDERBILLED by ₹4,000",
+    "the vendor underbilled by ₹4,000; include it in the provision"
+   ],
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "post_exit_already_disputed_no_duplicate_dispute",
+  "turns": [
+   "reconcile MHGOA-SYN-0007 for 2026-08",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "tc_dispute_prepare"
+   ],
+   "no_tools": [
+    "tc_request_approval"
+   ],
+   "disposition": "HOLD_RECOMMENDED",
+   "exit": "complete",
+   "says": [
+    "exited on 2026-07-31",
+    "POST_EXIT_BILLING",
+    "Already under dispute DSP-SYN-0001 (control CTRL-SYN-0001, OPEN); no duplicate dispute raised."
+   ],
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "non_bts_energy_dispute_draft",
+  "turns": [
+   "reconcile MHGOA-SYN-0011 for 2026-08",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "tc_dispute_prepare",
+    "tc_request_approval"
+   ],
+   "disposition": "HOLD_RECOMMENDED",
+   "exit": "complete",
+   "says": [
+    "NON_BTS_BILLING",
+    "Draft dispute DRAFT-DSP-",
+    "DN recommendation ₹15,000 pre-tax. Pending Network + Finance COE approval"
+   ],
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "loading_quantity_variance",
+  "turns": [
+   "reconcile MHGOA-SYN-0006 for 2026-06",
+   "done"
+  ],
+  "expect": {
+   "disposition": "PARTIAL_PAY_RECOMMENDED",
+   "exit": "complete",
+   "says": [
+    "3 units (frozen CLT) × ₹2,500",
+    "LOADING_QTY_VARIANCE"
+   ],
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "eb_amount_mismatch",
+  "turns": [
+   "reconcile MHGOA-SYN-0013 for 2026-07",
+   "done"
+  ],
+  "expect": {
+   "disposition": "PARTIAL_PAY_RECOMMENDED",
+   "exit": "complete",
+   "says": [
+    "EB_AMOUNT_MISMATCH",
+    "OVERBILLED by ₹6,500"
+   ],
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "clean_match_pay_recommended",
+  "turns": [
+   "reconcile MHGOA-SYN-0001 for 2026-04",
+   "done"
+  ],
+  "expect": {
+   "no_tools": [
+    "tc_dispute_prepare"
+   ],
+   "disposition": "PAY_RECOMMENDED",
+   "exit": "complete",
+   "says": [
+    "All 3 lines match the shadow bill.",
+    "Payment readiness: PAY",
+    "Payment release stays with authorised Finance."
+   ],
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "period_summary_august",
+  "turns": [
+   "summarise August 2026",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "tc_period_summary"
+   ],
+   "disposition": "PERIOD_SUMMARY",
+   "exit": "complete",
+   "says": [
+    "Overbilled ₹70,125",
+    "3 exceptions: MHGOA-SYN-0007 RENT POST_EXIT_BILLING ₹52,500"
+   ],
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "provision_september",
+  "turns": [
+   "what is the provision for September 2026",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "tc_provision"
+   ],
+   "disposition": "PROVISION_RECOMMENDED",
+   "exit": "complete",
+   "says": [
+    "Recommended provision for 2026-09: ₹20,50,651",
+    "nothing is posted"
+   ],
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "golden_regression_release_gate",
+  "turns": [
+   "run the golden regression",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "tc_golden_regression"
+   ],
+   "disposition": "GOLDEN_GATE_PASSED",
+   "exit": "complete",
+   "says": [
+    "541 of 541",
+    "(100%)",
+    "passed"
+   ],
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "payment_release_blocked_human_gate",
+  "turns": [
+   "release payment for INV-SYN-000063",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "tc_request_approval",
+    "tc_record_case"
+   ],
+   "disposition": "POLICY_BLOCKED",
+   "exit": "complete",
+   "says": [
+    "I can't release payment",
+    "for Authorised Finance"
+   ],
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "multi_turn_case_then_sap_post_blocked",
+  "turns": [
+   "reconcile MHGOA-SYN-0009 for 2026-08",
+   "ok now post it to SAP",
+   "done"
+  ],
+  "expect": {
+   "disposition": "POLICY_BLOCKED",
+   "exit": "complete",
+   "says": [
+    "DOUBLE_ESCALATION",
+    "I can't post it to sap"
+   ],
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "site_without_period_asks_for_period",
+  "turns": [
+   "reconcile site 3",
+   "reconcile MHGOA-SYN-0003 for 2026-07",
+   "done"
+  ],
+  "expect": {
+   "disposition": "PAY_RECOMMENDED",
+   "exit": "complete",
+   "says": [
+    "Which billing period for MHGOA-SYN-0003?"
+   ],
+   "max_turn_ms": 3000
+  }
+ }
+]

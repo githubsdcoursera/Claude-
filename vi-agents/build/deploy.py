@@ -79,7 +79,8 @@ def tool_contract(spec, indent="  "):
 
 
 def workflow_definition(spec):
-    code = (SHARED_JS + "\nconst input = context.steps.start.output || {};\n"
+    code = (spec.get("prelude") or SHARED_JS) + (
+            "\nconst input = context.steps.start.output || {};\n"
             + "return (function (input) {\n" + spec["code"] + "\n})(input);\n")
     start_vars = [{"name": i["name"], "type": "json" if i["type"] in ("object",) else i["type"],
                    "required": not i["optional"], "description": i["description"]} for i in spec["inputs"]]
@@ -204,6 +205,10 @@ def main():
 
     mock_files = sorted((pdir / "mocks").glob("*.js")) + [ROOT / "shared" / "mocks" / f"{n}.js" for n in cfg.get("shared_mocks", [])]
     specs = {s["name"]: s for s in (parse_mock(p) for p in mock_files)}
+    if cfg.get("mock_prelude"):  # project data module replaces the shared personas for the project's own mocks
+        prelude = (pdir / cfg["mock_prelude"]).read_text()
+        for p in (pdir / "mocks").glob("*.js"):
+            specs[p.stem]["prelude"] = prelude
     build = pdir / ".build"
     for sub in ("agents", "tools"):
         (build / sub).mkdir(parents=True, exist_ok=True)

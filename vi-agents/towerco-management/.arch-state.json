@@ -1,0 +1,37 @@
+{
+  "workflows": {
+    "tc_case_context": "01a17dee-fa0c-738d-94e4-a035de4fe20f",
+    "tc_dispute_prepare": "01a17def-046b-7380-b6b1-d73efc127ac3",
+    "tc_document_check": "01a17def-0ead-77e6-bb9a-b47ca3baecf2",
+    "tc_duplicate_check": "01a17def-ef19-7852-b290-83504a0d26d4",
+    "tc_eb_consumer_check": "01a17def-f91a-778e-864f-296862e86866",
+    "tc_golden_regression": "01a17df0-d390-7d39-80d9-c8e4bbb63b6d",
+    "tc_order_evidence": "01a17df0-e3c2-7b1d-b455-0f80345e8c22",
+    "tc_parse_request": "01a17df0-ed73-7a58-9902-ef393c66a472",
+    "tc_payment_readiness": "01a17df1-c7e3-7c58-9b93-565760f3f48e",
+    "tc_period_summary": "01a17df1-d921-7799-8515-a53aefb03ca4",
+    "tc_provision": "01a17df2-b421-7963-baf7-38c6e0c5d0f7",
+    "tc_reconcile": "01a17df2-bef7-7fc9-979e-c4266bb65348",
+    "tc_record_case": "01a17df2-c8f7-7227-9ba3-261a4df57d2b",
+    "tc_request_approval": "01a17df3-a9a7-76c7-b8fe-72c9fe4ab085",
+    "tc_shadow_bill": "01a17df3-b448-7fd8-93c4-1926b65e25ec"
+  },
+  "workflow_versions": {
+    "tc_case_context": "v1.0.0",
+    "tc_dispute_prepare": "v1.0.0",
+    "tc_document_check": "v1.0.0",
+    "tc_duplicate_check": "v1.0.0",
+    "tc_eb_consumer_check": "v1.0.0",
+    "tc_golden_regression": "v1.0.0",
+    "tc_order_evidence": "v1.0.0",
+    "tc_parse_request": "v1.0.0",
+    "tc_payment_readiness": "v1.0.0",
+    "tc_period_summary": "v1.0.0",
+    "tc_provision": "v1.0.0",
+    "tc_reconcile": "v1.0.0",
+    "tc_record_case": "v1.0.0",
+    "tc_request_approval": "v1.0.0",
+    "tc_shadow_bill": "v1.0.0"
+  },
+  "projectId": "01a17dee-ebee-7037-b42e-6fea9fa65523"
+}

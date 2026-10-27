@@ -1,0 +1,2 @@
+agreement_id,tower_company,version,effective_from,effective_to,base_rent_monthly_inr,annual_escalation_pct,escalation_anniversary,loading_rate_per_unit_inr,fem_rate_monthly_inr,payment_terms_days,synthetic_flag
+AGR-SYN-INDUS-001,Indus Towers SYNTHETIC,v1.0,2025-04-01,2028-03-31,50000,5.0,04-01,2500,18000,30,Y

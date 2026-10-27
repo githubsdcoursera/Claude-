@@ -58,7 +58,7 @@ def run(pid, agent, sc):
             replies.append(d["content"])
         elif t == "tool_call" and d.get("phase") == "complete":
             tools.append(d.get("toolName"))
-            if d.get("toolName") in ("a11_write_post_call", "a11_record_outcome"):
+            if d.get("toolName") in ("a11_write_post_call", "a11_record_outcome", "tc_record_case"):
                 inp = d.get("input") or {}
                 if "_preview" in inp:
                     try:
