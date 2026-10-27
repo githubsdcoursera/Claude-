@@ -14,14 +14,15 @@
     "tc_reconcile": "01a17df2-bef7-7fc9-979e-c4266bb65348",
     "tc_record_case": "01a17df2-c8f7-7227-9ba3-261a4df57d2b",
     "tc_request_approval": "01a17df3-a9a7-76c7-b8fe-72c9fe4ab085",
-    "tc_shadow_bill": "01a17df3-b448-7fd8-93c4-1926b65e25ec"
+    "tc_shadow_bill": "01a17df3-b448-7fd8-93c4-1926b65e25ec",
+    "tc_eb_check": "01a17e42-dd86-733c-aed8-88b46e3203dd"
   },
   "workflow_versions": {
     "tc_case_context": "v1.0.0",
     "tc_dispute_prepare": "v1.0.0",
     "tc_document_check": "v1.0.0",
     "tc_duplicate_check": "v1.0.0",
-    "tc_eb_consumer_check": "v1.0.1",
+    "tc_eb_consumer_check": "v1.0.3",
     "tc_golden_regression": "v1.0.0",
     "tc_order_evidence": "v1.0.0",
     "tc_parse_request": "v1.0.0",
@@ -31,7 +32,8 @@
     "tc_reconcile": "v1.0.0",
     "tc_record_case": "v1.0.0",
     "tc_request_approval": "v1.0.0",
-    "tc_shadow_bill": "v1.0.0"
+    "tc_shadow_bill": "v1.0.0",
+    "tc_eb_check": "v1.0.0"
   },
   "projectId": "01a17dee-ebee-7037-b42e-6fea9fa65523"
 }

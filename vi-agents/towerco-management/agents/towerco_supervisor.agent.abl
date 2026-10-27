@@ -24,7 +24,7 @@ EXECUTION:
   tool_timeout: 8000
 
 TOOLS:
-  #include-tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_eb_consumer_check, tc_dispute_prepare, tc_request_approval, tc_payment_readiness, tc_period_summary, tc_provision, tc_golden_regression, tc_record_case
+  #include-tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_eb_check, tc_dispute_prepare, tc_request_approval, tc_payment_readiness, tc_period_summary, tc_provision, tc_golden_regression, tc_record_case
 
 MEMORY:
   session:
@@ -36,7 +36,7 @@ MEMORY:
     - dup
     - shadow
     - recon
-    - eb
+    - ebc
     - disp
     - appr
     - pay
@@ -166,10 +166,10 @@ FLOW:
 
   c7_eb:
     REASONING: false
-    CALL: tc_eb_consumer_check
+    CALL: tc_eb_check
       WITH:
         site_id: req.output.site_id
-      AS: eb
+      AS: ebc
     ON_RESULT:
       - IF: recon.output.dispute_needed == true AND docs.output.complete == true
         THEN: c8_dispute
@@ -234,7 +234,7 @@ FLOW:
 
   c12_say:
     REASONING: false
-    RESPOND: "Case {{ctx.output.case_ref}} under {{ctx.output.agreement}}, rule book {{shadow.output.rule_version}}, frozen input {{ctx.output.freeze_version}}. Site status: {{ctx.output.status_label}}; billable from {{order.output.billable_from}}.\n\nShadow bill: rent {{shadow.output.rent_math}}; loading {{shadow.output.loading_math}}; energy {{shadow.output.energy_math}}. Expected {{shadow.output.total_expected}} against billed {{recon.output.billed_total}} on {{ctx.output.invoices}}.\n\nReconciliation: {{recon.output.findings}} {{#if dup.output.duplicates}}{{dup.output.finding}} {{/if}}{{#if eb.output.reused}}{{eb.output.finding}} {{/if}}{{#if docs.output.missing}}Supporting documents incomplete: {{docs.output.missing}} missing. Vendor request {{docs.output.vendor_request_ref}} opened; the invoice is not marked complete and no dispute is raised until the documents arrive. {{/if}}{{#if disp.output.existing}}Already under dispute {{disp.output.dispute_id}} (control {{disp.output.control_no}}, {{disp.output.status}}); no duplicate dispute raised. {{/if}}{{#if disp.output.created}}Draft dispute {{disp.output.dispute_id}} prepared with evidence pack {{disp.output.evidence_pack}}; DN recommendation {{disp.output.dn_amount}} pre-tax. Pending {{appr.output.approver}} approval {{appr.output.approval_id}}; nothing has been sent to the vendor. {{/if}}\n\nPayment readiness: {{pay.output.recommendation}}, payable {{pay.output.payable}}, held {{pay.output.held}} ({{pay.output.reason}}). {{pay.output.upside_note}} Payment release stays with authorised Finance. Audit {{audit.output.audit_id}}.\n\nCitations: {{shadow.output.citations}}. {{order.output.evidence_note}}\n\nAnything else?"
+    RESPOND: "Case {{ctx.output.case_ref}} under {{ctx.output.agreement}}, rule book {{shadow.output.rule_version}}, frozen input {{ctx.output.freeze_version}}. Site status: {{ctx.output.status_label}}; billable from {{order.output.billable_from}}.\n\nShadow bill: rent {{shadow.output.rent_math}}; loading {{shadow.output.loading_math}}; energy {{shadow.output.energy_math}}. Expected {{shadow.output.total_expected}} against billed {{recon.output.billed_total}} on {{ctx.output.invoices}}.\n\nReconciliation: {{recon.output.findings}} {{#if dup.output.duplicates}}{{dup.output.finding}} {{/if}}{{#if ebc.output.reused}}{{ebc.output.finding}} {{/if}}{{#if docs.output.missing}}Supporting documents incomplete: {{docs.output.missing}} missing. Vendor request {{docs.output.vendor_request_ref}} opened; the invoice is not marked complete and no dispute is raised until the documents arrive. {{/if}}{{#if disp.output.existing}}Already under dispute {{disp.output.dispute_id}} (control {{disp.output.control_no}}, {{disp.output.status}}); no duplicate dispute raised. {{/if}}{{#if disp.output.created}}Draft dispute {{disp.output.dispute_id}} prepared with evidence pack {{disp.output.evidence_pack}}; DN recommendation {{disp.output.dn_amount}} pre-tax. Pending {{appr.output.approver}} approval {{appr.output.approval_id}}; nothing has been sent to the vendor. {{/if}}\n\nPayment readiness: {{pay.output.recommendation}}, payable {{pay.output.payable}}, held {{pay.output.held}} ({{pay.output.reason}}). {{pay.output.upside_note}} Payment release stays with authorised Finance. Audit {{audit.output.audit_id}}.\n\nCitations: {{shadow.output.citations}}. {{order.output.evidence_note}}\n\nAnything else?"
     ON_INPUT:
       - ELSE:
         SET: request = input
@@ -307,12 +307,13 @@ FLOW:
   # ---- A31: EB consumer integrity ----
   e1_consumer:
     REASONING: false
-    CALL: tc_eb_consumer_check
+    CALL: tc_eb_check
       WITH:
-        consumer: req.output.consumer
-      AS: eb
+        consumer_no: req.output.consumer
+        site_id: "none"
+      AS: ebc
     ON_RESULT:
-      - IF: eb.output.reused == true
+      - IF: ebc.output.reused == true
         SET: disposition = "EB_CONSUMER_REUSE_FLAGGED"
         THEN: e1_record
       - ELSE:
@@ -323,15 +324,15 @@ FLOW:
     REASONING: false
     CALL: tc_record_case
       WITH:
-        case_ref: eb.output.consumer
+        case_ref: ebc.output.consumer
         disposition: disposition
-        summary: eb.output.finding
+        summary: ebc.output.finding
       AS: audit
     THEN: e1_say
 
   e1_say:
     REASONING: false
-    RESPOND: "{{eb.output.finding}} Anything else?"
+    RESPOND: "{{ebc.output.finding}} Anything else?"
     ON_INPUT:
       - ELSE:
         SET: request = input

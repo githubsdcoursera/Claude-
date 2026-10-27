@@ -6,6 +6,6 @@
   "agents": { "TowerCo_Supervisor": "agents/towerco_supervisor.agent.abl" },
   "mock_prelude": "towerco-data.js",
   "shared_mocks": [],
-  "smoke_inputs": { "text": "RUN_CASE site=MHGOA-SYN-0003 period=2026-06", "site_id": "MHGOA-SYN-0003", "period": "2026-06", "consumer": "CONS-SYN-00014", "gate": "payment_release", "subject": "smoke", "summary": "smoke", "scope": "all", "case_ref": "smoke", "disposition": "SMOKE" },
+  "smoke_inputs": { "text": "RUN_CASE site=MHGOA-SYN-0003 period=2026-06", "site_id": "MHGOA-SYN-0003", "period": "2026-06", "consumer_no": "CONS-SYN-00014", "gate": "payment_release", "subject": "smoke", "summary": "smoke", "scope": "all", "case_ref": "smoke", "disposition": "SMOKE" },
   "deployment_label": "towerco-v1"
 }

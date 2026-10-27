@@ -81,7 +81,7 @@
   ],
   "expect": {
    "tools": [
-    "tc_eb_consumer_check"
+    "tc_eb_check"
    ],
    "disposition": "EB_CONSUMER_REUSE_FLAGGED",
    "exit": "complete",

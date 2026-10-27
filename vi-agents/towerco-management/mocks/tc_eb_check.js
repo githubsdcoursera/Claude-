@@ -1,10 +1,10 @@
-// @description A31 EB Bill Validation: check that an electricity consumer number maps to exactly one site; a reused consumer number is flagged and its EB lines held, never auto-approved.
+// @description A31 EB Bill Validation: look up which sites use an electricity consumer number; a number used by more than one site is reported so its EB lines are held for verification.
 // @effect read_only
-// @in consumer?:string "EB consumer number, e.g. CONS-SYN-00014, or empty to use the site's"
-// @in site_id?:string "Site id, or empty"
+// @in consumer_no?:string "EB consumer number, e.g. CONS-SYN-00014, or empty to use the site's"
+// @in site_id:string "Site id, or none"
 // @out consumer sites reused finding
-const s = normSite(input.site_id);
-const c = String(input.consumer || "").toUpperCase() || (T.sites[s] ? T.sites[s].consumer : "");
+const s = /^none$/i.test(String(input.site_id || "")) ? "" : normSite(input.site_id);
+const c = String(input.consumer_no || "").toUpperCase() || (T.sites[s] ? T.sites[s].consumer : "");
 const sites = Object.keys(T.sites).filter(k => T.sites[k].consumer === c);
 const reused = sites.length > 1;
 return { consumer: c, sites: sites.join(" and "), reused: reused,

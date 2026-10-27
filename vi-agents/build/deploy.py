@@ -178,6 +178,7 @@ def main():
     ap.add_argument("--no-publish", action="store_true")
     ap.add_argument("--env", default="dev", choices=ENVS)
     ap.add_argument("--mocks", default="", help="comma-separated mock names to redeploy; others reuse cached workflows")
+    ap.add_argument("--recreate-tools", default="", help="comma-separated tools to delete and re-create (import never updates an existing tool record)")
     ap.add_argument("--prune", action="store_true", help="delete project agents and tools that are not in the package")
     a = ap.parse_args()
 
@@ -248,6 +249,20 @@ def main():
     if not diag.get("valid") or blocking:
         raise SystemExit("validation failed")
 
+    if a.recreate_tools:  # phase 1: import without these tools and delete unmatched, so phase 2 creates them fresh
+        drop = set(a.recreate_tools.split(","))
+        man = json.loads((build / "project.json").read_text())
+        full = dict(man["tools"])
+        man["tools"] = {k: v for k, v in full.items() if k not in drop}
+        (build / "project.json").write_text(json.dumps(man, indent=2))
+        for k in drop:
+            (build / "tools" / f"{k}.tools.abl").rename(build / f"{k}.tools.abl.hold")
+        r1 = call("platform_import_export", {"action": "import", "projectId": pid, "path": str(build), "confirm": True, "data": {"deleteUnmatched": True}})
+        print(f"recreate phase 1: {json.dumps((r1.get('data') or {}).get('result', {}).get('applied', r1))[:300]}")
+        for k in drop:
+            (build / f"{k}.tools.abl.hold").rename(build / "tools" / f"{k}.tools.abl")
+        man["tools"] = full
+        (build / "project.json").write_text(json.dumps(man, indent=2))
     imp_args = {"action": "import", "projectId": pid, "path": str(build), "confirm": True}
     if a.prune:
         imp_args["data"] = {"deleteUnmatched": True}
