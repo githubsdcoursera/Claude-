@@ -7,7 +7,7 @@ const t = " " + String(input.text || "").toLowerCase() + " ";
 const rules = [
   ["PORT_INTENT", /( port|porting|upc|mnp|switch operator|leaving vi|leave vi)/],
   ["BILL_SHOCK", /(bill|charged|charges|roaming|deducted|unexpected)/],
-  ["NETWORK", /(network|signal|call drop|calls drop|no coverage|slow data|slow internet|internet is slow|data is slow|speed|tower|net nahi)/],
+  ["NETWORK", /(network|signal|call drop|calls drop|no coverage|slow|speed|buffer|internet|tower|net nahi|not working|no data)/],
   ["SERVICE_EXPERIENCE", /(customer care|store|no response|not resolved|complaint|service was bad|nobody helped)/],
   ["PLAN_MISFIT", /(don't use|dont use|do not use|not using|more than i need|too much data|plan is too big|wrong plan|barely use|hardly use|paying for things i don't)/],
   ["PRICE_VALUE", /(expensive|costly|too much|price|cheaper|value for money|mehenga|paying a lot)/],

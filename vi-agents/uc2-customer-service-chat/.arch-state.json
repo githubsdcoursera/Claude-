@@ -35,5 +35,16 @@
     "a09_create_handoff": "v1.0.0",
     "a11_write_post_call": "v1.0.2"
   },
-  "projectId": "01a17d40-5a67-7bc6-829c-7a41b5fe03a4"
+  "projectId": "01a17d40-5a67-7bc6-829c-7a41b5fe03a4",
+  "deployment": {
+    "env": "dev",
+    "id": "01a17edd-e41b-7455-a606-eb564718d76f",
+    "endpointSlug": "01a17d40-dev-mvr37ehe-ba3bfc",
+    "agents": {
+      "UC2_Chat_Supervisor": {
+        "version": "1.0.0"
+      }
+    },
+    "preflight": "ready"
+  }
 }

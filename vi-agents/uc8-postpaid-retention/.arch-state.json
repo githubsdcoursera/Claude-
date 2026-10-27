@@ -30,7 +30,7 @@
     "a07_u8_book_callback": "v1.0.0",
     "a08_u8_offer_apply": "v1.0.0",
     "a08_u8_plan_change": "v1.0.0",
-    "rt01_classify_cause": "v1.0.0",
+    "rt01_classify_cause": "v1.0.1",
     "rt01_ticket_create": "v1.0.0",
     "rt02_billing_explain": "v1.0.0",
     "rt02_plan_fit": "v1.0.0",
