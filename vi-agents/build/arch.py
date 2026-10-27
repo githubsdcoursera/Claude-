@@ -1,6 +1,8 @@
 """Minimal client for the Arch MCP server exposed by build/bridge.mjs on 127.0.0.1:7777."""
+import http.client
 import json
 import time
+import urllib.error
 import urllib.request
 
 BRIDGE = "http://127.0.0.1:7777/call"
@@ -15,8 +17,15 @@ def call(tool, args=None, timeout=600, retries=6):
     """Call an Arch tool; wait out the tenant's 60 requests/minute budget on HTTP 429."""
     body = json.dumps({"name": tool, "arguments": args or {}}).encode()
     for attempt in range(retries + 1):
-        with _opener.open(urllib.request.Request(BRIDGE, data=body), timeout=timeout) as r:
-            d = json.load(r)
+        for wait in range(36):  # tolerate a bridge restart (up to ~3 minutes)
+            try:
+                with _opener.open(urllib.request.Request(BRIDGE, data=body), timeout=timeout) as r:
+                    d = json.load(r)
+                break
+            except (ConnectionError, urllib.error.URLError, http.client.HTTPException):
+                if wait == 35:
+                    raise
+                time.sleep(5)
         if "error" in d and "result" not in d:
             raise ArchError(f"{tool}: {d['error']}")
         text = d["result"]["content"][0]["text"]

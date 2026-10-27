@@ -176,6 +176,7 @@ def main():
     ap.add_argument("--skip-mocks", action="store_true", help="reuse cached workflow ids")
     ap.add_argument("--no-publish", action="store_true")
     ap.add_argument("--env", default="dev", choices=ENVS)
+    ap.add_argument("--prune", action="store_true", help="delete project agents and tools that are not in the package")
     a = ap.parse_args()
 
     pdir = pathlib.Path(a.project_dir).resolve()
@@ -239,7 +240,10 @@ def main():
     if not diag.get("valid") or blocking:
         raise SystemExit("validation failed")
 
-    imp = call("platform_import_export", {"action": "import", "projectId": pid, "path": str(build), "confirm": True})
+    imp_args = {"action": "import", "projectId": pid, "path": str(build), "confirm": True}
+    if a.prune:
+        imp_args["data"] = {"deleteUnmatched": True}
+    imp = call("platform_import_export", imp_args)
     if not imp.get("success"):
         summarize_issues(imp.get("preview"))
         raise SystemExit(f"import failed: {json.dumps({k: v for k, v in imp.items() if k != 'preview'})[:1500]}")

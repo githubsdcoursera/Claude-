@@ -12,7 +12,10 @@
     "a10_kb_answer": "01a17d43-3ece-73ae-befe-82d421e39611",
     "a04_send_otp": "01a17d44-2576-71f4-bfb2-39d9c1f8332f",
     "a04_verify_otp": "01a17d44-2dcf-7533-8a90-cf151da431d9",
-    "a08_record_consent": "01a17d44-362b-712a-b11e-bdec418d8a4d"
+    "a08_record_consent": "01a17d44-362b-712a-b11e-bdec418d8a4d",
+    "a11_record_csat": "01a17d45-19c3-7819-9772-b2438f54fee0",
+    "a09_create_handoff": "01a17d45-214b-7aa7-94c4-944ed8c226aa",
+    "a11_write_post_call": "01a17d45-289d-7ec9-a87a-2d9f22d41f8b"
   },
   "workflow_versions": {
     "a03_get_customer_360": "v1.0.0",
@@ -27,7 +30,10 @@
     "a10_kb_answer": "v1.0.0",
     "a04_send_otp": "v1.0.0",
     "a04_verify_otp": "v1.0.0",
-    "a08_record_consent": "v1.0.0"
+    "a08_record_consent": "v1.0.0",
+    "a11_record_csat": "v1.0.0",
+    "a09_create_handoff": "v1.0.0",
+    "a11_write_post_call": "v1.0.0"
   },
   "projectId": "01a17d40-5a67-7bc6-829c-7a41b5fe03a4"
 }

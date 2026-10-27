@@ -127,7 +127,7 @@ const P = {
     rollover: "Unused data rolls over up to 200 GB on eligible postpaid plans, subject to plan terms.",
     easy_plus: "Easy+ lets employees buy eligible personal services on their corporate number without the charges going on the company bill.",
     competitor: "I can only compare against approved, current information. An advisor can share an approved comparison with you.",
-    mobile_security: "Eligible Vi Business plans include a licensed mobile security suite at no extra charge, which goes beyond basic spam blocking.",
+    mobile_protection: "Eligible Vi Business plans include a licensed mobile security suite at no extra charge, which goes beyond standard spam blocking.",
     cloud_storage: "Eligible plans include secure cloud storage with time-limited link sharing for files across phones and laptops.",
     workspace: "Google Workspace with business email, Meet and Drive is included on eligible plans and connection volumes. An advisor can confirm eligibility for your volume.",
     single_bill: "All your company connections come on one consolidated, GST-compliant bill, managed through the digital self-care portal.",

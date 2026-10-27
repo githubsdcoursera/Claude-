@@ -1,0 +1,27 @@
+{
+  "workflows": {
+    "bps01_compliance_gate": "01a17d49-5562-7c8a-849a-3f52e076e3e2",
+    "bps01_get_lead": "01a17d49-5d06-7986-a9ce-8e3acd7106e0",
+    "bps01_schedule_callback": "01a17d4a-2428-703d-b120-02fa0eca448e",
+    "bps03_get_plan_options": "01a17d4a-48b1-7634-ace3-557e233dae33",
+    "bps04_send_document_link": "01a17d4a-5090-7afd-9a1b-48b6dd557bf1",
+    "bps05_book_appointment": "01a17d4b-3715-77cc-a6a6-b25df1f84593",
+    "bps06_create_sales_handoff": "01a17d4b-3edd-75d2-981f-73a165f423e7",
+    "a06_record_opt_out": "01a17d4b-46c3-795a-8a0a-0fc40ee6cd6e",
+    "a10_kb_answer": "01a17d4c-2c9b-7312-b84c-3e7c10d450a9",
+    "a11_write_post_call": "01a17d4c-34ef-74a2-84d0-0b54ac73b50a"
+  },
+  "workflow_versions": {
+    "bps01_compliance_gate": "v1.0.0",
+    "bps01_get_lead": "v1.0.0",
+    "bps01_schedule_callback": "v1.0.0",
+    "bps03_get_plan_options": "v1.0.0",
+    "bps04_send_document_link": "v1.0.0",
+    "bps05_book_appointment": "v1.0.0",
+    "bps06_create_sales_handoff": "v1.0.0",
+    "a06_record_opt_out": "v1.0.0",
+    "a10_kb_answer": "v1.0.0",
+    "a11_write_post_call": "v1.0.0"
+  },
+  "projectId": "01a17d49-4dc2-7ace-bc0f-078e364de170"
+}

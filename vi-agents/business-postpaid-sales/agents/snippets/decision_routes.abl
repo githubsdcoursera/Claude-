@@ -16,7 +16,7 @@ ON_INPUT:
     THEN: s5_objection_answer
   - IF: input matches "(security|spam|fraud|antivirus)"
     SET:
-      kb_topic = "mobile_security"
+      kb_topic = "mobile_protection"
       objections = input
     THEN: s5_objection_answer
   - IF: input matches "(workspace|gmail|google|email ids|meet)"

@@ -91,6 +91,40 @@ ESCALATE:
     queue: "LIVE_CHAT_DESK"
     skill_tags: [prepaid, care, chat]
 
+ACTION_HANDLERS:
+  m_balance:
+    DO:
+      - SET: intent = "balance"
+      - GOTO: s5_balance
+  m_recharge:
+    DO:
+      - SET: intent = "recharge"
+      - GOTO: s5_recharge
+  m_data:
+    DO:
+      - SET: intent = "data"
+      - GOTO: s5_data
+  m_vas:
+    DO:
+      - SET: intent = "subscriptions"
+      - GOTO: s5_vas
+  m_network:
+    DO:
+      - SET: intent = "network"
+      - GOTO: s5_network
+  r1:
+    DO:
+      - SET: csat_score = "1"
+      - GOTO: s7_record_csat
+  r3:
+    DO:
+      - SET: csat_score = "3"
+      - GOTO: s7_record_csat
+  r5:
+    DO:
+      - SET: csat_score = "5"
+      - GOTO: s7_record_csat
+
 FLOW:
   global_digressions:
     - INTENT: human_request
@@ -115,15 +149,6 @@ FLOW:
   s1_disclose:
     REASONING: false
     RESPOND: "Hi, I'm Vi's virtual assistant, an AI. This chat is recorded for quality and training. Would you like to chat in English or Hindi?"
-    ACTIONS:
-      - id: "lang_en"
-        type: button
-        label: "English"
-        value: "English"
-      - id: "lang_hi"
-        type: button
-        label: "हिंदी"
-        value: "Hindi"
     ON_INPUT:
       - IF: input matches "(hindi|हिंदी|hindee)" AND msisdn != ""
         SET: spoken_language = "hi"
@@ -211,26 +236,21 @@ FLOW:
     REASONING: false
     RESPOND: "Thanks, {{ctx.output.first_name}}. I can see your last contact with us: {{ctx.output.last_contact_1}}. How can I help you today?"
     ACTIONS:
-      - id: "m_balance"
-        type: button
-        label: "Balance and validity"
-        value: "balance"
-      - id: "m_recharge"
-        type: button
-        label: "Recharge"
-        value: "recharge"
-      - id: "m_data"
-        type: button
-        label: "Data"
-        value: "data"
-      - id: "m_vas"
-        type: button
-        label: "Stop a subscription"
-        value: "stop subscription"
-      - id: "m_network"
-        type: button
-        label: "Network issue"
-        value: "network problem"
+      - BUTTON: "Balance and validity"
+        ID: m_balance
+        VALUE: "balance"
+      - BUTTON: "Recharge"
+        ID: m_recharge
+        VALUE: "recharge"
+      - BUTTON: "Data"
+        ID: m_data
+        VALUE: "data"
+      - BUTTON: "Stop a subscription"
+        ID: m_vas
+        VALUE: "stop subscription"
+      - BUTTON: "Network issue"
+        ID: m_network
+        VALUE: "network problem"
     #include-snippet: intent_routes
 
   s4_ask_again:
@@ -671,18 +691,15 @@ FLOW:
     REASONING: false
     RESPOND: "Before you go, how would you rate this chat from 1 to 5?"
     ACTIONS:
-      - id: "r1"
-        type: button
-        label: "1"
-        value: "1"
-      - id: "r3"
-        type: button
-        label: "3"
-        value: "3"
-      - id: "r5"
-        type: button
-        label: "5"
-        value: "5"
+      - BUTTON: "1"
+        ID: r1
+        VALUE: "1"
+      - BUTTON: "3"
+        ID: r3
+        VALUE: "3"
+      - BUTTON: "5"
+        ID: r5
+        VALUE: "5"
     ON_INPUT:
       - IF: input matches "[1-5]"
         SET: csat_score = REGEX_EXTRACT(input, "[1-5]")

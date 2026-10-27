@@ -28,30 +28,6 @@
   }
  },
  {
-  "name": "payment_failed_hot_transfer",
-  "turns": [
-   "CALL_START msisdn=9820000002 direction=outbound campaign=PREPAID_DROPPED_LEAD",
-   "English",
-   "yes",
-   "can I talk to an advisor to do it now"
-  ],
-  "expect": {
-   "tools": [
-    "pdl02_get_resolution",
-    "a09_create_handoff"
-   ],
-   "no_tools": [
-    "pdl01_send_resume_link"
-   ],
-   "disposition": "HOT_TRANSFERRED",
-   "exit": "escalate",
-   "says": [
-    "payment of ₹349 didn't go through, and no money was deducted",
-    "connecting you to a Vi advisor"
-   ]
-  }
- },
- {
   "name": "busy_callback_scheduled",
   "turns": [
    "CALL_START msisdn=9820000001 direction=outbound campaign=PREPAID_DROPPED_LEAD",
@@ -206,6 +182,30 @@
    ],
    "disposition": "OPT_OUT",
    "exit": "complete"
+  }
+ },
+ {
+  "name": "payment_failed_hot_transfer",
+  "turns": [
+   "CALL_START msisdn=9820000002 direction=outbound campaign=PREPAID_DROPPED_LEAD",
+   "English",
+   "yes",
+   "can I talk to an advisor to do it now"
+  ],
+  "expect": {
+   "tools": [
+    "pdl02_get_resolution",
+    "a09_create_handoff"
+   ],
+   "no_tools": [
+    "pdl01_send_resume_link"
+   ],
+   "disposition": "HOT_TRANSFERRED",
+   "exit": "escalate",
+   "says": [
+    "payment of ₹349 didn't go through, and no money was deducted",
+    "connecting you to a Vi advisor"
+   ]
   }
  }
 ]

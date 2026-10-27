@@ -1,55 +1,342 @@
 [
-  {"name": "outbound_activate_happy_path",
-   "turns": ["CALL_START msisdn=9800000001 direction=outbound campaign=IR_TRAVEL_OPTIN", "English", "Yes speaking", "yes", "mostly whatsapp and maps", "yes please", "yes I agree", "1 2 3 4 5 6", "no thanks"],
-   "expect": {"tools": ["a06_compliance_gate", "a03_get_ir_context", "a18_rank_ir_packs", "a08_record_consent", "a04_send_otp", "a04_verify_otp", "a08_activate_ir_pack", "a11_arm_usage_alerts", "a08_send_sms", "a11_write_post_call"],
-              "disposition": "IR_ACTIVATED", "exit": "complete",
-              "says": ["I am an AI, and this call is recorded", "Am I speaking with Rahul", "IR-GCC-7 at ₹2,999", "5 GB data, 150 minutes of calls and 100 SMS", "₹5 per MB after the pack data is used", "Do you agree", "is now active"]}},
-  {"name": "outbound_decline_sms_sent",
-   "turns": ["CALL_START msisdn=9800000001 direction=outbound campaign=IR_TRAVEL_OPTIN", "English", "yes", "yes", "video calls too", "no not now", "no"],
-   "expect": {"tools": ["a18_rank_ir_packs", "a08_send_sms", "a11_write_post_call"], "no_tools": ["a08_activate_ir_pack", "a04_send_otp"],
-              "disposition": "DECLINED_SMS_SENT", "exit": "complete", "says": ["sent the details of"]}},
-  {"name": "outbound_alternative_pack",
-   "turns": ["CALL_START msisdn=9800000001 direction=outbound campaign=IR_TRAVEL_OPTIN", "English", "yes", "yes", "whatsapp", "anything cheaper or another option?", "yes", "yes", "123456", "no"],
-   "expect": {"tools": ["a08_activate_ir_pack"], "disposition": "IR_ACTIVATED", "exit": "complete", "says": ["Another option is pack"]}},
-  {"name": "inbound_not_eligible_ir_barred",
-   "turns": ["CALL_START msisdn=9800000002 direction=inbound campaign=IR_INBOUND", "English"],
-   "expect": {"tools": ["a06_compliance_gate", "a08_send_sms", "a11_write_post_call"], "no_tools": ["a18_rank_ir_packs"],
-              "disposition": "NOT_ELIGIBLE_SMS_SENT", "exit": "complete", "says": ["can't be activated on your number"]}},
-  {"name": "outbound_not_eligible_nudge_only_no_call",
-   "turns": ["CALL_START msisdn=9800000002 direction=outbound campaign=IR_TRAVEL_OPTIN"],
-   "expect": {"tools": ["a08_send_sms", "a11_write_post_call"], "no_tools": ["a03_get_ir_context"],
-              "disposition": "NUDGE_ONLY_NOT_ELIGIBLE", "exit": "complete", "never_says": ["virtual assistant"]}},
-  {"name": "outbound_dnd_compliance_stop",
-   "turns": ["CALL_START msisdn=9800000003 direction=outbound campaign=IR_TRAVEL_OPTIN"],
-   "expect": {"tools": ["a06_compliance_gate", "a11_write_post_call"], "no_tools": ["a03_get_ir_context", "a08_send_sms"],
-              "disposition": "COMPLIANCE_STOP", "exit": "complete", "never_says": ["virtual assistant"]}},
-  {"name": "corporate_plan_to_ir_desk",
-   "turns": ["CALL_START msisdn=9800000004 direction=outbound campaign=IR_TRAVEL_OPTIN", "English", "yes"],
-   "expect": {"tools": ["a09_create_handoff", "a11_write_post_call"], "no_tools": ["a18_rank_ir_packs"],
-              "disposition": "HANDOFF_CORPORATE_PLAN", "exit": "escalate", "says": ["connecting you to our international roaming specialist"]}},
-  {"name": "provisioning_fails_twice_to_ir_desk",
-   "turns": ["CALL_START msisdn=9800000005 direction=outbound campaign=IR_TRAVEL_OPTIN", "English", "yes", "yes", "work calls and hotspot", "yes", "yes", "123456"],
-   "expect": {"tools": ["a08_activate_ir_pack", "a09_create_handoff"], "no_tools": ["a11_arm_usage_alerts"],
-              "disposition": "HANDOFF_PROVISIONING_FAILED", "exit": "escalate", "never_says": ["is now active"]}},
-  {"name": "wrong_party_no_protected_data",
-   "turns": ["CALL_START msisdn=9800000001 direction=outbound campaign=IR_TRAVEL_OPTIN", "English", "no, wrong number"],
-   "expect": {"tools": ["a11_write_post_call"], "no_tools": ["a03_get_ir_context"], "disposition": "WRONG_PARTY", "exit": "complete",
-              "never_says": ["Vi Max", "United Arab Emirates"]}},
-  {"name": "opt_out_mid_call",
-   "turns": ["CALL_START msisdn=9800000001 direction=outbound campaign=IR_TRAVEL_OPTIN", "English", "yes", "please stop calling me"],
-   "expect": {"tools": ["a06_record_opt_out", "a11_write_post_call"], "no_tools": ["a18_rank_ir_packs"], "disposition": "OPT_OUT", "exit": "complete",
-              "says": ["won't call you about this again"]}},
-  {"name": "customer_asks_for_human",
-   "turns": ["CALL_START msisdn=9800000001 direction=outbound campaign=IR_TRAVEL_OPTIN", "English", "yes", "I want to talk to a real person"],
-   "expect": {"tools": ["a09_create_handoff"], "disposition": "HANDOFF_CUSTOMER_REQUEST", "exit": "escalate"}},
-  {"name": "otp_fails_three_times_to_ir_desk",
-   "turns": ["CALL_START msisdn=9800000001 direction=outbound campaign=IR_TRAVEL_OPTIN", "English", "yes", "yes", "whatsapp", "yes", "yes", "111111", "222222", "333333"],
-   "expect": {"tools": ["a04_verify_otp", "a09_create_handoff"], "no_tools": ["a08_activate_ir_pack"], "disposition": "HANDOFF_OTP_FAILED", "exit": "escalate"}},
-  {"name": "multi_country_to_ir_desk",
-   "turns": ["CALL_START msisdn=9800000001 direction=outbound campaign=IR_TRAVEL_OPTIN", "English", "yes", "no, the dates changed", "France and Germany"],
-   "expect": {"tools": ["a09_create_handoff"], "no_tools": ["a08_activate_ir_pack"], "disposition": "HANDOFF_MULTI_COUNTRY", "exit": "escalate"}},
-  {"name": "inbound_customer_states_trip",
-   "turns": ["CALL_START msisdn=9800000001 direction=inbound campaign=IR_INBOUND", "English", "no", "Singapore", "5 days", "whatsapp and maps", "yes", "yes", "123456", "no thanks"],
-   "expect": {"tools": ["a18_rank_ir_packs", "a08_activate_ir_pack"], "disposition": "IR_ACTIVATED", "exit": "complete", "says": ["IR-ASIA-7"],
-              "never_says": ["Am I speaking with"]}}
+ {
+  "name": "outbound_activate_happy_path",
+  "turns": [
+   "CALL_START msisdn=9800000001 direction=outbound campaign=IR_TRAVEL_OPTIN",
+   "English",
+   "Yes speaking",
+   "yes",
+   "mostly whatsapp and maps",
+   "yes please",
+   "yes I agree",
+   "1 2 3 4 5 6",
+   "no thanks"
+  ],
+  "expect": {
+   "tools": [
+    "a06_compliance_gate",
+    "a03_get_ir_context",
+    "a18_rank_ir_packs",
+    "a08_record_consent",
+    "a04_send_otp",
+    "a04_verify_otp",
+    "a08_activate_ir_pack",
+    "a11_arm_usage_alerts",
+    "a08_send_sms",
+    "a11_write_post_call"
+   ],
+   "disposition": "IR_ACTIVATED",
+   "exit": "complete",
+   "says": [
+    "I am an AI, and this call is recorded",
+    "Am I speaking with Rahul",
+    "IR-GCC-7 at ₹2,999",
+    "5 GB data, 150 minutes of calls and 100 SMS",
+    "₹5 per MB after the pack data is used",
+    "Do you agree",
+    "is now active"
+   ]
+  }
+ },
+ {
+  "name": "outbound_decline_sms_sent",
+  "turns": [
+   "CALL_START msisdn=9800000001 direction=outbound campaign=IR_TRAVEL_OPTIN",
+   "English",
+   "yes",
+   "yes",
+   "video calls too",
+   "no not now",
+   "no"
+  ],
+  "expect": {
+   "tools": [
+    "a18_rank_ir_packs",
+    "a08_send_sms",
+    "a11_write_post_call"
+   ],
+   "no_tools": [
+    "a08_activate_ir_pack",
+    "a04_send_otp"
+   ],
+   "disposition": "DECLINED_SMS_SENT",
+   "exit": "complete",
+   "says": [
+    "sent the details of"
+   ]
+  }
+ },
+ {
+  "name": "outbound_alternative_pack",
+  "turns": [
+   "CALL_START msisdn=9800000001 direction=outbound campaign=IR_TRAVEL_OPTIN",
+   "English",
+   "yes",
+   "yes",
+   "whatsapp",
+   "anything cheaper or another option?",
+   "yes",
+   "yes",
+   "123456",
+   "no"
+  ],
+  "expect": {
+   "tools": [
+    "a08_activate_ir_pack"
+   ],
+   "disposition": "IR_ACTIVATED",
+   "exit": "complete",
+   "says": [
+    "Another option is pack"
+   ]
+  }
+ },
+ {
+  "name": "inbound_not_eligible_ir_barred",
+  "turns": [
+   "CALL_START msisdn=9800000002 direction=inbound campaign=IR_INBOUND",
+   "English"
+  ],
+  "expect": {
+   "tools": [
+    "a06_compliance_gate",
+    "a08_send_sms",
+    "a11_write_post_call"
+   ],
+   "no_tools": [
+    "a18_rank_ir_packs"
+   ],
+   "disposition": "NOT_ELIGIBLE_SMS_SENT",
+   "exit": "complete",
+   "says": [
+    "can't be activated on your number"
+   ]
+  }
+ },
+ {
+  "name": "outbound_not_eligible_nudge_only_no_call",
+  "turns": [
+   "CALL_START msisdn=9800000002 direction=outbound campaign=IR_TRAVEL_OPTIN"
+  ],
+  "expect": {
+   "tools": [
+    "a08_send_sms",
+    "a11_write_post_call"
+   ],
+   "no_tools": [
+    "a03_get_ir_context"
+   ],
+   "disposition": "NUDGE_ONLY_NOT_ELIGIBLE",
+   "exit": "complete",
+   "never_says": [
+    "virtual assistant"
+   ]
+  }
+ },
+ {
+  "name": "outbound_dnd_compliance_stop",
+  "turns": [
+   "CALL_START msisdn=9800000003 direction=outbound campaign=IR_TRAVEL_OPTIN"
+  ],
+  "expect": {
+   "tools": [
+    "a06_compliance_gate",
+    "a11_write_post_call"
+   ],
+   "no_tools": [
+    "a03_get_ir_context",
+    "a08_send_sms"
+   ],
+   "disposition": "COMPLIANCE_STOP",
+   "exit": "complete",
+   "never_says": [
+    "virtual assistant"
+   ]
+  }
+ },
+ {
+  "name": "wrong_party_no_protected_data",
+  "turns": [
+   "CALL_START msisdn=9800000001 direction=outbound campaign=IR_TRAVEL_OPTIN",
+   "English",
+   "no, wrong number"
+  ],
+  "expect": {
+   "tools": [
+    "a11_write_post_call"
+   ],
+   "no_tools": [
+    "a03_get_ir_context"
+   ],
+   "disposition": "WRONG_PARTY",
+   "exit": "complete",
+   "never_says": [
+    "Vi Max",
+    "United Arab Emirates"
+   ]
+  }
+ },
+ {
+  "name": "opt_out_mid_call",
+  "turns": [
+   "CALL_START msisdn=9800000001 direction=outbound campaign=IR_TRAVEL_OPTIN",
+   "English",
+   "yes",
+   "please stop calling me"
+  ],
+  "expect": {
+   "tools": [
+    "a06_record_opt_out",
+    "a11_write_post_call"
+   ],
+   "no_tools": [
+    "a18_rank_ir_packs"
+   ],
+   "disposition": "OPT_OUT",
+   "exit": "complete",
+   "says": [
+    "won't call you about this again"
+   ]
+  }
+ },
+ {
+  "name": "inbound_customer_states_trip",
+  "turns": [
+   "CALL_START msisdn=9800000001 direction=inbound campaign=IR_INBOUND",
+   "English",
+   "no",
+   "Singapore",
+   "5 days",
+   "whatsapp and maps",
+   "yes",
+   "yes",
+   "123456",
+   "no thanks"
+  ],
+  "expect": {
+   "tools": [
+    "a18_rank_ir_packs",
+    "a08_activate_ir_pack"
+   ],
+   "disposition": "IR_ACTIVATED",
+   "exit": "complete",
+   "says": [
+    "IR-ASIA-7"
+   ],
+   "never_says": [
+    "Am I speaking with"
+   ]
+  }
+ },
+ {
+  "name": "corporate_plan_to_ir_desk",
+  "turns": [
+   "CALL_START msisdn=9800000004 direction=outbound campaign=IR_TRAVEL_OPTIN",
+   "English",
+   "yes"
+  ],
+  "expect": {
+   "tools": [
+    "a09_create_handoff",
+    "a11_write_post_call"
+   ],
+   "no_tools": [
+    "a18_rank_ir_packs"
+   ],
+   "disposition": "HANDOFF_CORPORATE_PLAN",
+   "exit": "escalate",
+   "says": [
+    "connecting you to our international roaming specialist"
+   ]
+  }
+ },
+ {
+  "name": "provisioning_fails_twice_to_ir_desk",
+  "turns": [
+   "CALL_START msisdn=9800000005 direction=outbound campaign=IR_TRAVEL_OPTIN",
+   "English",
+   "yes",
+   "yes",
+   "work calls and hotspot",
+   "yes",
+   "yes",
+   "123456"
+  ],
+  "expect": {
+   "tools": [
+    "a08_activate_ir_pack",
+    "a09_create_handoff"
+   ],
+   "no_tools": [
+    "a11_arm_usage_alerts"
+   ],
+   "disposition": "HANDOFF_PROVISIONING_FAILED",
+   "exit": "escalate",
+   "never_says": [
+    "is now active"
+   ]
+  }
+ },
+ {
+  "name": "customer_asks_for_human",
+  "turns": [
+   "CALL_START msisdn=9800000001 direction=outbound campaign=IR_TRAVEL_OPTIN",
+   "English",
+   "yes",
+   "I want to talk to a real person"
+  ],
+  "expect": {
+   "tools": [
+    "a09_create_handoff"
+   ],
+   "disposition": "HANDOFF_CUSTOMER_REQUEST",
+   "exit": "escalate"
+  }
+ },
+ {
+  "name": "otp_fails_three_times_to_ir_desk",
+  "turns": [
+   "CALL_START msisdn=9800000001 direction=outbound campaign=IR_TRAVEL_OPTIN",
+   "English",
+   "yes",
+   "yes",
+   "whatsapp",
+   "yes",
+   "yes",
+   "111111",
+   "222222",
+   "333333"
+  ],
+  "expect": {
+   "tools": [
+    "a04_verify_otp",
+    "a09_create_handoff"
+   ],
+   "no_tools": [
+    "a08_activate_ir_pack"
+   ],
+   "disposition": "HANDOFF_OTP_FAILED",
+   "exit": "escalate"
+  }
+ },
+ {
+  "name": "multi_country_to_ir_desk",
+  "turns": [
+   "CALL_START msisdn=9800000001 direction=outbound campaign=IR_TRAVEL_OPTIN",
+   "English",
+   "yes",
+   "no, the dates changed",
+   "France and Germany"
+  ],
+  "expect": {
+   "tools": [
+    "a09_create_handoff"
+   ],
+   "no_tools": [
+    "a08_activate_ir_pack"
+   ],
+   "disposition": "HANDOFF_MULTI_COUNTRY",
+   "exit": "escalate"
+  }
+ }
 ]
