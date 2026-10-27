@@ -1,6 +1,7 @@
 """Minimal client for the Arch MCP server exposed by build/bridge.mjs on 127.0.0.1:7777."""
 import http.client
 import json
+import os
 import time
 import urllib.error
 import urllib.request
@@ -33,6 +34,11 @@ def call(tool, args=None, timeout=600, retries=6):
             res = json.loads(text)
         except ValueError:
             return {"raw": text}
+        if "Not connected to server" in str(res.get("error", "")) and attempt < retries and tool != "platform_connect":
+            print("    platform disconnected; reconnecting")
+            call("platform_connect", {"serverUrl": os.environ.get("AGENTS_URL", "https://ind-agents.kore.ai")}, retries=0)
+            time.sleep(3)
+            continue
         limited = res.get("status") == 429 or "429 Too Many Requests" in str(res.get("error", ""))
         if limited and attempt < retries:
             wait = ((res.get("body") or {}).get("retryAfterMs") or 60000) / 1000 + 1

@@ -1,8 +1,8 @@
 // @description RC04 Reassignment: a reporting manager or the Head reassigns an obligation to another officer with a reason; recorded in the audit trail with who, when and why. Officers cannot reassign.
 // @effect side_effect
 // @in obligation_id:string "Obligation id"
-// @in new_owner:string "Target user id"
-// @in reason:string "Reason for reassignment"
+// @in new_owner?:string "Target user id"
+// @in reason?:string "Reason for reassignment"
 // @in user:string "User requesting the reassignment"
 // @out done message audit_id
 const o = R.obligations.find(x => x.id === String(input.obligation_id || "").toUpperCase()), by = R.users[input.user], to = R.users[input.new_owner];

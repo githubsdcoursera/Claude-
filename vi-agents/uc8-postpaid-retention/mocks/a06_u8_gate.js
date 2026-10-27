@@ -1,7 +1,7 @@
 // @description A06 Compliance (UC8 pre-dial gate): consent/DND for the service category, calling window 10:00-20:00 IST, UC8 cooldown, suppression (open Nodal complaint, in collections, deceased or legal flag) and at most 2 attempts per trigger. Fail closed.
 // @effect read_only
 // @in msisdn:string "10-digit Vi postpaid number"
-// @in trigger_code:string "Trigger code T1-T7 from the event, or empty"
+// @in trigger_code?:string "Trigger code T1-T7 from the event, or empty"
 // @out allowed stop_reason first_name trigger_code rule_version
 const c = customer(input.msisdn);
 const rv = "UC8-GATE-v1-MOCK";

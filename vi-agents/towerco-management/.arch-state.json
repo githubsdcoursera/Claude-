@@ -21,7 +21,7 @@
     "tc_dispute_prepare": "v1.0.0",
     "tc_document_check": "v1.0.0",
     "tc_duplicate_check": "v1.0.0",
-    "tc_eb_consumer_check": "v1.0.0",
+    "tc_eb_consumer_check": "v1.0.1",
     "tc_golden_regression": "v1.0.0",
     "tc_order_evidence": "v1.0.0",
     "tc_parse_request": "v1.0.0",

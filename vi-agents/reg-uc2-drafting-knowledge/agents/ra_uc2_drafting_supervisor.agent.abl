@@ -123,7 +123,6 @@ FLOW:
       WITH:
         topic: brief.output.topic
         doc_id: req.output.doc_id
-        requested: ""
       AS: cons
     THEN: d4_draft
 
@@ -171,8 +170,6 @@ FLOW:
     CALL: rd03_consistency
       WITH:
         topic: req.output.topic
-        doc_id: ""
-        requested: ""
       AS: cons
     ON_RESULT:
       - IF: cons.output.escalate == true

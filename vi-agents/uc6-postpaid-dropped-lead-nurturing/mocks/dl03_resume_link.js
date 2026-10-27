@@ -3,7 +3,7 @@
 // @in msisdn:string "10-digit mobile number of the lead"
 // @in lead_id:string "Lead id from a03_u6_lead_context"
 // @in step:string "Journey step to reopen, e.g. plan_selection, kyc, payment, address, upc"
-// @in plan_id:string "Plan id the customer chose, or empty"
+// @in plan_id?:string "Plan id the customer chose, or empty"
 // @in campaign:string "Campaign id for the attribution tag"
 // @out sent link_ref masked_msisdn expiry attribution_tag
 const c = customer(input.msisdn);

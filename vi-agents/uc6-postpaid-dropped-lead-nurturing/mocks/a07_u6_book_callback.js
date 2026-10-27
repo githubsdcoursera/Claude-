@@ -1,8 +1,8 @@
 // @description A09/A07 Handoff (callback.book): book a callback at the customer-chosen time, or the next suitable time band when the customer is busy or driving. Respects the 4-hour spacing and calling window.
 // @effect side_effect
 // @in msisdn:string "10-digit mobile number of the lead"
-// @in lead_id:string "Lead id, or empty before context is loaded"
-// @in preference:string "Customer's preferred time in their words, or next_band"
+// @in lead_id?:string "Lead id, or empty before context is loaded"
+// @in preference?:string "Customer's preferred time in their words, or next_band"
 // @in reason:string "Why: busy, family_approval, upc_pending, think_it_over"
 // @out booked slot callback_ref
 const t = String(input.preference || "").toLowerCase();

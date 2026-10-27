@@ -2,7 +2,7 @@
 // @effect read_only
 // @in user:string "Officer user id"
 // @in topic:string "Topic"
-// @in year:string "Year, or empty"
+// @in year?:string "Year, or empty"
 // @out count answer
 const ps = R.positions.filter(p => p.topic === input.topic && (!input.year || p.date.startsWith(input.year)));
 if (!ps.length) return { count: 0, answer: "I found no Vi document on that topic" + (input.year ? " in " + input.year : "") + " that you are authorised to see." };

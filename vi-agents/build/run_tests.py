@@ -30,6 +30,24 @@ def load_session(pid, agent, first):
         time.sleep(20)
 
 
+def full_replies(pid, sid, want):
+    """Live traces truncate long replies; the persisted session history keeps the full text."""
+    out = []
+    for _ in range(6):
+        out, off = [], 0
+        while True:
+            h = call("debug_session_history", {"action": "get", "projectId": pid, "sessionId": sid, "offset": off, "limit": 100})
+            tr = h.get("traces") or []
+            out += [str((e.get("data") or {}).get("content") or "") for e in tr if e.get("type") == "agent_response"]
+            if len(tr) < 100:
+                break
+            off += 100
+        if len(out) >= want:
+            break
+        time.sleep(5)
+    return out
+
+
 def run(pid, agent, sc):
     sid, raw = load_session(pid, agent, sc["turns"][0])
     if not sid:
@@ -80,7 +98,8 @@ def run(pid, agent, sc):
         if e.get("type") == "agent_response" and (e.get("data") or {}).get("content"):
             first_turn.append(e["data"]["content"])
     transcript.insert(0, (sc["turns"][0], " ".join(first_turn)))
-    spoken = " ".join(replies + [a for _, a in transcript])
+    full = full_replies(pid, sid, len([r for r in replies if r]))
+    spoken = " ".join(replies + full + [a for _, a in transcript])
     exp, fail = sc.get("expect", {}), []
     for tname in exp.get("tools", []):
         if tname not in tools:

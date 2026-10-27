@@ -1,8 +1,8 @@
 // @description RD03 Consistency Checker: flag CONFLICT (two approved current positions disagree), DRIFT (requested stance departs from the current position), GAP (no prior position) and STALE (older than 24 months). Conflicts are escalated to the owner and never silently resolved.
 // @effect read_only
 // @in topic:string "Topic"
-// @in doc_id:string "Document being responded to, or empty"
-// @in requested:string "Stance the officer asked for, or empty"
+// @in doc_id?:string "Document being responded to, or empty"
+// @in requested?:string "Stance the officer asked for, or empty"
 // @out flags conflict escalate
 const out = []; let conflict = false;
 const cur = R.positions.filter(p => p.topic === input.topic && p.approved && p.status === "current");

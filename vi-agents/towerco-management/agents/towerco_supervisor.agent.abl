@@ -168,7 +168,6 @@ FLOW:
     REASONING: false
     CALL: tc_eb_consumer_check
       WITH:
-        consumer: ""
         site_id: req.output.site_id
       AS: eb
     ON_RESULT:
@@ -311,7 +310,6 @@ FLOW:
     CALL: tc_eb_consumer_check
       WITH:
         consumer: req.output.consumer
-        site_id: ""
       AS: eb
     ON_RESULT:
       - IF: eb.output.reused == true
@@ -349,10 +347,20 @@ FLOW:
     ON_RESULT:
       - IF: golden.output.gate_passed == true
         SET: disposition = "GOLDEN_GATE_PASSED"
-        THEN: g1_say
+        THEN: g1_record
       - ELSE:
         SET: disposition = "GOLDEN_GATE_FAILED"
-        THEN: g1_say
+        THEN: g1_record
+
+  g1_record:
+    REASONING: false
+    CALL: tc_record_case
+      WITH:
+        case_ref: "GOLDEN-REGRESSION"
+        disposition: disposition
+        summary: "{{golden.output.correct}}/{{golden.output.lines}} lines, {{golden.output.accuracy_pct}}%"
+      AS: audit
+    THEN: g1_say
 
   g1_say:
     REASONING: false

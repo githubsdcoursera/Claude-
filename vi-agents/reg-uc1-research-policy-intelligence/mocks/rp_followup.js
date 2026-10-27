@@ -1,8 +1,8 @@
 // @description RP05 follow-up: answer the officer's follow-up question about a document strictly from its extracted content (a question number, the deadlines or the definitions), with the page citation.
 // @effect read_only
 // @in user:string "Officer user id"
-// @in doc_id:string "Document id the conversation is about"
-// @in question:string "Q1-Q6, deadline or definitions"
+// @in doc_id?:string "Document id the conversation is about"
+// @in question?:string "Q1-Q6, deadline or definitions"
 // @out answered answer
 const id = String(input.doc_id || "").toUpperCase(), r = docFor(input.user, id);
 if (r.state !== "ok") return { answered: false, answer: "Please name the document first." };
