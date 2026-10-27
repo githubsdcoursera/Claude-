@@ -13,7 +13,7 @@
     "a11_meter_entitlement": "v1.0.0",
     "a16_block_call": "v1.0.0",
     "a16_check_caller_reputation": "v1.0.0",
-    "a16_get_subscriber_rules": "v1.0.0",
+    "a16_get_subscriber_rules": "v1.0.1",
     "a16_provision_call_forwarding": "v1.0.0",
     "a17_deliver_summary": "v1.0.1",
     "a17_push_urgent": "v1.0.0",

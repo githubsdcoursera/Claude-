@@ -112,7 +112,7 @@ FLOW:
         caller: caller
       AS: reputation
     ON_RESULT:
-      - IF: reputation.output.category == "spam" AND rules.output.block_spam == true
+      - IF: reputation.output.category == "spam" AND rules.output.block_spam != false
         THEN: s1_block
       - IF: reputation.output.category == "vip"
         SET: urgent = true
