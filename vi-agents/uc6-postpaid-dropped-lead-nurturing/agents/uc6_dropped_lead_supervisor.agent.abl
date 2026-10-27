@@ -731,7 +731,7 @@ FLOW:
     CALL: a07_u6_book_callback
       WITH:
         msisdn: msisdn
-        lead_id: ctx.output.lead_id
+        lead_id: "not_loaded"
         preference: "next_band"
         reason: "busy"
       AS: callback

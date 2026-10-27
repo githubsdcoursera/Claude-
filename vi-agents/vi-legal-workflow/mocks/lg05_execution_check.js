@@ -3,6 +3,6 @@
 // @in doc_id:string "Document id"
 // @in approval_ref?:string "Approval record reference, or empty"
 // @out found result checks exceptions clean_copy envelope
-const r = executionCheck(String(input.doc_id || "").toUpperCase(), input.approval_ref || ""); if (!r) return { found: false };
+const r = executionCheck(String(input.doc_id || "").toUpperCase(), (/^none$/i.test(String(input.approval_ref || "")) ? "" : input.approval_ref || "")); if (!r) return { found: false };
 return { found: true, result: r.result, checks: r.checks.join(" | "), exceptions: r.exceptions, clean_copy: r.clean_copy,
   envelope: r.result === "FAIL" || r.result === "NOT_READY" ? "Not prepared until the exceptions are cleared." : "Envelope drafted (signers and order per approval record); not sent. The lawyer or signatory sends it." };

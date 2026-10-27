@@ -43,6 +43,7 @@ MEMORY:
     - wat
     - dp
     - appr
+    - approval_ref
     - ev
     - disposition
     - audit
@@ -53,6 +54,7 @@ FLOW:
     SET:
       user = FIRST_NON_EMPTY(session.messageMetadata.user, REGEX_EXTRACT(input, "user=([a-z]+\\.[a-z]+)", 1), "lawyer.radhika")
       request = input
+      approval_ref = "none"
       disposition = "IN_PROGRESS"
     THEN: s1_parse
 
@@ -279,7 +281,9 @@ FLOW:
       AS: appr
     ON_RESULT:
       - IF: appr.output.approved == true
-        SET: disposition = "APPROVED"
+        SET:
+          disposition = "APPROVED"
+          approval_ref = appr.output.approval_ref
         THEN: w6_execution
       - ELSE:
         SET: disposition = "APPROVAL_REFUSED"
@@ -309,7 +313,7 @@ FLOW:
     CALL: lg05_execution_check
       WITH:
         doc_id: req.output.doc_id
-        approval_ref: appr.output.approval_ref
+        approval_ref: approval_ref
       AS: exe
     ON_RESULT:
       - IF: exe.output.result == "FAIL"
