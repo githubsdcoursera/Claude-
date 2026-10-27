@@ -1,30 +1,30 @@
 # Test results: Vi TowerCo Management
 
-16/17 scenarios passed. Run 2026-10-27 17:21 UTC against the draft agent through Arch debug sessions; backend systems are mock workflows.
+17/17 scenarios passed. Run 2026-10-27 21:27 UTC against the draft agent through Arch debug sessions; backend systems are mock workflows.
 
 | Scenario | Result | Disposition | End | Slowest turn | Notes |
 |---|---|---|---|---:|---|
-| GOLD-001_premature_rent_before_rfs_hold | PASS | HOLD_RECOMMENDED | complete | 1836 ms |  |
-| GOLD-002_duplicate_line_excluded | PASS | PARTIAL_PAY_RECOMMENDED | complete | 1639 ms |  |
-| GOLD-003_one_escalation_only | PASS | PARTIAL_PAY_RECOMMENDED | complete | 1785 ms |  |
-| GOLD-004_reused_eb_consumer_flagged | FAIL | - | complete | 211 ms | tool tc_eb_consumer_check not called; disposition None != EB_CONSUMER_REUSE_FLAGGED; never said: mapped to 2 sites (MHGOA-SYN-0014 and MHGOA-SYN-0024); never said: not auto-approved |
-| GOLD-005_missing_support_docs_vendor_request | PASS | DOCS_INCOMPLETE_HOLD | complete | 1263 ms |  |
-| GOLD-006_underbilling_reported | PASS | PAY_RECOMMENDED | complete | 1357 ms |  |
-| post_exit_already_disputed_no_duplicate_dispute | PASS | HOLD_RECOMMENDED | complete | 1249 ms |  |
-| non_bts_energy_dispute_draft | PASS | HOLD_RECOMMENDED | complete | 1885 ms |  |
-| loading_quantity_variance | PASS | PARTIAL_PAY_RECOMMENDED | complete | 1980 ms |  |
-| eb_amount_mismatch | PASS | PARTIAL_PAY_RECOMMENDED | complete | 1455 ms |  |
-| clean_match_pay_recommended | PASS | PAY_RECOMMENDED | complete | 1388 ms |  |
-| period_summary_august | PASS | PERIOD_SUMMARY | complete | 512 ms |  |
-| provision_september | PASS | PROVISION_RECOMMENDED | complete | 441 ms |  |
-| golden_regression_release_gate | PASS | GOLDEN_GATE_PASSED | complete | 646 ms |  |
-| payment_release_blocked_human_gate | PASS | POLICY_BLOCKED | complete | 593 ms |  |
-| multi_turn_case_then_sap_post_blocked | PASS | POLICY_BLOCKED | complete | 1894 ms |  |
-| site_without_period_asks_for_period | PASS | PAY_RECOMMENDED | complete | 1655 ms |  |
+| GOLD-001_premature_rent_before_rfs_hold | PASS | HOLD_RECOMMENDED | complete | 1539 ms |  |
+| GOLD-002_duplicate_line_excluded | PASS | PARTIAL_PAY_RECOMMENDED | complete | 1804 ms |  |
+| GOLD-003_one_escalation_only | PASS | PARTIAL_PAY_RECOMMENDED | complete | 1805 ms |  |
+| GOLD-004_reused_eb_consumer_flagged | PASS | EB_CONSUMER_REUSE_FLAGGED | complete | 626 ms |  |
+| GOLD-005_missing_support_docs_vendor_request | PASS | DOCS_INCOMPLETE_HOLD | complete | 1490 ms |  |
+| GOLD-006_underbilling_reported | PASS | PAY_RECOMMENDED | complete | 1575 ms |  |
+| post_exit_already_disputed_no_duplicate_dispute | PASS | HOLD_RECOMMENDED | complete | 1595 ms |  |
+| non_bts_energy_dispute_draft | PASS | HOLD_RECOMMENDED | complete | 2001 ms |  |
+| loading_quantity_variance | PASS | PARTIAL_PAY_RECOMMENDED | complete | 1451 ms |  |
+| eb_amount_mismatch | PASS | PARTIAL_PAY_RECOMMENDED | complete | 1626 ms |  |
+| clean_match_pay_recommended | PASS | PAY_RECOMMENDED | complete | 1517 ms |  |
+| period_summary_august | PASS | PERIOD_SUMMARY | complete | 660 ms |  |
+| provision_september | PASS | PROVISION_RECOMMENDED | complete | 541 ms |  |
+| golden_regression_release_gate | PASS | GOLDEN_GATE_PASSED | complete | 571 ms |  |
+| payment_release_blocked_human_gate | PASS | POLICY_BLOCKED | complete | 614 ms |  |
+| multi_turn_case_then_sap_post_blocked | PASS | POLICY_BLOCKED | complete | 1776 ms |  |
+| site_without_period_asks_for_period | PASS | PAY_RECOMMENDED | complete | 1297 ms |  |
 
 ## GOLD-001_premature_rent_before_rfs_hold
 
-Session `a0f8b09a-253b-4664-9f08-4dbc10738d9a`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_dispute_prepare, tc_request_approval, tc_payment_readiness, tc_record_case, tc_parse_request.
+Session `b09730bc-fbfb-445b-8a6c-874609243eb3`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_eb_check, tc_dispute_prepare, tc_request_approval, tc_payment_readiness, tc_record_case, tc_parse_request.
 
 | Caller | Agent |
 |---|---|
@@ -33,7 +33,7 @@ Session `a0f8b09a-253b-4664-9f08-4dbc10738d9a`. Tools: tc_parse_request, tc_case
 
 ## GOLD-002_duplicate_line_excluded
 
-Session `08d15330-7d80-4a5b-9b8d-80978ea7cbd3`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_dispute_prepare, tc_request_approval, tc_payment_readiness, tc_record_case, tc_parse_request.
+Session `154202f3-3e4e-4cc4-a507-32c58e980730`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_eb_check, tc_dispute_prepare, tc_request_approval, tc_payment_readiness, tc_record_case, tc_parse_request.
 
 | Caller | Agent |
 |---|---|
@@ -42,7 +42,7 @@ Session `08d15330-7d80-4a5b-9b8d-80978ea7cbd3`. Tools: tc_parse_request, tc_case
 
 ## GOLD-003_one_escalation_only
 
-Session `06c86eaf-e75b-49ea-b29d-9509cf6f40d9`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_dispute_prepare, tc_request_approval, tc_payment_readiness, tc_record_case, tc_parse_request.
+Session `063d4571-4b76-4734-97a4-09e5886a1cb1`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_eb_check, tc_dispute_prepare, tc_request_approval, tc_payment_readiness, tc_record_case, tc_parse_request.
 
 | Caller | Agent |
 |---|---|
@@ -51,16 +51,16 @@ Session `06c86eaf-e75b-49ea-b29d-9509cf6f40d9`. Tools: tc_parse_request, tc_case
 
 ## GOLD-004_reused_eb_consumer_flagged
 
-Session `36f3863e-d765-4c9c-88d2-f8fb0b5b1cf4`. Tools: tc_parse_request, tc_parse_request.
+Session `a327beba-2749-4559-b965-9e71b4e259eb`. Tools: tc_parse_request, tc_eb_check, tc_record_case, tc_parse_request.
 
 | Caller | Agent |
 |---|---|
-| check consumer CONS-SYN-00014 | Anything else? |
+| check consumer CONS-SYN-00014 | EB consumer number CONS-SYN-00014 is mapped to 2 sites (MHGOA-SYN-0014 and MHGOA-SYN-0024). EB lines on this consumer are held for verification and are not auto-approved. Anything else? |
 | done | Closing the session. Every outcome is in the audit trail. |
 
 ## GOLD-005_missing_support_docs_vendor_request
 
-Session `a2aed57a-a45a-4e08-af6c-46a049a4480d`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_payment_readiness, tc_record_case, tc_parse_request.
+Session `aeb7bed2-48dc-4b7b-ba3e-280db94281d2`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_eb_check, tc_payment_readiness, tc_record_case, tc_parse_request.
 
 | Caller | Agent |
 |---|---|
@@ -69,7 +69,7 @@ Session `a2aed57a-a45a-4e08-af6c-46a049a4480d`. Tools: tc_parse_request, tc_case
 
 ## GOLD-006_underbilling_reported
 
-Session `3eeb7a5f-ca17-4710-9f3c-828dd16c668f`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_payment_readiness, tc_record_case, tc_parse_request.
+Session `d26564e9-9f89-47cf-abde-713b3ee43dd6`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_eb_check, tc_payment_readiness, tc_record_case, tc_parse_request.
 
 | Caller | Agent |
 |---|---|
@@ -78,7 +78,7 @@ Session `3eeb7a5f-ca17-4710-9f3c-828dd16c668f`. Tools: tc_parse_request, tc_case
 
 ## post_exit_already_disputed_no_duplicate_dispute
 
-Session `dce3f795-11d3-4687-9086-1dd26daf492f`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_dispute_prepare, tc_payment_readiness, tc_record_case, tc_parse_request.
+Session `b17b6d72-f54c-42b8-9a3b-151b6d777983`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_eb_check, tc_dispute_prepare, tc_payment_readiness, tc_record_case, tc_parse_request.
 
 | Caller | Agent |
 |---|---|
@@ -87,7 +87,7 @@ Session `dce3f795-11d3-4687-9086-1dd26daf492f`. Tools: tc_parse_request, tc_case
 
 ## non_bts_energy_dispute_draft
 
-Session `4a553414-7848-46f0-b5f3-dc2e7a7c14a9`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_eb_check, tc_dispute_prepare, tc_request_approval, tc_payment_readiness, tc_record_case, tc_parse_request.
+Session `74474816-0b01-49cd-812a-1fbb72978d53`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_eb_check, tc_dispute_prepare, tc_request_approval, tc_payment_readiness, tc_record_case, tc_parse_request.
 
 | Caller | Agent |
 |---|---|
@@ -96,7 +96,7 @@ Session `4a553414-7848-46f0-b5f3-dc2e7a7c14a9`. Tools: tc_parse_request, tc_case
 
 ## loading_quantity_variance
 
-Session `de39bee6-f4ca-44f5-8cf3-82721ff95e1b`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_eb_check, tc_dispute_prepare, tc_request_approval, tc_payment_readiness, tc_record_case, tc_parse_request.
+Session `7573a26e-d784-4c1e-bffb-e3e710f1a1d1`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_eb_check, tc_dispute_prepare, tc_request_approval, tc_payment_readiness, tc_record_case, tc_parse_request.
 
 | Caller | Agent |
 |---|---|
@@ -105,7 +105,7 @@ Session `de39bee6-f4ca-44f5-8cf3-82721ff95e1b`. Tools: tc_parse_request, tc_case
 
 ## eb_amount_mismatch
 
-Session `aef03adb-0c0f-4768-a51c-c8923c5229ef`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_eb_check, tc_dispute_prepare, tc_request_approval, tc_payment_readiness, tc_record_case, tc_parse_request.
+Session `db93e179-711e-448b-ae43-44a596dcd5a2`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_eb_check, tc_dispute_prepare, tc_request_approval, tc_payment_readiness, tc_record_case, tc_parse_request.
 
 | Caller | Agent |
 |---|---|
@@ -114,7 +114,7 @@ Session `aef03adb-0c0f-4768-a51c-c8923c5229ef`. Tools: tc_parse_request, tc_case
 
 ## clean_match_pay_recommended
 
-Session `1991452f-f20e-4961-93d8-cbba2fd62e43`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_eb_check, tc_payment_readiness, tc_record_case, tc_parse_request.
+Session `30cf846e-5706-4c39-aaee-66348c359e07`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_eb_check, tc_payment_readiness, tc_record_case, tc_parse_request.
 
 | Caller | Agent |
 |---|---|
@@ -123,7 +123,7 @@ Session `1991452f-f20e-4961-93d8-cbba2fd62e43`. Tools: tc_parse_request, tc_case
 
 ## period_summary_august
 
-Session `2c3af067-12c8-4a47-a1aa-8aed0d6895f7`. Tools: tc_parse_request, tc_period_summary, tc_record_case, tc_parse_request.
+Session `5ef5d8d0-a85a-417b-8e8b-c4672a407b13`. Tools: tc_parse_request, tc_period_summary, tc_record_case, tc_parse_request.
 
 | Caller | Agent |
 |---|---|
@@ -132,7 +132,7 @@ Session `2c3af067-12c8-4a47-a1aa-8aed0d6895f7`. Tools: tc_parse_request, tc_peri
 
 ## provision_september
 
-Session `061a9cb3-ff27-4793-8a5f-102817f45d79`. Tools: tc_parse_request, tc_provision, tc_record_case, tc_parse_request.
+Session `2dec2860-9b17-40f1-98fe-df01e9138178`. Tools: tc_parse_request, tc_provision, tc_record_case, tc_parse_request.
 
 | Caller | Agent |
 |---|---|
@@ -141,7 +141,7 @@ Session `061a9cb3-ff27-4793-8a5f-102817f45d79`. Tools: tc_parse_request, tc_prov
 
 ## golden_regression_release_gate
 
-Session `3848b994-21f3-4fa4-a981-ae175fd7b848`. Tools: tc_parse_request, tc_golden_regression, tc_record_case, tc_parse_request.
+Session `ca4f735b-91dc-419a-999b-e3b95a5ea75f`. Tools: tc_parse_request, tc_golden_regression, tc_record_case, tc_parse_request.
 
 | Caller | Agent |
 |---|---|
@@ -150,7 +150,7 @@ Session `3848b994-21f3-4fa4-a981-ae175fd7b848`. Tools: tc_parse_request, tc_gold
 
 ## payment_release_blocked_human_gate
 
-Session `fbf28823-a869-4ef4-a6a6-d118f5df1f15`. Tools: tc_parse_request, tc_request_approval, tc_record_case, tc_parse_request.
+Session `3338ee0c-1be4-439f-ac33-1114dc2bfdf8`. Tools: tc_parse_request, tc_request_approval, tc_record_case, tc_parse_request.
 
 | Caller | Agent |
 |---|---|
@@ -159,7 +159,7 @@ Session `fbf28823-a869-4ef4-a6a6-d118f5df1f15`. Tools: tc_parse_request, tc_requ
 
 ## multi_turn_case_then_sap_post_blocked
 
-Session `70b93e9c-ba15-4f6f-be83-194af06b8cd5`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_eb_check, tc_dispute_prepare, tc_request_approval, tc_payment_readiness, tc_record_case, tc_parse_request, tc_request_approval, tc_record_case, tc_parse_request.
+Session `ea214390-71b7-4b13-a3f2-98e58dfe4092`. Tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_eb_check, tc_dispute_prepare, tc_request_approval, tc_payment_readiness, tc_record_case, tc_parse_request, tc_request_approval, tc_record_case, tc_parse_request.
 
 | Caller | Agent |
 |---|---|
@@ -169,7 +169,7 @@ Session `70b93e9c-ba15-4f6f-be83-194af06b8cd5`. Tools: tc_parse_request, tc_case
 
 ## site_without_period_asks_for_period
 
-Session `81f0f3aa-3bb1-4980-a3d6-31ba20dc284d`. Tools: tc_parse_request, tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_eb_check, tc_payment_readiness, tc_record_case, tc_parse_request.
+Session `d2139ecd-49ec-4193-be8c-b2d00c17ab01`. Tools: tc_parse_request, tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_eb_check, tc_payment_readiness, tc_record_case, tc_parse_request.
 
 | Caller | Agent |
 |---|---|
