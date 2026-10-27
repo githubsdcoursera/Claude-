@@ -39,8 +39,13 @@ def run(pid, agent, sc):
     for u in sc["turns"][1:]:
         r = call("debug_send_message", {"text": u, "sessionId": sid, "waitForResponse": True, "timeout": 90000})
         transcript.append((u, r.get("response") or ""))
-    time.sleep(3)
-    evs = list(reversed(call("debug_traces", {"sessionId": sid, "limit": 1000}).get("events", [])))
+    for _ in range(10):  # traces land asynchronously; wait until the call's final exit is recorded
+        time.sleep(2)
+        evs = list(reversed(call("debug_traces", {"sessionId": sid, "limit": 1000}).get("events", [])))
+        if any(e.get("type") == "agent_exit" and (e.get("data") or {}).get("result") in ("complete", "escalate") for e in evs):
+            time.sleep(1)
+            evs = list(reversed(call("debug_traces", {"sessionId": sid, "limit": 1000}).get("events", [])))
+            break
     if not evs:  # live buffers are lost if the MCP server restarts; fall back to persisted Runtime traces
         hist = call("debug_traces", {"sessionId": sid, "limit": 1000, "source": "historical", "projectId": pid}).get("events", [])
         evs = sorted(hist, key=lambda e: e.get("timestamp") or "")
