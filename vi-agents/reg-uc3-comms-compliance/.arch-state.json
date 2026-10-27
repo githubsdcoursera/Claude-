@@ -25,7 +25,7 @@
     "rc06_dashboard": "v1.0.0",
     "rc_approve": "v1.0.0",
     "rc_parse": "v1.0.0",
-    "rc_reassign": "v1.0.0",
+    "rc_reassign": "v1.0.1",
     "rc_replay": "v1.0.0",
     "r_audit_log": "v1.0.0",
     "r_cite_verify": "v1.0.0",
