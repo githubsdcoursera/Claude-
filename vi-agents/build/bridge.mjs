@@ -12,6 +12,10 @@ p.on('exit', c => { console.error(`[bridge] server exited ${c}`); process.exit(1
 const rpc = (method, params) => new Promise(r => { const i = ++id; pending[i] = r; p.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: i, method, params }) + '\n'); });
 await rpc('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'bridge', version: '1' } });
 p.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) + '\n');
+// Connect before serving requests so callers never see "Not connected" (uses stored credentials,
+// or prints a device-login URL to stderr on first use).
+const conn = await rpc('tools/call', { name: 'platform_connect', arguments: { serverUrl: env.AGENTS_URL } });
+console.error('[bridge] platform_connect:', JSON.stringify(conn).slice(0, 200));
 http.createServer(async (req, res) => {
   let body = ''; for await (const c of req) body += c;
   res.setHeader('content-type', 'application/json');
