@@ -23,5 +23,16 @@
     "a10_kb_answer": "v1.0.0",
     "a11_write_post_call": "v1.0.0"
   },
-  "projectId": "01a17d49-4dc2-7ace-bc0f-078e364de170"
+  "projectId": "01a17d49-4dc2-7ace-bc0f-078e364de170",
+  "deployment": {
+    "env": "dev",
+    "id": "01a17ee7-5062-7d24-862b-f635a5c6d7b4",
+    "endpointSlug": "01a17d49-dev-mvr3kmze-eaa8ef",
+    "agents": {
+      "Business_Sales_Supervisor": {
+        "version": "1.0.0"
+      }
+    },
+    "preflight": "ready"
+  }
 }

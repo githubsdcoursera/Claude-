@@ -35,5 +35,16 @@
     "tc_shadow_bill": "v1.0.0",
     "tc_eb_check": "v1.0.0"
   },
-  "projectId": "01a17dee-ebee-7037-b42e-6fea9fa65523"
+  "projectId": "01a17dee-ebee-7037-b42e-6fea9fa65523",
+  "deployment": {
+    "env": "dev",
+    "id": "01a17eeb-d7e3-734b-bc04-90e0a4e4be8a",
+    "endpointSlug": "01a17dee-dev-mvr3r00q-8ad9c0",
+    "agents": {
+      "TowerCo_Supervisor": {
+        "version": "1.0.0"
+      }
+    },
+    "preflight": "ready"
+  }
 }

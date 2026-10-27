@@ -33,5 +33,16 @@
     "r_kb_search": "v1.0.0",
     "r_notify": "v1.0.0"
   },
-  "projectId": "01a17dfb-876e-783e-8430-148e24c95082"
+  "projectId": "01a17dfb-876e-783e-8430-148e24c95082",
+  "deployment": {
+    "env": "dev",
+    "id": "01a17ef0-0200-7b0e-b5de-a04903f908bf",
+    "endpointSlug": "01a17dfb-dev-mvr3wum1-dfa60e",
+    "agents": {
+      "RA_UC3_Compliance_Supervisor": {
+        "version": "1.0.0"
+      }
+    },
+    "preflight": "ready"
+  }
 }

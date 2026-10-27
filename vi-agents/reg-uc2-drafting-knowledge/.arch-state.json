@@ -33,5 +33,16 @@
     "r_notify": "v1.0.0",
     "rd03_check_consistency": "v1.0.0"
   },
-  "projectId": "01a17e02-c98e-7aff-ada8-d0acd8cdfa34"
+  "projectId": "01a17e02-c98e-7aff-ada8-d0acd8cdfa34",
+  "deployment": {
+    "env": "dev",
+    "id": "01a17eee-f178-7b75-ab02-f4c0423f2443",
+    "endpointSlug": "01a17e02-dev-mvr3vcs1-5a1c0a",
+    "agents": {
+      "RA_UC2_Drafting_Supervisor": {
+        "version": "1.0.0"
+      }
+    },
+    "preflight": "ready"
+  }
 }

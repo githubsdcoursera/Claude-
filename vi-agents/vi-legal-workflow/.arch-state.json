@@ -31,5 +31,16 @@
     "lg_pr_strip": "v1.0.0",
     "lg_tr_verify": "v1.0.0"
   },
-  "projectId": "01a17e17-3685-7685-8d67-491f8dffefe7"
+  "projectId": "01a17e17-3685-7685-8d67-491f8dffefe7",
+  "deployment": {
+    "env": "dev",
+    "id": "01a17ef2-029d-77f2-9376-fa18511b134e",
+    "endpointSlug": "01a17e17-dev-mvr3znva-fe5ba3",
+    "agents": {
+      "Legal_Supervisor": {
+        "version": "1.0.0"
+      }
+    },
+    "preflight": "ready"
+  }
 }

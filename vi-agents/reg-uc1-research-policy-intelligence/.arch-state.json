@@ -29,5 +29,16 @@
     "r_kb_search": "v1.0.0",
     "r_notify": "v1.0.0"
   },
-  "projectId": "01a17e09-b402-7854-8a91-715fd9c6e63c"
+  "projectId": "01a17e09-b402-7854-8a91-715fd9c6e63c",
+  "deployment": {
+    "env": "dev",
+    "id": "01a17eed-e6c7-7cdd-8515-a92f4572a5e7",
+    "endpointSlug": "01a17e09-dev-mvr3tw3j-6d9c67",
+    "agents": {
+      "RA_UC1_Research_Supervisor": {
+        "version": "1.0.0"
+      }
+    },
+    "preflight": "ready"
+  }
 }

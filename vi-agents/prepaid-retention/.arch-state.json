@@ -35,5 +35,16 @@
     "a09_create_handoff": "v1.0.0",
     "a11_write_post_call": "v1.0.0"
   },
-  "projectId": "01a17d0c-6d31-73b2-9fc9-145618e26edc"
+  "projectId": "01a17d0c-6d31-73b2-9fc9-145618e26edc",
+  "deployment": {
+    "env": "dev",
+    "id": "01a17ee5-6e77-7391-99c6-6bde486da1dd",
+    "endpointSlug": "01a17d0c-dev-mvr3hzse-cb0f8c",
+    "agents": {
+      "Prepaid_Retention_Supervisor": {
+        "version": "1.0.0"
+      }
+    },
+    "preflight": "warnings"
+  }
 }
