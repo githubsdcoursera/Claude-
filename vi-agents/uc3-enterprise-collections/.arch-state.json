@@ -32,8 +32,8 @@
   "projectId": "01a17d46-22e7-7101-836a-adf54110a430",
   "deployment": {
     "env": "dev",
-    "id": "01a17f0c-d43f-7e08-bd00-32776399049b",
-    "endpointSlug": "01a17d46-dev-mvr51c1e-9f27ae",
+    "id": "01a18005-e98f-772a-9c5c-cb5c993e1dfa",
+    "endpointSlug": "01a17d46-dev-mvrer7nt-13b7fa",
     "agents": {
       "UC3_Collections_Supervisor": {
         "version": "1.0.0"

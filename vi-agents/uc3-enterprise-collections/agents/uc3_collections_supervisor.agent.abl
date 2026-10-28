@@ -398,7 +398,7 @@ FLOW:
       WITH:
         account_id: account_id
         invoice: billing.output.invoice
-        sr_number: sr.output.sr_number
+        sr_token: sr.output.sr_number
       AS: pause
     THEN: s5_dispute_ack
 
