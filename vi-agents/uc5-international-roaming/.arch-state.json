@@ -30,11 +30,11 @@
   "projectId": "01a17ccb-0616-7830-a034-ed48dccfe0d2",
   "deployment": {
     "env": "dev",
-    "id": "01a17d0b-e8cd-7813-abbd-e255a70b0dfc",
-    "endpointSlug": "01a17ccb-dev-mvql0urk-01635f",
+    "id": "01a1814b-14c4-75a1-baae-472040ba3802",
+    "endpointSlug": "01a17ccb-dev-mvrrfyrh-63120b",
     "agents": {
       "UC5_IR_Supervisor": {
-        "version": "1.0.0"
+        "version": "1.0.2"
       }
     },
     "preflight": "warnings"

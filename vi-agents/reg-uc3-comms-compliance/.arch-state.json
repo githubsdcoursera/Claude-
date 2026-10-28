@@ -18,31 +18,31 @@
     "doc_docx": "01a180cf-d656-7ef0-b050-e4f172dc7998"
   },
   "workflow_versions": {
-    "rc01_classify": "v1.0.1",
-    "rc02_extract": "v1.0.1",
-    "rc03_route": "v1.0.1",
-    "rc04_escalations": "v1.0.1",
-    "rc05_prepare": "v1.0.1",
-    "rc06_dashboard": "v1.0.1",
-    "rc_approve": "v1.0.1",
-    "rc_parse": "v1.0.1",
-    "rc_reassign": "v1.0.2",
-    "rc_replay": "v1.0.1",
-    "r_audit_log": "v1.0.1",
-    "r_cite_verify": "v1.0.1",
-    "r_doc_extract": "v1.0.1",
-    "r_kb_search": "v1.0.1",
-    "r_notify": "v1.0.1",
-    "doc_docx": "v1.0.0"
+    "rc01_classify": "v1.0.2",
+    "rc02_extract": "v1.0.2",
+    "rc03_route": "v1.0.2",
+    "rc04_escalations": "v1.0.2",
+    "rc05_prepare": "v1.0.2",
+    "rc06_dashboard": "v1.0.2",
+    "rc_approve": "v1.0.2",
+    "rc_parse": "v1.0.2",
+    "rc_reassign": "v1.0.3",
+    "rc_replay": "v1.0.2",
+    "r_audit_log": "v1.0.2",
+    "r_cite_verify": "v1.0.2",
+    "r_doc_extract": "v1.0.2",
+    "r_kb_search": "v1.0.2",
+    "r_notify": "v1.0.2",
+    "doc_docx": "v1.0.1"
   },
   "projectId": "01a17dfb-876e-783e-8430-148e24c95082",
   "deployment": {
     "env": "dev",
-    "id": "01a180d0-e5b4-7108-b2bf-990eed153e42",
-    "endpointSlug": "01a17dfb-dev-mvrmoc6m-5767c7",
+    "id": "01a18148-53a3-7cd0-ba32-c3d87f08c53a",
+    "endpointSlug": "01a17dfb-dev-mvrrc3h8-ca59d6",
     "agents": {
       "RA_UC3_Compliance_Supervisor": {
-        "version": "1.0.1"
+        "version": "1.0.2"
       }
     },
     "preflight": "ready"

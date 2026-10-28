@@ -180,5 +180,28 @@
    "exit": "escalate",
    "max_turn_ms": 2000
   }
+ },
+ {
+  "name": "bill_not_received_request_and_copy",
+  "turns": [
+   "hi",
+   "ENT5001 9870000001",
+   "I have not received the bills",
+   "yes",
+   "no thanks"
+  ],
+  "expect": {
+   "tools": [
+    "a24_create_dispute_sr",
+    "a24_pause_dunning",
+    "a23_send_message"
+   ],
+   "disposition": "BILL_COPY_REQUEST",
+   "says": [
+    "service request, reference SR"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 5000
+  }
  }
 ]

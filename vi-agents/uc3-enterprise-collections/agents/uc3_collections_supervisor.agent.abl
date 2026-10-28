@@ -43,6 +43,7 @@ MEMORY:
     - callback_preference
     - callback
     - dispute_type
+    - pending_concern
     - dispute_amount
     - dispute_details
     - sr
@@ -96,22 +97,25 @@ FLOW:
   s0_trigger:
     REASONING: false
     SET:
-      account_id = UPPER(FIRST_NON_EMPTY(session.messageMetadata.account_id, REGEX_EXTRACT(input, "account=([A-Za-z0-9]+)", 1), ""))
+      account_id = UPPER(FIRST_NON_EMPTY(session.messageMetadata.account_id, REGEX_EXTRACT(input, "account=([A-Za-z0-9]+)", 1), "none"))
       msisdn = FIRST_NON_EMPTY(session.messageMetadata.msisdn, REGEX_EXTRACT(input, "msisdn=(\\d{10})", 1), customer_id, "none")
       channel = FIRST_NON_EMPTY(session.messageMetadata.channel, REGEX_EXTRACT(input, "channel=(\\w+)", 1), "ivr")
       mode = FIRST_NON_EMPTY(session.messageMetadata.mode, REGEX_EXTRACT(input, "mode=(\\w+)", 1), "followup")
       disposition = "IN_PROGRESS"
+      pending_concern = "none"
     THEN: s0_need_number
 
 
   # ---- No caller ID (for example a Studio test chat): ask for the number before the call starts ----
   s0_need_number:
     REASONING: false
-    WHEN: msisdn == "none"
-    RESPOND: "Test chat: no caller number was passed to this session. Please type the 10-digit mobile number of the test customer (for example 9870000001) to start the call."
+    WHEN: msisdn == "none" OR account_id == "NONE"
+    RESPOND: "Test chat: no call details were passed to this session. Please type the enterprise account id and the billing contact's 10-digit mobile number (for example: ENT5001 9870000001) to start the call."
     ON_INPUT:
-      - IF: input matches "[0-9]{10}"
-        SET: msisdn = REGEX_EXTRACT(input, "([0-9]{10})", 1)
+      - IF: input matches "[A-Za-z]{3}[0-9]{4}" AND input matches "[0-9]{10}"
+        SET:
+          account_id = UPPER(REGEX_EXTRACT(input, "([A-Za-z]{3}[0-9]{4})", 1))
+          msisdn = REGEX_EXTRACT(input, "([0-9]{10})", 1)
         THEN: s0_billing
       - ELSE:
         THEN: s0_need_number
@@ -171,7 +175,7 @@ FLOW:
   # ---- S1 Disclose ----
   s1_disclose:
     REASONING: false
-    MAX_ATTEMPTS: 2
+    MAX_ATTEMPTS: 3
     ON_EXHAUSTED: x2_fallback
     RESPOND: "Hello, this is Vi Business's virtual assistant. I am an AI, and this conversation is recorded for quality and training. Am I speaking with {{billing.output.contact_name}}, the billing contact for {{billing.output.company}}?"
     ON_INPUT:
@@ -182,6 +186,10 @@ FLOW:
           disposition = "WRONG_PARTY"
           outcome = "billing_contact_not_reached"
         THEN: x3_wrong_party
+      - IF: input matches "(bill|invoice|statement|charge|amount|dispute|payment|received)"
+        SET: pending_concern = input
+        RESPOND: "I can help with that. First, to protect your account, am I speaking with {{billing.output.contact_name}}? Please say yes or no."
+        THEN: s1_disclose
       - ELSE:
         RESPOND: "Sorry, am I speaking with {{billing.output.contact_name}}? Please say yes or no."
         THEN: s1_disclose
@@ -195,6 +203,11 @@ FLOW:
         msisdn: msisdn
       AS: verify
     ON_RESULT:
+      - IF: verify.output.authorised == true AND pending_concern matches "(not received|haven.t received|have not received|didn.t receive|did not receive|didn.t get|did not get|never got|no bill|not got|bill copy|copy of the bill|invoice copy|copy of the invoice)"
+        THEN: s5_bill_copy
+      - IF: verify.output.authorised == true AND pending_concern matches "(dispute|wrong|incorrect|not ours|overcharged|error)"
+        SET: dispute_details = pending_concern
+        THEN: s5_dispute_type
       - IF: verify.output.authorised == true
         THEN: s3_state_amount
       - ELSE:
@@ -210,6 +223,9 @@ FLOW:
     ON_EXHAUSTED: x2_fallback
     RESPOND: "Thank you. The {{billing.output.cycle}} invoice {{billing.output.invoice}} for {{billing.output.amount_due}} was due on {{billing.output.due_date}} and is now {{billing.output.days_overdue}} days overdue. Would you like to pay now, tell me when you can pay, get a callback, or raise a dispute?"
     ON_INPUT:
+      - IF: input matches "(not received|haven.t received|have not received|didn.t receive|did not receive|didn.t get|did not get|never got|no bill|not got|bill copy|copy of the bill|invoice copy|copy of the invoice)"
+        SET: pending_concern = input
+        THEN: s5_bill_copy
       - IF: input matches "(dispute|wrong|incorrect|not ours|overcharged|didn't use|did not use|error in the bill)"
         SET: dispute_details = input
         THEN: s5_dispute_type
@@ -432,6 +448,64 @@ FLOW:
   s5_dispute_say:
     REASONING: false
     RESPOND: "I've raised your dispute of ₹{{dispute_amount}}. Your dispute reference number is {{sr.output.sr_number}}, and we'll resolve it within {{sr.output.tat}}. Payment reminders for invoice {{billing.output.invoice}} are paused until then, and I've sent the details on WhatsApp. Thank you."
+    THEN: s9_write
+
+  # ---- Bill not received: service request, invoice copy to the registered email, reminders paused ----
+  s5_bill_copy:
+    REASONING: false
+    CALL: a24_create_dispute_sr
+      WITH:
+        account_id: account_id
+        msisdn: msisdn
+        dispute_type: "bill_not_received"
+        amount: billing.output.amount_due
+        details: pending_concern
+      AS: sr
+    ON_RESULT:
+      - IF: sr.output.created == true
+        THEN: s5_bill_pause
+      - ELSE:
+        SET:
+          handoff_reason = "Bill-not-received request could not be created"
+          handoff_next_step = "Raise the service request and resend the invoice"
+          disposition = "SYSTEM_FAILURE"
+        THEN: x1_handoff
+
+  s5_bill_pause:
+    REASONING: false
+    CALL: a24_pause_dunning
+      WITH:
+        account_id: account_id
+        invoice: billing.output.invoice
+        sr_token: sr.output.sr_number
+      AS: pause
+    THEN: s5_bill_send
+
+  s5_bill_send:
+    REASONING: false
+    CALL: a23_send_message
+      WITH:
+        account_id: account_id
+        template: "invoice_copy"
+        channel: "email"
+      AS: message
+    SET:
+      disposition = "BILL_COPY_REQUEST"
+      outcome = "invoice_resent_sr_created"
+    THEN: s5_bill_say
+
+  s5_bill_say:
+    REASONING: false
+    RESPOND: "I'm sorry the bill didn't reach you. I've raised a service request, reference {{sr.output.sr_number}}, and sent a copy of the {{billing.output.cycle}} invoice {{billing.output.invoice}} for {{billing.output.amount_due}} (due {{billing.output.due_date}}) to your registered email. Payment reminders for this invoice are paused while the request is open, up to {{sr.output.tat}}. Would you like a payment link now, or is there anything else?"
+    ON_INPUT:
+      - IF: input matches "(pay|link|yes|yeah|sure|ok)"
+        THEN: s5_pay_now
+      - ELSE:
+        THEN: s5_bill_close
+
+  s5_bill_close:
+    REASONING: false
+    RESPOND: "Thank you. The invoice copy and your request reference are on their way. Goodbye."
     THEN: s9_write
 
   # ---- S9 Post-call: self-serve, PTP and dispute-TAT events (A11) ----

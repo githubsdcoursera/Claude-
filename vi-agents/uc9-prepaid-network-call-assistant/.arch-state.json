@@ -22,11 +22,11 @@
   "projectId": "01a17d56-c5f5-70f5-832a-e00c4c05d6e1",
   "deployment": {
     "env": "dev",
-    "id": "01a17ee4-5d7e-7b8f-a7ba-2b889da44f98",
-    "endpointSlug": "01a17d56-dev-mvr3ghvb-a22cd4",
+    "id": "01a18121-6669-7dc7-82cf-041e143ab9aa",
+    "endpointSlug": "01a17d56-dev-mvrptf1f-037351",
     "agents": {
       "UC9_Call_Assistant": {
-        "version": "1.0.0"
+        "version": "1.0.1"
       }
     },
     "preflight": "ready"

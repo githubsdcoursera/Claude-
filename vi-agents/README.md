@@ -175,9 +175,23 @@ upload may not carry the file. Each back-office agent routes an upload (or long 
 
 `build/add_upload_path.py <agent.abl> <spec.json>` generates the model-review, follow-up and Word-download steps from a
 spec (`upload_path.json`, `new_contract_path.json`). Word files are built inside the workflow (`shared/mocks/doc_docx.js`,
-no library) and returned as a `FILE` response. The file is currently embedded as a `data:` URL; the platform documents
-`FILE` as needing a reachable URL, so production should store the file in Vi document storage (SharePoint, Azure Blob or
-S3 through a platform integration) and return that link.
+no library), saved to the conversation with `upload_attachment` and returned as a download link.
+
+### Testing in the Studio chat
+
+A real call passes the caller's number (and for some agents the account or forwarding details) to the agent. A Studio
+test chat passes nothing, so each call agent first asks for the test details and then starts the call:
+
+| Agent | Type when asked | Example |
+|---|---|---|
+| UC1, UC5, UC6, UC7, UC8, Prepaid Retention, Dropped Leads, Business Sales | Test customer's 10-digit number | 9830000001 (UC1), 9900000006 (UC8) |
+| UC3 Enterprise Collections | Account id and billing contact number | ENT5001 9870000001 |
+| UC4 VSD Assist | Account id, then DIAL, then `SEG agent: ...` / `SEG customer: ...` lines, then END | ACC1001 |
+| UC9 Network Call Assistant | Subscriber number, then caller number | 9850000001 9711111111 |
+
+Uploaded files are read with the platform's attachment tools (`list_attachments`, `get_attachment`); the extracted text
+is passed to the model, which must say so when no text is available rather than guess. Generated Word files are saved
+with `upload_attachment` and returned as a download link (`get_attachment_url`, valid for about an hour).
 
 ## Platform behaviours found while building
 
@@ -202,6 +216,8 @@ S3 through a platform integration) and return that link.
 | `\n` inside a quoted `RESPOND: "..."` is shown literally | Multi-line replies use `RESPOND: |` blocks |
 | The MCP client refuses workflow code that looks like a credential (for example `const AUTH = "..."`) | Renamed |
 | A reasoning step with `EXIT_WHEN: flag == true` never exits if the model writes the flag as the string "true" | Steps that write data use `EXIT_WHEN: always`; the next tool validates the data |
+| Uploaded files are not given to FLOW reasoning steps; the model answered without the file | Read uploads with `list_attachments` and `get_attachment` (`build/doc_steps.py`) |
+| The `FILE` rich-content card does not interpolate `{{...}}` in its url | Download links go in the reply text from `get_attachment_url` |
 | Live traces cut long replies at about 200 characters | The test runner reads full replies from `debug_session_history` |
 
 ## Not done yet / decisions for Vi
