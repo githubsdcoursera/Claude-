@@ -16,7 +16,7 @@
     "doc_docx": "01a180bf-fe28-70fb-bccf-31a7b0e002d5"
   },
   "workflow_versions": {
-    "rp01_propose_obligation": "v1.0.1",
+    "rp01_propose_obligation": "v1.0.2",
     "rp01_source_poll": "v1.0.1",
     "rp02_summarise": "v1.0.1",
     "rp03_precedents": "v1.0.1",

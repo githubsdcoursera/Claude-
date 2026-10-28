@@ -42,11 +42,11 @@
   "projectId": "01a17dee-ebee-7037-b42e-6fea9fa65523",
   "deployment": {
     "env": "dev",
-    "id": "01a180ba-5a13-7898-a8cb-fcc46285d771",
-    "endpointSlug": "01a17dee-dev-mvrlso3v-627e91",
+    "id": "01a180d4-b2c7-705e-b1be-58275e3e8898",
+    "endpointSlug": "01a17dee-dev-mvrmtoe8-f46eb8",
     "agents": {
       "TowerCo_Supervisor": {
-        "version": "1.0.2"
+        "version": "1.0.3"
       }
     },
     "preflight": "ready"
