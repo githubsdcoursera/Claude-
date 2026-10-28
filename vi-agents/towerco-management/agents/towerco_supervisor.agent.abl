@@ -24,10 +24,56 @@ EXECUTION:
   tool_timeout: 8000
 
 TOOLS:
+  list_attachments(limit?: number, offset?: number) -> object
+    description: "List the files the user shared in this conversation, oldest first."
+    effect: read_only
+    confirm: never
+    params:
+      limit:
+        description: "Maximum number of files to return"
+      offset:
+        description: "Number of files to skip"
+  get_attachment(attachment_id: string) -> object
+    description: "Read one shared file; returns its extracted text in content."
+    effect: read_only
+    confirm: never
+    params:
+      attachment_id:
+        description: "File id from list_attachments"
+  upload_attachment(filename: string, content_base64: string, mime_type: string) -> object
+    description: "Save a generated file to this conversation so the user can download it."
+    effect: side_effect
+    confirm: never
+    params:
+      filename:
+        description: "File name, e.g. report.docx"
+      content_base64:
+        description: "File content, base64-encoded"
+      mime_type:
+        description: "File type"
+  get_attachment_url(attachment_id: string, expires_in_seconds?: number) -> object
+    description: "Short-lived download link for one file in this conversation."
+    effect: read_only
+    confirm: never
+    params:
+      attachment_id:
+        description: "File id"
+      expires_in_seconds:
+        description: "Link lifetime in seconds, up to 86400"
   #include-tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_eb_check, tc_dispute_prepare, tc_request_approval, tc_payment_readiness, tc_period_summary, tc_provision, tc_golden_regression, tc_record_case, tc_invoice_reconcile, doc_docx
 
 MEMORY:
   session:
+    - lnk
+    - dl_id
+    - upf
+    - doc_name
+    - doc_text
+    - got
+    - att_id
+    - last_offset
+    - lastf
+    - files
     - request
     - req
     - ctx
@@ -55,6 +101,8 @@ FLOW:
   s0_start:
     REASONING: false
     SET:
+      doc_text = "none"
+      doc_name = "none"
       request = input
       disposition = "IN_PROGRESS"
       inv_lines = "none"
@@ -87,11 +135,52 @@ FLOW:
       - IF: req.output.intent == "need_period"
         THEN: s2_need_period
       - IF: req.output.intent == "uploaded"
-        THEN: u1_read_invoice
+        THEN: tf1_list
       - ELSE:
         THEN: s2_help
 
   # ---- Uploaded or pasted vendor invoice: the model only reads the lines; every number is checked deterministically ----
+  tf1_list:
+    REASONING: false
+    CALL: list_attachments
+      AS: files
+    ON_RESULT:
+      - IF: files.total > 0
+        SET: last_offset = ADD(files.total, -1)
+        THEN: tf2_last
+      - ELSE:
+        THEN: u1_read_invoice
+
+  tf2_last:
+    REASONING: false
+    CALL: list_attachments
+      WITH:
+        limit: 1
+        offset: last_offset
+      AS: lastf
+    THEN: tf3_pick
+
+  tf3_pick:
+    REASONING: false
+    SET:
+      att_id = lastf.attachments[0].id
+      doc_name = lastf.attachments[0].filename
+    THEN: tf4_get
+
+  tf4_get:
+    REASONING: false
+    CALL: get_attachment
+      WITH:
+        attachment_id: att_id
+      AS: got
+    ON_RESULT:
+      - IF: got.processingStatus == "completed"
+        SET: doc_text = got.content
+        THEN: u1_read_invoice
+      - ELSE:
+        SET: doc_text = "UNREADABLE"
+        THEN: u1_read_invoice
+
   u1_read_invoice:
     REASONING: true
     GOAL: |
@@ -106,6 +195,14 @@ FLOW:
       Then reply with one short sentence: "Reading the invoice and checking each line against the rule book."
     AVAILABLE_TOOLS: [tc_record_case]
     CONTEXT_UPDATES: [inv_lines, inv_no, inv_vendor]
+      Text extracted from the most recently uploaded file ({{doc_name}}):
+      <<<
+      {{doc_text}}
+      >>>
+      If that text is "none", the user did not upload a file in this conversation: use any document text pasted in
+      their message instead. If it is "UNREADABLE", the platform could not extract the file's text: say so and ask the
+      user to paste the text or upload a text-based PDF or Word file. If there is no document text at all, say so in
+      one sentence. Never describe, summarise or review a document you cannot see.
     STEP_CONSTRAINTS:
       - "Never invent, round or compute an amount; copy only what the invoice shows"
     EXIT_WHEN: always
@@ -169,18 +266,41 @@ FLOW:
       AS: tdoc
     ON_RESULT:
       - IF: tdoc.output.ok == true
-        THEN: u7_doc_ready
+        THEN: td1_upload
       - ELSE:
         THEN: u8_doc_failed
 
-  u7_doc_ready:
+  td1_upload:
     REASONING: false
-    RESPOND: "{{tdoc.output.message}} It has the summary, every line with billed and expected amounts, the calculation and clause for each exception, and next steps. Anything else?"
-      FORMATS:
-        FILE:
-          url: "{{tdoc.output.url}}"
-          filename: "{{tdoc.output.filename}}"
-          mime_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    CALL: upload_attachment
+      WITH:
+        filename: tdoc.output.filename
+        content_base64: tdoc.output.b64
+        mime_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      AS: upf
+    ON_RESULT:
+      - IF: upf.success == true
+        SET: dl_id = upf.data.attachmentId
+        THEN: td2_link
+      - ELSE:
+        THEN: u8_doc_failed
+
+  td2_link:
+    REASONING: false
+    CALL: get_attachment_url
+      WITH:
+        attachment_id: dl_id
+        expires_in_seconds: 3600
+      AS: lnk
+    ON_RESULT:
+      - IF: lnk.success == true
+        THEN: td3_ready
+      - ELSE:
+        THEN: u8_doc_failed
+
+  td3_ready:
+    REASONING: false
+    RESPOND: "{{tdoc.output.message}} [Download {{tdoc.output.filename}}]({{lnk.data.url}}) (the link works for about an hour; the file also stays in this conversation's files). It has the summary, every line with billed and expected amounts, the calculation and clause for each exception, and next steps. Anything else?"
     THEN: u5_route
 
   u8_doc_failed:

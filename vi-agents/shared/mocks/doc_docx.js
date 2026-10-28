@@ -3,11 +3,11 @@
 // @in title:string "Document title"
 // @in markdown:string "Body in simple markdown"
 // @in footer_note?:string "Closing note, e.g. AI draft for review; nothing has been sent"
-// @out ok url filename mime_type size_bytes message
+// @out ok b64 filename mime_type size_bytes message
 const none = v => { const s = String(v == null ? "" : v).trim(); return !s || s.toLowerCase() === "none" ? "" : s; };
 const title = none(input.title) || "Document";
 const md = none(input.markdown).replace(/\r/g, "").replace(/\\n/g, "\n").replace(/ \|\| /g, "\n");
-if (!md) return { ok: false, url: "", filename: "", mime_type: "", size_bytes: 0, message: "There was no content to put in the document." };
+if (!md) return { ok: false, b64: "", filename: "", mime_type: "", size_bytes: 0, message: "There was no content to put in the document." };
 const today = new Date().toISOString().slice(0, 10);
 const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 // inline **bold** runs
@@ -79,4 +79,4 @@ for (let i = 0; i < out.length; i += 3) { const a = out[i], b = out[i + 1], d = 
   b64 += A[a >> 2] + A[(a & 3) << 4 | (b === undefined ? 0 : b >> 4)] + (b === undefined ? "=" : A[(b & 15) << 2 | (d === undefined ? 0 : d >> 6)]) + (d === undefined ? "=" : A[d & 63]); }
 const mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 const fname = (title.replace(/[^A-Za-z0-9]+/g, "_").replace(/^_|_$/g, "").slice(0, 60) || "Vi_document") + "_" + today + ".docx";
-return { ok: true, url: "data:" + mime + ";base64," + b64, filename: fname, mime_type: mime, size_bytes: out.length, message: fname + " is ready to download." };
+return { ok: true, b64: b64, filename: fname, mime_type: mime, size_bytes: out.length, message: fname + " is ready to download." };

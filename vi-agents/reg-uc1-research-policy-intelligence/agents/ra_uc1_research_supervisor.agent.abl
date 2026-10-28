@@ -25,10 +25,56 @@ EXECUTION:
   tool_timeout: 8000
 
 TOOLS:
+  list_attachments(limit?: number, offset?: number) -> object
+    description: "List the files the user shared in this conversation, oldest first."
+    effect: read_only
+    confirm: never
+    params:
+      limit:
+        description: "Maximum number of files to return"
+      offset:
+        description: "Number of files to skip"
+  get_attachment(attachment_id: string) -> object
+    description: "Read one shared file; returns its extracted text in content."
+    effect: read_only
+    confirm: never
+    params:
+      attachment_id:
+        description: "File id from list_attachments"
+  upload_attachment(filename: string, content_base64: string, mime_type: string) -> object
+    description: "Save a generated file to this conversation so the user can download it."
+    effect: side_effect
+    confirm: never
+    params:
+      filename:
+        description: "File name, e.g. report.docx"
+      content_base64:
+        description: "File content, base64-encoded"
+      mime_type:
+        description: "File type"
+  get_attachment_url(attachment_id: string, expires_in_seconds?: number) -> object
+    description: "Short-lived download link for one file in this conversation."
+    effect: read_only
+    confirm: never
+    params:
+      attachment_id:
+        description: "File id"
+      expires_in_seconds:
+        description: "Link lifetime in seconds, up to 86400"
   #include-tools: rp_parse, rp01_source_poll, rp01_propose_obligation, rp02_summarise, rp03_precedents, rp04_competitor_map, rp05_brief, rp_followup, r_kb_search, r_cite_verify, r_notify, r_audit_log, doc_docx
 
 MEMORY:
   session:
+    - lnk
+    - dl_id
+    - upf
+    - doc_name
+    - doc_text
+    - got
+    - att_id
+    - last_offset
+    - lastf
+    - files
     - udoc
     - doc_md
     - doc_title
@@ -55,6 +101,8 @@ FLOW:
   s0_start:
     REASONING: false
     SET:
+      doc_text = "none"
+      doc_name = "none"
       doc_title = "none"
       doc_md = "none"
       user = FIRST_NON_EMPTY(session.messageMetadata.user, REGEX_EXTRACT(input, "user=([a-z]+\\.[a-z]+)", 1), "officer.asha")
@@ -108,7 +156,48 @@ FLOW:
         object: "uploaded document"
         detail: "Model review of an uploaded or pasted document"
       AS: audit
-    THEN: u1_review
+    THEN: uf1_list
+
+  uf1_list:
+    REASONING: false
+    CALL: list_attachments
+      AS: files
+    ON_RESULT:
+      - IF: files.total > 0
+        SET: last_offset = ADD(files.total, -1)
+        THEN: uf2_last
+      - ELSE:
+        THEN: u1_review
+
+  uf2_last:
+    REASONING: false
+    CALL: list_attachments
+      WITH:
+        limit: 1
+        offset: last_offset
+      AS: lastf
+    THEN: uf3_pick
+
+  uf3_pick:
+    REASONING: false
+    SET:
+      att_id = lastf.attachments[0].id
+      doc_name = lastf.attachments[0].filename
+    THEN: uf4_get
+
+  uf4_get:
+    REASONING: false
+    CALL: get_attachment
+      WITH:
+        attachment_id: att_id
+      AS: got
+    ON_RESULT:
+      - IF: got.processingStatus == "completed"
+        SET: doc_text = got.content
+        THEN: u1_review
+      - ELSE:
+        SET: doc_text = "UNREADABLE"
+        THEN: u1_review
 
   u1_review:
     REASONING: true
@@ -123,6 +212,14 @@ FLOW:
       3. Impact on Vi: which business areas, financial or operational exposure, and obligations or deadlines that would bind Vi.
       4. Points for Vi's response and open questions for the officer.
       5. A short executive summary of at most 5 lines.
+      Text extracted from the most recently uploaded file ({{doc_name}}):
+      <<<
+      {{doc_text}}
+      >>>
+      If that text is "none", the user did not upload a file in this conversation: use any document text pasted in
+      their message instead. If it is "UNREADABLE", the platform could not extract the file's text: say so and ask the
+      user to paste the text or upload a text-based PDF or Word file. If there is no document text at all, say so in
+      one sentence. Never describe, summarise or review a document you cannot see.
       End by offering: follow-up questions on this document, or say Word to download it as a .docx.
     STEP_CONSTRAINTS:
       - "Quote only text that appears in the document, with its paragraph or page reference; never invent citations, dates or numbers"
@@ -146,6 +243,47 @@ FLOW:
         THEN: s1_parse
       - ELSE:
         SET: followup = input
+        THEN: ugf1_list
+
+  ugf1_list:
+    REASONING: false
+    CALL: list_attachments
+      AS: files
+    ON_RESULT:
+      - IF: files.total > 0
+        SET: last_offset = ADD(files.total, -1)
+        THEN: ugf2_last
+      - ELSE:
+        THEN: u3_followup
+
+  ugf2_last:
+    REASONING: false
+    CALL: list_attachments
+      WITH:
+        limit: 1
+        offset: last_offset
+      AS: lastf
+    THEN: ugf3_pick
+
+  ugf3_pick:
+    REASONING: false
+    SET:
+      att_id = lastf.attachments[0].id
+      doc_name = lastf.attachments[0].filename
+    THEN: ugf4_get
+
+  ugf4_get:
+    REASONING: false
+    CALL: get_attachment
+      WITH:
+        attachment_id: att_id
+      AS: got
+    ON_RESULT:
+      - IF: got.processingStatus == "completed"
+        SET: doc_text = got.content
+        THEN: u3_followup
+      - ELSE:
+        SET: doc_text = "UNREADABLE"
         THEN: u3_followup
 
   u3_followup:
@@ -154,6 +292,14 @@ FLOW:
       The user is following up on the document they uploaded or pasted earlier in this conversation and your
       earlier answer. Their message: "{{followup}}".
       Answer from the document and your earlier brief only, with paragraph references. If they ask for a comparison with other regulators or past Vi positions you cannot see, say what needs to be checked in the R-KB rather than guessing.
+      Text extracted from the most recently uploaded file ({{doc_name}}):
+      <<<
+      {{doc_text}}
+      >>>
+      If that text is "none", the user did not upload a file in this conversation: use any document text pasted in
+      their message instead. If it is "UNREADABLE", the platform could not extract the file's text: say so and ask the
+      user to paste the text or upload a text-based PDF or Word file. If there is no document text at all, say so in
+      one sentence. Never describe, summarise or review a document you cannot see.
       End by asking whether anything else is needed on this document, or say Word to download it.
     STEP_CONSTRAINTS:
       - "Quote only text that appears in the document, with its paragraph or page reference; never invent citations, dates or numbers"
@@ -192,18 +338,41 @@ FLOW:
       AS: udoc
     ON_RESULT:
       - IF: udoc.output.ok == true
-        THEN: u6_doc_ready
+        THEN: ud1_upload
       - ELSE:
         THEN: u7_doc_failed
 
-  u6_doc_ready:
+  ud1_upload:
     REASONING: false
-    RESPOND: "{{udoc.output.message}} It is an AI draft for review; nothing has been sent. Anything else on this document, or a new request?"
-      FORMATS:
-        FILE:
-          url: "{{udoc.output.url}}"
-          filename: "{{udoc.output.filename}}"
-          mime_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    CALL: upload_attachment
+      WITH:
+        filename: udoc.output.filename
+        content_base64: udoc.output.b64
+        mime_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      AS: upf
+    ON_RESULT:
+      - IF: upf.success == true
+        SET: dl_id = upf.data.attachmentId
+        THEN: ud2_link
+      - ELSE:
+        THEN: u7_doc_failed
+
+  ud2_link:
+    REASONING: false
+    CALL: get_attachment_url
+      WITH:
+        attachment_id: dl_id
+        expires_in_seconds: 3600
+      AS: lnk
+    ON_RESULT:
+      - IF: lnk.success == true
+        THEN: ud3_ready
+      - ELSE:
+        THEN: u7_doc_failed
+
+  ud3_ready:
+    REASONING: false
+    RESPOND: "{{udoc.output.message}} [Download {{udoc.output.filename}}]({{lnk.data.url}}) (the link works for about an hour; the file also stays in this conversation's files). It is an AI draft for review; nothing has been sent. Anything else on this document, or a new request?"
     THEN: u2_route
 
   u7_doc_failed:

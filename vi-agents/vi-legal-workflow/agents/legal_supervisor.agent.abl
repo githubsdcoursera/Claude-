@@ -25,10 +25,56 @@ EXECUTION:
   tool_timeout: 8000
 
 TOOLS:
+  list_attachments(limit?: number, offset?: number) -> object
+    description: "List the files the user shared in this conversation, oldest first."
+    effect: read_only
+    confirm: never
+    params:
+      limit:
+        description: "Maximum number of files to return"
+      offset:
+        description: "Number of files to skip"
+  get_attachment(attachment_id: string) -> object
+    description: "Read one shared file; returns its extracted text in content."
+    effect: read_only
+    confirm: never
+    params:
+      attachment_id:
+        description: "File id from list_attachments"
+  upload_attachment(filename: string, content_base64: string, mime_type: string) -> object
+    description: "Save a generated file to this conversation so the user can download it."
+    effect: side_effect
+    confirm: never
+    params:
+      filename:
+        description: "File name, e.g. report.docx"
+      content_base64:
+        description: "File content, base64-encoded"
+      mime_type:
+        description: "File type"
+  get_attachment_url(attachment_id: string, expires_in_seconds?: number) -> object
+    description: "Short-lived download link for one file in this conversation."
+    effect: read_only
+    confirm: never
+    params:
+      attachment_id:
+        description: "File id"
+      expires_in_seconds:
+        description: "Link lifetime in seconds, up to 86400"
   #include-tools: lg_parse, lg01_intake, lg02_nda_triage, lg03_mou, lg04_vendor_review, lg05_execution_check, lg06_obligations, lg06_watch, lg07_dpdp, lg_tr_verify, lg_pr_strip, lg_approve, lg_eval, lg_audit, lg_redline_docx, doc_docx
 
 MEMORY:
   session:
+    - lnk
+    - dl_id
+    - upf
+    - doc_name
+    - doc_text
+    - got
+    - att_id
+    - last_offset
+    - lastf
+    - files
     - udoc
     - doc_md
     - doc_title
@@ -61,6 +107,8 @@ FLOW:
   s0_start:
     REASONING: false
     SET:
+      doc_text = "none"
+      doc_name = "none"
       doc_title = "none"
       doc_md = "none"
       user = FIRST_NON_EMPTY(session.messageMetadata.user, REGEX_EXTRACT(input, "user=([a-z]+\\.[a-z]+)", 1), "lawyer.radhika")
@@ -113,7 +161,48 @@ FLOW:
         object: "uploaded:{{req.output.doc_kind}}"
         detail: "Model review of an uploaded document against the Vi playbooks"
       AS: audit
-    THEN: u1_review
+    THEN: uf1_list
+
+  uf1_list:
+    REASONING: false
+    CALL: list_attachments
+      AS: files
+    ON_RESULT:
+      - IF: files.total > 0
+        SET: last_offset = ADD(files.total, -1)
+        THEN: uf2_last
+      - ELSE:
+        THEN: u1_review
+
+  uf2_last:
+    REASONING: false
+    CALL: list_attachments
+      WITH:
+        limit: 1
+        offset: last_offset
+      AS: lastf
+    THEN: uf3_pick
+
+  uf3_pick:
+    REASONING: false
+    SET:
+      att_id = lastf.attachments[0].id
+      doc_name = lastf.attachments[0].filename
+    THEN: uf4_get
+
+  uf4_get:
+    REASONING: false
+    CALL: get_attachment
+      WITH:
+        attachment_id: att_id
+      AS: got
+    ON_RESULT:
+      - IF: got.processingStatus == "completed"
+        SET: doc_text = got.content
+        THEN: u1_review
+      - ELSE:
+        SET: doc_text = "UNREADABLE"
+        THEN: u1_review
 
   u1_review:
     REASONING: true
@@ -160,6 +249,14 @@ FLOW:
       sign as is and what must change, and who decides: RED goes to senior counsel or the GC, YELLOW to Legal
       counsel with the business owner), then a lawyer note headed "Privileged & Confidential, prepared for Vi
       Legal. AI draft for lawyer review." Then ask whether they want counterparty-ready redline wording as text, or a downloadable Word redline (.docx with tracked changes).
+      Text extracted from the most recently uploaded file ({{doc_name}}):
+      <<<
+      {{doc_text}}
+      >>>
+      If that text is "none", the user did not upload a file in this conversation: use any document text pasted in
+      their message instead. If it is "UNREADABLE", the platform could not extract the file's text: say so and ask the
+      user to paste the text or upload a text-based PDF or Word file. If there is no document text at all, say so in
+      one sentence. Never describe, summarise or review a document you cannot see.
     STEP_CONSTRAINTS:
       - "Quote only text that appears in the document; never invent clause numbers or quotes"
       - "Never sign, accept, send or agree anything on Vi's behalf, and never lower a tier for a strategic counterparty or a close deadline"
@@ -182,6 +279,47 @@ FLOW:
         THEN: u4_docx_prepare
       - ELSE:
         SET: followup = input
+        THEN: ugf1_list
+
+  ugf1_list:
+    REASONING: false
+    CALL: list_attachments
+      AS: files
+    ON_RESULT:
+      - IF: files.total > 0
+        SET: last_offset = ADD(files.total, -1)
+        THEN: ugf2_last
+      - ELSE:
+        THEN: u3_followup
+
+  ugf2_last:
+    REASONING: false
+    CALL: list_attachments
+      WITH:
+        limit: 1
+        offset: last_offset
+      AS: lastf
+    THEN: ugf3_pick
+
+  ugf3_pick:
+    REASONING: false
+    SET:
+      att_id = lastf.attachments[0].id
+      doc_name = lastf.attachments[0].filename
+    THEN: ugf4_get
+
+  ugf4_get:
+    REASONING: false
+    CALL: get_attachment
+      WITH:
+        attachment_id: att_id
+      AS: got
+    ON_RESULT:
+      - IF: got.processingStatus == "completed"
+        SET: doc_text = got.content
+        THEN: u3_followup
+      - ELSE:
+        SET: doc_text = "UNREADABLE"
         THEN: u3_followup
 
   u3_followup:
@@ -196,6 +334,14 @@ FLOW:
       for a document file, tell them to say "Word redline" to get a downloadable .docx with tracked changes. If they agree to sign, send or
       accept, decline: a named Vi lawyer must approve and a human signs.
       End by asking whether anything else is needed on this document, or say "new matter" to start another.
+      Text extracted from the most recently uploaded file ({{doc_name}}):
+      <<<
+      {{doc_text}}
+      >>>
+      If that text is "none", the user did not upload a file in this conversation: use any document text pasted in
+      their message instead. If it is "UNREADABLE", the platform could not extract the file's text: say so and ask the
+      user to paste the text or upload a text-based PDF or Word file. If there is no document text at all, say so in
+      one sentence. Never describe, summarise or review a document you cannot see.
     STEP_CONSTRAINTS:
       - "Quote only text that appears in the document; never invent clause numbers or quotes"
       - "Never sign, accept, send or agree anything on Vi's behalf, and never lower a tier for a strategic counterparty or a close deadline"
@@ -221,6 +367,14 @@ FLOW:
       Set all four fields in a single update before replying.
     AVAILABLE_TOOLS: [lg_audit]
     CONTEXT_UPDATES: [redline_changes, redline_title, redline_counterparty, redline_ready]
+      Text extracted from the most recently uploaded file ({{doc_name}}):
+      <<<
+      {{doc_text}}
+      >>>
+      If that text is "none", the user did not upload a file in this conversation: use any document text pasted in
+      their message instead. If it is "UNREADABLE", the platform could not extract the file's text: say so and ask the
+      user to paste the text or upload a text-based PDF or Word file. If there is no document text at all, say so in
+      one sentence. Never describe, summarise or review a document you cannot see.
     STEP_CONSTRAINTS:
       - "Quote only text that appears in the document; never invent clause numbers or quotes"
       - "Never sign, accept, send or agree anything on Vi's behalf"
@@ -253,16 +407,39 @@ FLOW:
         object: rdoc.output.filename
         detail: "{{rdoc.output.change_count}} tracked changes; for lawyer review, not sent"
       AS: audit
-    THEN: u6_docx_ready
+    THEN: ud1_upload
 
-  u6_docx_ready:
+  ud1_upload:
     REASONING: false
-    RESPOND: "{{rdoc.output.message}} Download {{rdoc.output.filename}} below. Each change is a Word tracked change (accept or reject it in Word) with the reason underneath. It is an AI draft for a Vi lawyer to check before anything is shared; nothing has been sent. Anything else on this document, or say new matter to start another?"
-      FORMATS:
-        FILE:
-          url: "{{rdoc.output.url}}"
-          filename: "{{rdoc.output.filename}}"
-          mime_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    CALL: upload_attachment
+      WITH:
+        filename: rdoc.output.filename
+        content_base64: rdoc.output.b64
+        mime_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      AS: upf
+    ON_RESULT:
+      - IF: upf.success == true
+        SET: dl_id = upf.data.attachmentId
+        THEN: ud2_link
+      - ELSE:
+        THEN: u7_docx_failed
+
+  ud2_link:
+    REASONING: false
+    CALL: get_attachment_url
+      WITH:
+        attachment_id: dl_id
+        expires_in_seconds: 3600
+      AS: lnk
+    ON_RESULT:
+      - IF: lnk.success == true
+        THEN: ud3_ready
+      - ELSE:
+        THEN: u7_docx_failed
+
+  ud3_ready:
+    REASONING: false
+    RESPOND: "{{rdoc.output.message}} [Download {{rdoc.output.filename}}]({{lnk.data.url}}) (the link works for about an hour; the file also stays in this conversation's files). Each change is a Word tracked change (accept or reject it in Word) with the reason underneath. It is an AI draft for a Vi lawyer to check before anything is shared; nothing has been sent. Anything else on this document, or say new matter to start another?"
     THEN: u2_route
 
   u7_docx_failed:
@@ -280,7 +457,48 @@ FLOW:
         object: "uploaded document"
         detail: "Model first draft of a new agreement on Vi paper"
       AS: audit
-    THEN: n1_review
+    THEN: nf1_list
+
+  nf1_list:
+    REASONING: false
+    CALL: list_attachments
+      AS: files
+    ON_RESULT:
+      - IF: files.total > 0
+        SET: last_offset = ADD(files.total, -1)
+        THEN: nf2_last
+      - ELSE:
+        THEN: n1_review
+
+  nf2_last:
+    REASONING: false
+    CALL: list_attachments
+      WITH:
+        limit: 1
+        offset: last_offset
+      AS: lastf
+    THEN: nf3_pick
+
+  nf3_pick:
+    REASONING: false
+    SET:
+      att_id = lastf.attachments[0].id
+      doc_name = lastf.attachments[0].filename
+    THEN: nf4_get
+
+  nf4_get:
+    REASONING: false
+    CALL: get_attachment
+      WITH:
+        attachment_id: att_id
+      AS: got
+    ON_RESULT:
+      - IF: got.processingStatus == "completed"
+        SET: doc_text = got.content
+        THEN: n1_review
+      - ELSE:
+        SET: doc_text = "UNREADABLE"
+        THEN: n1_review
 
   n1_review:
     REASONING: true
@@ -304,6 +522,14 @@ FLOW:
       training; data in India; breach notice within 24 hours and audit rights; GRACIE R1-R10 Responsible AI pack; sub-contracting
       with consent; liability cap 1x annual fees with carve-outs; Indian law, Mumbai seat; exit assistance with deletion certificate.
       Write the full agreement with numbered clauses, then list the facts marked [to be confirmed] and the approvals needed.
+      Text extracted from the most recently uploaded file ({{doc_name}}):
+      <<<
+      {{doc_text}}
+      >>>
+      If that text is "none", the user did not upload a file in this conversation: use any document text pasted in
+      their message instead. If it is "UNREADABLE", the platform could not extract the file's text: say so and ask the
+      user to paste the text or upload a text-based PDF or Word file. If there is no document text at all, say so in
+      one sentence. Never describe, summarise or review a document you cannot see.
       End by offering: follow-up questions on this document, or say Word to download it as a .docx.
     STEP_CONSTRAINTS:
       - "Use only Vi playbook positions; never invent statutory references (mark any statute [verify]) and never present the draft as approved"
@@ -327,6 +553,47 @@ FLOW:
         THEN: s1_parse
       - ELSE:
         SET: followup = input
+        THEN: ngf1_list
+
+  ngf1_list:
+    REASONING: false
+    CALL: list_attachments
+      AS: files
+    ON_RESULT:
+      - IF: files.total > 0
+        SET: last_offset = ADD(files.total, -1)
+        THEN: ngf2_last
+      - ELSE:
+        THEN: n3_followup
+
+  ngf2_last:
+    REASONING: false
+    CALL: list_attachments
+      WITH:
+        limit: 1
+        offset: last_offset
+      AS: lastf
+    THEN: ngf3_pick
+
+  ngf3_pick:
+    REASONING: false
+    SET:
+      att_id = lastf.attachments[0].id
+      doc_name = lastf.attachments[0].filename
+    THEN: ngf4_get
+
+  ngf4_get:
+    REASONING: false
+    CALL: get_attachment
+      WITH:
+        attachment_id: att_id
+      AS: got
+    ON_RESULT:
+      - IF: got.processingStatus == "completed"
+        SET: doc_text = got.content
+        THEN: n3_followup
+      - ELSE:
+        SET: doc_text = "UNREADABLE"
         THEN: n3_followup
 
   n3_followup:
@@ -335,6 +602,14 @@ FLOW:
       The user is following up on the document they uploaded or pasted earlier in this conversation and your
       earlier answer. Their message: "{{followup}}".
       Revise the draft as asked, keeping Vi's playbook positions. If the user asks for a term outside the playbook, draft it but flag it for lawyer approval and say which playbook item it departs from.
+      Text extracted from the most recently uploaded file ({{doc_name}}):
+      <<<
+      {{doc_text}}
+      >>>
+      If that text is "none", the user did not upload a file in this conversation: use any document text pasted in
+      their message instead. If it is "UNREADABLE", the platform could not extract the file's text: say so and ask the
+      user to paste the text or upload a text-based PDF or Word file. If there is no document text at all, say so in
+      one sentence. Never describe, summarise or review a document you cannot see.
       End by asking whether anything else is needed on this document, or say Word to download it.
     STEP_CONSTRAINTS:
       - "Use only Vi playbook positions; never invent statutory references (mark any statute [verify]) and never present the draft as approved"
@@ -373,18 +648,41 @@ FLOW:
       AS: udoc
     ON_RESULT:
       - IF: udoc.output.ok == true
-        THEN: n6_doc_ready
+        THEN: nd1_upload
       - ELSE:
         THEN: n7_doc_failed
 
-  n6_doc_ready:
+  nd1_upload:
     REASONING: false
-    RESPOND: "{{udoc.output.message}} It is an AI draft for review; nothing has been sent. Anything else on this document, or a new request?"
-      FORMATS:
-        FILE:
-          url: "{{udoc.output.url}}"
-          filename: "{{udoc.output.filename}}"
-          mime_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    CALL: upload_attachment
+      WITH:
+        filename: udoc.output.filename
+        content_base64: udoc.output.b64
+        mime_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      AS: upf
+    ON_RESULT:
+      - IF: upf.success == true
+        SET: dl_id = upf.data.attachmentId
+        THEN: nd2_link
+      - ELSE:
+        THEN: n7_doc_failed
+
+  nd2_link:
+    REASONING: false
+    CALL: get_attachment_url
+      WITH:
+        attachment_id: dl_id
+        expires_in_seconds: 3600
+      AS: lnk
+    ON_RESULT:
+      - IF: lnk.success == true
+        THEN: nd3_ready
+      - ELSE:
+        THEN: n7_doc_failed
+
+  nd3_ready:
+    REASONING: false
+    RESPOND: "{{udoc.output.message}} [Download {{udoc.output.filename}}]({{lnk.data.url}}) (the link works for about an hour; the file also stays in this conversation's files). It is an AI draft for review; nothing has been sent. Anything else on this document, or a new request?"
     THEN: n2_route
 
   n7_doc_failed:

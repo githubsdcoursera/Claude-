@@ -13,6 +13,8 @@ import json
 import re
 import sys
 
+from doc_steps import DOC_GOAL_TEXT, MEMORY_VARS, add_attach_tools, add_memory, download_chain, fetch_chain, init_doc_vars
+
 def markers(prefix):
     return (f"  # ---- BEGIN generated document path '{prefix}' (build/add_upload_path.py) ----",
             f"  # ---- END generated document path '{prefix}' ----")
@@ -25,7 +27,6 @@ def indent(text, n):
 def block(sp):
     p = sp["prefix"]
     BEGIN, END = markers(p)
-    mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     return f"""{BEGIN}
   {p}0_audit:
     REASONING: false
@@ -36,12 +37,14 @@ def block(sp):
         object: "uploaded document"
         detail: "{sp.get('audit_detail', 'Model review of an uploaded or pasted document')}"
       AS: audit
-    THEN: {p}1_review
+    THEN: {p}f1_list
 
+{fetch_chain(p, p + "1_review")}
   {p}1_review:
     REASONING: true
     GOAL: |
 {indent(sp['review_goal'], 6)}
+{indent(DOC_GOAL_TEXT, 6)}
       End by offering: follow-up questions on this document, or say Word to download it as a .docx.
     STEP_CONSTRAINTS:
 {indent(chr(10).join('- "' + c + '"' for c in sp['constraints']), 6)}
@@ -63,14 +66,16 @@ def block(sp):
         THEN: {sp['parse_step']}
       - ELSE:
         SET: followup = input
-        THEN: {p}3_followup
+        THEN: {p}gf1_list
 
+{fetch_chain(p + "g", p + "3_followup")}
   {p}3_followup:
     REASONING: true
     GOAL: |
       The user is following up on the document they uploaded or pasted earlier in this conversation and your
       earlier answer. Their message: "{{{{followup}}}}".
 {indent(sp['followup_goal'], 6)}
+{indent(DOC_GOAL_TEXT, 6)}
       End by asking whether anything else is needed on this document, or say Word to download it.
     STEP_CONSTRAINTS:
 {indent(chr(10).join('- "' + c + '"' for c in sp['constraints']), 6)}
@@ -105,20 +110,11 @@ def block(sp):
       AS: udoc
     ON_RESULT:
       - IF: udoc.output.ok == true
-        THEN: {p}6_doc_ready
+        THEN: {p}d1_upload
       - ELSE:
         THEN: {p}7_doc_failed
 
-  {p}6_doc_ready:
-    REASONING: false
-    RESPOND: "{{{{udoc.output.message}}}} It is an AI draft for review; nothing has been sent. Anything else on this document, or a new request?"
-      FORMATS:
-        FILE:
-          url: "{{{{udoc.output.url}}}}"
-          filename: "{{{{udoc.output.filename}}}}"
-          mime_type: "{mime}"
-    THEN: {p}2_route
-
+{download_chain(p, "udoc", "It is an AI draft for review; nothing has been sent. Anything else on this document, or a new request?", p + "2_route", p + "7_doc_failed")}
   {p}7_doc_failed:
     REASONING: false
     RESPOND: "I couldn't build the Word document this time. Ask for Word again, or I can answer in the chat."
@@ -136,9 +132,9 @@ def main():
         s = s[:s.index(BEGIN)] + s[s.index(END) + len(END) + 1:].lstrip("\n")
     p, v = spec["prefix"], spec["parse_var"]
     # memory
-    for var in ("followup", "doc_title", "doc_md", "udoc"):
-        if not re.search(rf"^\s+- {var}\s*$", s, re.M):
-            s = re.sub(r"(MEMORY:\n  session:\n)", rf"\1    - {var}\n", s, count=1)
+    s = add_memory(s, ["followup", "doc_title", "doc_md", "udoc"] + MEMORY_VARS)
+    s = add_attach_tools(s)
+    s = init_doc_vars(s)
     # initial values in s0_start
     m = re.search(r"(  s0_start:\n    REASONING: false\n    SET:\n)", s)
     if "doc_md = \"none\"" not in s:

@@ -30,11 +30,11 @@
   "projectId": "01a17d52-0a0e-7f2a-a833-9ac569df8aff",
   "deployment": {
     "env": "dev",
-    "id": "01a17ee3-383f-7611-b634-f682509fe36f",
-    "endpointSlug": "01a17d52-dev-mvr3evy2-102c31",
+    "id": "01a1811e-70ac-75dc-bd81-0df0d16f343b",
+    "endpointSlug": "01a17d52-dev-mvrpp9d1-cbc9f4",
     "agents": {
       "UC7_Upgrade_Supervisor": {
-        "version": "1.0.0"
+        "version": "1.0.1"
       }
     },
     "preflight": "warnings"

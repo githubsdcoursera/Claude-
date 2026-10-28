@@ -3,7 +3,7 @@
 // @in changes:string "JSON array of {clause, current, proposed, reason}"
 // @in title?:string "Document title, e.g. Kore.ai - Vi AI Partner MoU"
 // @in counterparty?:string "Counterparty name"
-// @out ok url filename mime_type size_bytes change_count message
+// @out ok b64 filename mime_type size_bytes change_count message
 const none = v => { const s = String(v == null ? "" : v).trim(); return !s || s.toLowerCase() === "none" ? "" : s; };
 const banned = /\b(RED|YELLOW|GREEN)\b|fallback|playbook|negotiation|privileged|\btier\b|GC approval|RAI Board/gi;
 const clean = s => none(s).replace(/\b(as per|per|under|see)\s+(the\s+)?(vi\s+)?(playbook|fallback)[^.;]*/gi, "").replace(/\[(red|yellow|green)\]/gi, "").replace(banned, "").replace(/\s{2,}/g, " ").trim();
@@ -19,7 +19,7 @@ try {
 list = list.filter(c => c && (none(c.proposed) || none(c.current)))
   .map(c => ({ clause: clean(c.clause || c.ref || "Clause"), current: none(c.current || c.original || "").replace(/^not found$/i, ""),
     proposed: clean(c.proposed || c.proposed_wording || c.replacement || ""), reason: clean(c.reason || c.rationale || "") }));
-if (!list.length) return { ok: false, url: "", filename: "", mime_type: "", size_bytes: 0, change_count: 0, message: "No clause changes were supplied, so no document was built." };
+if (!list.length) return { ok: false, b64: "", filename: "", mime_type: "", size_bytes: 0, change_count: 0, message: "No clause changes were supplied, so no document was built." };
 
 const title = clean(input.title) || "Proposed changes";
 const cp = clean(input.counterparty);
@@ -76,5 +76,5 @@ for (let i = 0; i < out.length; i += 3) { const a = out[i], b = out[i + 1], d = 
 
 const mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 const fname = (title.replace(/[^A-Za-z0-9]+/g, "_").replace(/^_|_$/g, "").slice(0, 60) || "Vi") + "_redline_" + TODAY + ".docx";
-return { ok: true, url: "data:" + mime + ";base64," + b64, filename: fname, mime_type: mime, size_bytes: out.length, change_count: list.length,
+return { ok: true, b64: b64, filename: fname, mime_type: mime, size_bytes: out.length, change_count: list.length,
   message: "Redline with " + list.length + " tracked change" + (list.length === 1 ? "" : "s") + " is ready to download." };

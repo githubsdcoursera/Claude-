@@ -32,11 +32,11 @@
   "projectId": "01a17d46-22e7-7101-836a-adf54110a430",
   "deployment": {
     "env": "dev",
-    "id": "01a18005-e98f-772a-9c5c-cb5c993e1dfa",
-    "endpointSlug": "01a17d46-dev-mvrer7nt-13b7fa",
+    "id": "01a18111-cc12-70a1-836b-3d66feb812cf",
+    "endpointSlug": "01a17d46-dev-mvrp7i18-16fb33",
     "agents": {
       "UC3_Collections_Supervisor": {
-        "version": "1.0.0"
+        "version": "1.0.1"
       }
     },
     "preflight": "warnings"

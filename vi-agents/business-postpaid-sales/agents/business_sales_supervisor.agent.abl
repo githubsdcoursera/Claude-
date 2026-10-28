@@ -88,9 +88,23 @@ FLOW:
   s0_trigger:
     REASONING: false
     SET:
-      msisdn = FIRST_NON_EMPTY(session.messageMetadata.msisdn, REGEX_EXTRACT(input, "msisdn=(\\d{10})", 1), customer_id)
+      msisdn = FIRST_NON_EMPTY(session.messageMetadata.msisdn, REGEX_EXTRACT(input, "msisdn=(\\d{10})", 1), customer_id, "none")
       objections = "none"
       disposition = "IN_PROGRESS"
+    THEN: s0_need_number
+
+
+  # ---- No caller ID (for example a Studio test chat): ask for the number before the call starts ----
+  s0_need_number:
+    REASONING: false
+    WHEN: msisdn == "none"
+    RESPOND: "Test chat: no caller number was passed to this session. Please type the 10-digit mobile number of the test customer (for example 9880000001) to start the call."
+    ON_INPUT:
+      - IF: input matches "[0-9]{10}"
+        SET: msisdn = REGEX_EXTRACT(input, "([0-9]{10})", 1)
+        THEN: s0_lead
+      - ELSE:
+        THEN: s0_need_number
     THEN: s0_lead
 
   s0_lead:

@@ -50,11 +50,11 @@
   "projectId": "01a17ddf-5944-77f9-88cd-ab7d77e5edfc",
   "deployment": {
     "env": "dev",
-    "id": "01a18002-738b-72be-9707-fc35086fc1ed",
-    "endpointSlug": "01a17ddf-dev-mvremcn4-11b2d9",
+    "id": "01a18120-51c4-70a6-8804-b1e74a04805a",
+    "endpointSlug": "01a17ddf-dev-mvrprwe6-9c373c",
     "agents": {
       "UC8_Retention_Supervisor": {
-        "version": "1.0.0"
+        "version": "1.0.1"
       }
     },
     "preflight": "warnings"
