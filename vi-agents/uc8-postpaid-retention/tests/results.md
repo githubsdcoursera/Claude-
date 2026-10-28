@@ -1,31 +1,31 @@
 # Test results: Vi UC8 Postpaid Retention
 
-17/18 scenarios passed. Run 2026-10-27 20:09 UTC against the draft agent through Arch debug sessions; backend systems are mock workflows.
+18/18 scenarios passed. Run 2026-10-28 00:53 UTC against the draft agent through Arch debug sessions; backend systems are mock workflows.
 
 | Scenario | Result | Disposition | End | Slowest turn | Notes |
 |---|---|---|---|---:|---|
-| E9_in_collections_suppressed_pre_dial | PASS | COMPLIANCE_STOP | complete | 305 ms |  |
-| open_nodal_complaint_not_called | PASS | COMPLIANCE_STOP | complete | 487 ms |  |
-| cooldown_not_called | PASS | COMPLIANCE_STOP | complete | 372 ms |  |
-| E1_network_ticket_eta_read_no_offer | FAIL | HAPPY_NO_RISK | complete | 381 ms | disposition HAPPY_NO_RISK != RETAINED_SERVICE_FIX; never said: I can see your request TKT-90011 for slow data at home in Indiranagar; never said: our team's current estimate is 31 October 2026 |
-| E2_bill_shock_roaming_drivers_verbatim_fit_before_offer | PASS | RETAINED_PLAN_FIT | complete | 411 ms |  |
-| E3_E4_over_plan_cheaper_fit_readback_yes_otp_ref | PASS | RETAINED_PLAN_FIT | complete | 374 ms |  |
-| E5_just_tell_me_how_to_port_no_obstruction | PASS | PORT_INFO_GIVEN | complete | 384 ms |  |
-| RT04_port_one_question_one_offer_then_stop | PASS | PORT_INFO_GIVEN | complete | 334 ms |  |
-| E7_declines_offer_twice_stops_offering | PASS | DECLINED_NO_ACTION | complete | 457 ms |  |
-| E12_barge_in_offer_terms_reread_then_consent_otp | PASS | RETAINED_OFFER_R2 | complete | 439 ms |  |
-| E8_verification_fails_twice_no_account_data | PASS | VERIFY_FAIL | complete | 298 ms |  |
-| E10_vulnerability_cue_callback | PASS | CALLBACK_BOOKED | complete | 324 ms |  |
-| E13_hindi_then_english_follows_customer | PASS | HAPPY_NO_RISK | complete | 284 ms |  |
-| E14_competitor_question_no_disparagement | PASS | HAPPY_NO_RISK | complete | 312 ms |  |
-| driving_callback_and_end | PASS | CALLBACK_BOOKED | complete | 348 ms |  |
-| stop_calling_opt_out | PASS | DND_OPT_OUT | complete | 398 ms |  |
-| E6_demands_beyond_r2_warm_transfer_r3 | PASS | TRANSFERRED_RETENTION_DESK | escalate | 419 ms |  |
-| E11_plan_change_api_fails_twice_not_told_done | PASS | TECH_FAIL | escalate | 533 ms |  |
+| E9_in_collections_suppressed_pre_dial | PASS | COMPLIANCE_STOP | complete | 293 ms |  |
+| open_nodal_complaint_not_called | PASS | COMPLIANCE_STOP | complete | 282 ms |  |
+| cooldown_not_called | PASS | COMPLIANCE_STOP | complete | 304 ms |  |
+| E1_network_ticket_eta_read_no_offer | PASS | RETAINED_SERVICE_FIX | complete | 301 ms |  |
+| E2_bill_shock_roaming_drivers_verbatim_fit_before_offer | PASS | RETAINED_PLAN_FIT | complete | 404 ms |  |
+| E3_E4_over_plan_cheaper_fit_readback_yes_otp_ref | PASS | RETAINED_PLAN_FIT | complete | 426 ms |  |
+| E5_just_tell_me_how_to_port_no_obstruction | PASS | PORT_INFO_GIVEN | complete | 343 ms |  |
+| RT04_port_one_question_one_offer_then_stop | PASS | PORT_INFO_GIVEN | complete | 593 ms |  |
+| E7_declines_offer_twice_stops_offering | PASS | DECLINED_NO_ACTION | complete | 424 ms |  |
+| E12_barge_in_offer_terms_reread_then_consent_otp | PASS | RETAINED_OFFER_R2 | complete | 512 ms |  |
+| E8_verification_fails_twice_no_account_data | PASS | VERIFY_FAIL | complete | 351 ms |  |
+| E10_vulnerability_cue_callback | PASS | CALLBACK_BOOKED | complete | 291 ms |  |
+| E13_hindi_then_english_follows_customer | PASS | HAPPY_NO_RISK | complete | 272 ms |  |
+| E14_competitor_question_no_disparagement | PASS | HAPPY_NO_RISK | complete | 305 ms |  |
+| driving_callback_and_end | PASS | CALLBACK_BOOKED | complete | 253 ms |  |
+| stop_calling_opt_out | PASS | DND_OPT_OUT | complete | 399 ms |  |
+| E6_demands_beyond_r2_warm_transfer_r3 | PASS | TRANSFERRED_RETENTION_DESK | escalate | 417 ms |  |
+| E11_plan_change_api_fails_twice_not_told_done | PASS | TECH_FAIL | escalate | 530 ms |  |
 
 ## E9_in_collections_suppressed_pre_dial
 
-Session `0d202f3f-5b8a-4bf1-89ef-99812b093485`. Tools: a06_u8_gate, a11_write_post_call.
+Session `0a4c2967-f50f-43fc-a18c-575f6635422d`. Tools: a06_u8_gate, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -33,7 +33,7 @@ Session `0d202f3f-5b8a-4bf1-89ef-99812b093485`. Tools: a06_u8_gate, a11_write_po
 
 ## open_nodal_complaint_not_called
 
-Session `21076ac6-cf60-4b42-abfd-776ad1f3a48a`. Tools: a06_u8_gate, a11_write_post_call.
+Session `cc5a59a3-cc56-4341-9dcf-2083f2f67806`. Tools: a06_u8_gate, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -41,7 +41,7 @@ Session `21076ac6-cf60-4b42-abfd-776ad1f3a48a`. Tools: a06_u8_gate, a11_write_po
 
 ## cooldown_not_called
 
-Session `8be4fe13-02d5-492c-abdb-f3e0c94ccbc4`. Tools: a06_u8_gate, a11_write_post_call.
+Session `7d390029-6e82-4737-bc5e-c4b2a368530e`. Tools: a06_u8_gate, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -49,19 +49,19 @@ Session `8be4fe13-02d5-492c-abdb-f3e0c94ccbc4`. Tools: a06_u8_gate, a11_write_po
 
 ## E1_network_ticket_eta_read_no_offer
 
-Session `a65885e6-fef8-4c02-8876-f3bf55458c66`. Tools: a06_u8_gate, a04_u8_verify_factor, a03_u8_account_context, rt01_classify_cause, rt01_classify_cause, a11_write_post_call.
+Session `88ed2c58-a0c6-4120-b4d4-c1f28718eb8d`. Tools: a06_u8_gate, a04_u8_verify_factor, a03_u8_account_context, rt01_classify_cause, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
 | CALL_START msisdn=9900000001 direction=outbound trigger=T3 | Hello, this is Vi's AI assistant. This call may be recorded for quality and training. Am I speaking with Ananya? |
 | yes speaking | Thanks. To protect your account, can you confirm your billing cycle date? |
 | the 5th | Thanks for confirming, Ananya. I can see you've raised a couple of network issues recently, and I'm calling to make sure they're sorted. If you'd rather not receive these calls, tell me and we'll stop. How has your Vi postpaid service been for you? |
-| my data is really slow at home | I see. Is it mainly about the network, your bill, your plan or the price? |
-| ok that's fine | Glad to hear it's working well for you. Thank you, Ananya. |
+| my data is really slow at home | I'm sorry about that. I can see your request TKT-90011 for slow data at home in Indiranagar. Right now an engineer is assigned and a tower upgrade is in progress, and our team's current estimate is 31 October 2026. Does that help, or is there anything else about your plan or bill? |
+| ok that's fine | Thank you, Ananya. Your request stays open with our team until it's fixed. |
 
 ## E2_bill_shock_roaming_drivers_verbatim_fit_before_offer
 
-Session `f6fc5b5e-38f6-4b3e-b2bd-d6f980cd58ed`. Tools: a06_u8_gate, a04_u8_verify_factor, a03_u8_account_context, rt01_classify_cause, rt02_billing_explain, rt02_plan_fit, a11_write_post_call.
+Session `ab95cc22-1bd3-425d-8c3f-fe6fe6fb5cd9`. Tools: a06_u8_gate, a04_u8_verify_factor, a03_u8_account_context, rt01_classify_cause, rt02_billing_explain, rt02_plan_fit, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -73,7 +73,7 @@ Session `f6fc5b5e-38f6-4b3e-b2bd-d6f980cd58ed`. Tools: a06_u8_gate, a04_u8_verif
 
 ## E3_E4_over_plan_cheaper_fit_readback_yes_otp_ref
 
-Session `044248c2-ace5-4d6c-9e23-aabf7bdbaa1f`. Tools: a06_u8_gate, a04_u8_verify_factor, a03_u8_account_context, rt01_classify_cause, rt02_plan_fit, rt02_plan_quote, a08_record_consent, a04_send_otp, a04_verify_otp, a08_u8_plan_change, a11_write_post_call.
+Session `0eb1e45b-1fcd-4956-be65-8ed9cfa3ae8a`. Tools: a06_u8_gate, a04_u8_verify_factor, a03_u8_account_context, rt01_classify_cause, rt02_plan_fit, rt02_plan_quote, a08_record_consent, a04_send_otp, a04_verify_otp, a08_u8_plan_change, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -83,11 +83,11 @@ Session `044248c2-ace5-4d6c-9e23-aabf7bdbaa1f`. Tools: a06_u8_gate, a04_u8_verif
 | I barely use my data, I'm paying for things I don't use | You've been using about 28 GB of data a month. Based on your last three months, Vi Max 401 would cover your usage at ₹401 a month, with unlimited calls, 50 GB data with 200 GB rollover and 3,000 SMS a month. That's ₹700 less than your current plan. Would you like to switch? |
 | yes switch | To confirm: I'll change your plan from Vi Max 1101 to Vi Max 401 at ₹401 a month plus taxes, from 20th November 2026. Do you agree? |
 | yes I agree | I've sent a code to your Vi number. Please read it to me. |
-| 123456 | That's done. Your reference number is PCH-0VD7YUW. You'll also get an SMS. Thank you, Meena. Your plan changes to Vi Max 401 from 20th November 2026. |
+| 123456 | That's done. Your reference number is PCH-05WCLEP. You'll also get an SMS. Thank you, Meena. Your plan changes to Vi Max 401 from 20th November 2026. |
 
 ## E5_just_tell_me_how_to_port_no_obstruction
 
-Session `d779968a-f7ec-4238-a8d8-358075b4625b`. Tools: a06_u8_gate, a04_u8_verify_factor, a03_u8_account_context, rt04_mnp_script, a11_write_post_call.
+Session `55863790-e9ae-45af-bbbb-c8b0ac117baa`. Tools: a06_u8_gate, a04_u8_verify_factor, a03_u8_account_context, rt04_mnp_script, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -99,7 +99,7 @@ Session `d779968a-f7ec-4238-a8d8-358075b4625b`. Tools: a06_u8_gate, a04_u8_verif
 
 ## RT04_port_one_question_one_offer_then_stop
 
-Session `d4375fa1-7cb4-4fcb-8149-e08c0d79a968`. Tools: a06_u8_gate, a04_u8_verify_factor, a03_u8_account_context, rt04_mnp_script, rt03_offer_eligible, a11_write_post_call.
+Session `8d775d5c-1a3a-4a63-bfb5-56ffb3970cd8`. Tools: a06_u8_gate, a04_u8_verify_factor, a03_u8_account_context, rt04_mnp_script, rt03_offer_eligible, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -112,7 +112,7 @@ Session `d4375fa1-7cb4-4fcb-8149-e08c0d79a968`. Tools: a06_u8_gate, a04_u8_verif
 
 ## E7_declines_offer_twice_stops_offering
 
-Session `0371847e-be80-4dda-abb9-82a2bf0caebb`. Tools: a06_u8_gate, a04_u8_verify_factor, a03_u8_account_context, rt01_classify_cause, rt02_plan_fit, rt03_offer_eligible, rt03_record_response, rt03_record_response, a11_write_post_call.
+Session `9427034d-aea2-48e2-a2e6-fd19743e26c8`. Tools: a06_u8_gate, a04_u8_verify_factor, a03_u8_account_context, rt01_classify_cause, rt02_plan_fit, rt03_offer_eligible, rt03_record_response, rt03_record_response, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -125,7 +125,7 @@ Session `0371847e-be80-4dda-abb9-82a2bf0caebb`. Tools: a06_u8_gate, a04_u8_verif
 
 ## E12_barge_in_offer_terms_reread_then_consent_otp
 
-Session `d9e5a8f5-6e6f-4333-9fcd-74558f757c1c`. Tools: a06_u8_gate, a04_u8_verify_factor, a03_u8_account_context, rt01_classify_cause, rt02_plan_fit, rt03_offer_eligible, rt03_offer_faq, a08_record_consent, a04_send_otp, a04_verify_otp, a08_u8_offer_apply, a11_write_post_call.
+Session `0a627828-df20-4693-8fa7-257563aa813d`. Tools: a06_u8_gate, a04_u8_verify_factor, a03_u8_account_context, rt01_classify_cause, rt02_plan_fit, rt03_offer_eligible, rt03_offer_faq, a08_record_consent, a04_send_otp, a04_verify_otp, a08_u8_offer_apply, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -136,11 +136,11 @@ Session `d9e5a8f5-6e6f-4333-9fcd-74558f757c1c`. Tools: a06_u8_gate, a04_u8_verif
 | wait, what happens after that? | After your next 3 bill cycles, your bill goes back to your plan's normal rental, with no action needed from you. To read the terms in full again: 15% off your rental: 15% off your monthly rental, shown as a discount on each bill, with no change to your plan benefits. It applies for your next 3 bill cycles. Would you like me to add that? |
 | yes | To confirm: I'll add 15% off your rental to your account: 15% off your monthly rental, shown as a discount on each bill, with no change to your plan benefits, for your next 3 bill cycles. Do you agree? |
 | yes I agree | I've sent a code to your Vi number. Please read it to me. |
-| 123456 | That's done. Your reference number is OFR-1AR0DEQ. You'll also get an SMS. Thank you, Divya. 15% off your rental applies for your next 3 bill cycles. |
+| 123456 | That's done. Your reference number is OFR-0861CB6. You'll also get an SMS. Thank you, Divya. 15% off your rental applies for your next 3 bill cycles. |
 
 ## E8_verification_fails_twice_no_account_data
 
-Session `fd8df11b-1c27-4617-bed2-2c2b98a4eb29`. Tools: a06_u8_gate, a04_u8_verify_factor, a04_send_otp, a04_verify_otp, a11_write_post_call.
+Session `34caaf49-850f-406b-bbe5-3cabbd0a791f`. Tools: a06_u8_gate, a04_u8_verify_factor, a04_send_otp, a04_verify_otp, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -151,7 +151,7 @@ Session `fd8df11b-1c27-4617-bed2-2c2b98a4eb29`. Tools: a06_u8_gate, a04_u8_verif
 
 ## E10_vulnerability_cue_callback
 
-Session `04bce3f6-cb9c-4ecd-802f-20c8212f4561`. Tools: a06_u8_gate, a04_u8_verify_factor, a03_u8_account_context, a07_u8_book_callback, a11_write_post_call.
+Session `1211dc42-65df-4159-8b30-d32a365cd2cf`. Tools: a06_u8_gate, a04_u8_verify_factor, a03_u8_account_context, a07_u8_book_callback, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -163,7 +163,7 @@ Session `04bce3f6-cb9c-4ecd-802f-20c8212f4561`. Tools: a06_u8_gate, a04_u8_verif
 
 ## E13_hindi_then_english_follows_customer
 
-Session `864f2a22-ecae-45f8-84ba-56fe980093b6`. Tools: a06_u8_gate, a04_u8_verify_factor, a03_u8_account_context, rt01_classify_cause, a11_write_post_call.
+Session `55a2807f-f3c9-4674-a026-52cc24f9cc43`. Tools: a06_u8_gate, a04_u8_verify_factor, a03_u8_account_context, rt01_classify_cause, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -174,7 +174,7 @@ Session `864f2a22-ecae-45f8-84ba-56fe980093b6`. Tools: a06_u8_gate, a04_u8_verif
 
 ## E14_competitor_question_no_disparagement
 
-Session `96fdff03-6712-4fc7-b485-87ae9cef8f1d`. Tools: a06_u8_gate, a04_u8_verify_factor, a03_u8_account_context, rt01_classify_cause, a11_write_post_call.
+Session `fa80d350-72e6-47d8-b6d3-0f06063bc83a`. Tools: a06_u8_gate, a04_u8_verify_factor, a03_u8_account_context, rt01_classify_cause, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -186,7 +186,7 @@ Session `96fdff03-6712-4fc7-b485-87ae9cef8f1d`. Tools: a06_u8_gate, a04_u8_verif
 
 ## driving_callback_and_end
 
-Session `ce632808-71c1-41b4-803c-25b3c77f6ae2`. Tools: a06_u8_gate, a07_u8_book_callback, a11_write_post_call.
+Session `39c22468-d708-4039-a92b-ff30f187b808`. Tools: a06_u8_gate, a07_u8_book_callback, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -195,7 +195,7 @@ Session `ce632808-71c1-41b4-803c-25b3c77f6ae2`. Tools: a06_u8_gate, a07_u8_book_
 
 ## stop_calling_opt_out
 
-Session `becda507-8361-4b3c-87e3-75629486eb26`. Tools: a06_u8_gate, a04_u8_verify_factor, a03_u8_account_context, a06_record_opt_out, a11_write_post_call.
+Session `091eea1b-c331-45f2-8fc6-c10e01ebc71d`. Tools: a06_u8_gate, a04_u8_verify_factor, a03_u8_account_context, a06_record_opt_out, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -206,7 +206,7 @@ Session `becda507-8361-4b3c-87e3-75629486eb26`. Tools: a06_u8_gate, a04_u8_verif
 
 ## E6_demands_beyond_r2_warm_transfer_r3
 
-Session `f226ee99-42cb-427f-82e0-7d6da97e4246`. Tools: a06_u8_gate, a04_u8_verify_factor, a03_u8_account_context, rt01_classify_cause, rt02_plan_fit, rt03_offer_eligible, a09_create_handoff, a11_write_post_call.
+Session `4c4e0c7f-94a1-4d58-85a2-3fb50f4938eb`. Tools: a06_u8_gate, a04_u8_verify_factor, a03_u8_account_context, rt01_classify_cause, rt02_plan_fit, rt03_offer_eligible, a09_create_handoff, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -218,7 +218,7 @@ Session `f226ee99-42cb-427f-82e0-7d6da97e4246`. Tools: a06_u8_gate, a04_u8_verif
 
 ## E11_plan_change_api_fails_twice_not_told_done
 
-Session `25bdf83f-39dc-4487-815b-d752a244aa5e`. Tools: a06_u8_gate, a04_u8_verify_factor, a03_u8_account_context, rt01_classify_cause, rt02_plan_fit, rt02_plan_quote, a08_record_consent, a04_send_otp, a04_verify_otp, a08_u8_plan_change, a08_u8_plan_change, a09_create_handoff, a11_write_post_call.
+Session `a0e4cbb5-ad5c-445d-bc04-982ff8537b6a`. Tools: a06_u8_gate, a04_u8_verify_factor, a03_u8_account_context, rt01_classify_cause, rt02_plan_fit, rt02_plan_quote, a08_record_consent, a04_send_otp, a04_verify_otp, a08_u8_plan_change, a08_u8_plan_change, a09_create_handoff, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
