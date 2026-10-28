@@ -26,27 +26,27 @@
     "tc_duplicate_check": "v1.0.2",
     "tc_eb_consumer_check": "v1.0.3",
     "tc_golden_regression": "v1.0.2",
-    "tc_order_evidence": "v1.0.1",
-    "tc_parse_request": "v1.0.1",
-    "tc_payment_readiness": "v1.0.1",
-    "tc_period_summary": "v1.0.1",
-    "tc_provision": "v1.0.1",
-    "tc_reconcile": "v1.0.1",
-    "tc_record_case": "v1.0.1",
-    "tc_request_approval": "v1.0.1",
-    "tc_shadow_bill": "v1.0.1",
+    "tc_order_evidence": "v1.0.2",
+    "tc_parse_request": "v1.0.2",
+    "tc_payment_readiness": "v1.0.2",
+    "tc_period_summary": "v1.0.2",
+    "tc_provision": "v1.0.2",
+    "tc_reconcile": "v1.0.2",
+    "tc_record_case": "v1.0.2",
+    "tc_request_approval": "v1.0.2",
+    "tc_shadow_bill": "v1.0.2",
     "tc_eb_check": "v1.0.2",
     "tc_invoice_reconcile": "v1.0.1",
-    "doc_docx": "v1.0.0"
+    "doc_docx": "v1.0.1"
   },
   "projectId": "01a17dee-ebee-7037-b42e-6fea9fa65523",
   "deployment": {
     "env": "dev",
-    "id": "01a180a7-30a7-7baa-829f-5ddb4102930c",
-    "endpointSlug": "01a17dee-dev-mvrl1r4u-365880",
+    "id": "01a180ba-5a13-7898-a8cb-fcc46285d771",
+    "endpointSlug": "01a17dee-dev-mvrlso3v-627e91",
     "agents": {
       "TowerCo_Supervisor": {
-        "version": "1.0.1"
+        "version": "1.0.2"
       }
     },
     "preflight": "ready"

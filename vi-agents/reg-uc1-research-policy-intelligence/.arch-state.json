@@ -15,7 +15,7 @@
     "r_notify": "01a17e0d-888e-7b3b-be09-e0757cd8527e"
   },
   "workflow_versions": {
-    "rp01_propose_obligation": "v1.0.0",
+    "rp01_propose_obligation": "v1.0.1",
     "rp01_source_poll": "v1.0.0",
     "rp02_summarise": "v1.0.0",
     "rp03_precedents": "v1.0.0",
