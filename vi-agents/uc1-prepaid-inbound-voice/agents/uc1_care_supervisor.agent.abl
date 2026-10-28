@@ -105,6 +105,9 @@ FLOW:
       otp_attempts = 0
       resolved_count = 0
       disposition = "IN_PROGRESS"
+      outcome = "in_progress"
+      intent = "none"
+      csat_score = "none"
     THEN: s1_disclose
 
   # ---- S1 Disclose and language ----
@@ -509,6 +512,7 @@ FLOW:
           outcome = "data_addon_bought"
         THEN: s6_addon_done
       - IF: purchase.output.error_code == "INSUFFICIENT_BALANCE"
+        SET: outcome = "addon_insufficient_balance"
         THEN: s6_addon_low_balance
       - ELSE:
         SET:

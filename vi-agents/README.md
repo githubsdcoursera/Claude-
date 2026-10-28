@@ -172,6 +172,13 @@ personas (`arch.json` `mock_prelude`); the three Regulatory projects also share 
 | Workflow function outputs cannot use the key `trigger` | Renamed (`cue_type`) |
 | Specialist handoff with return can drop the specialist's reply | Single orchestrator per call |
 | A workflow function node's output key `steps` (or a variable named `steps`) fails with "Cannot overwrite immutable context property" | Mocks use `porting_steps` |
+| Re-importing a package never updates an existing tool record (`toolsUpdated` stays 0), so a changed tool contract is ignored | `deploy.py --recreate-tools a,b` deletes and re-creates the named tools, or the tool is renamed |
+| A tool call is silently skipped (no tool event, `ON_RESULT` sees undefined) when a required argument is empty or references a variable that was never set | Variables are initialised in the first step with sentinels such as `"none"`, which mocks treat as empty |
+| In ABL regex the string `"\\?"` becomes an optional backslash and matches every input | A literal question mark is written `[?]` |
+| Passing a number to a string parameter errors | Numbers are passed as templates, for example `"{{neg_count}}"` |
+| Output fields whose names contain "token" are shown as `[REDACTED]` in replies | Renamed, for example `sr_number` |
+| Deployment preflight reports `UNBOUND_TOOL ... check could not be completed` for some projects (UC3, UC4, UC5, UC7, UC8, Prepaid Retention) | No tool is missing and the tests pass; worth confirming with Kore.ai |
+| Live traces cut long replies at about 200 characters | The test runner reads full replies from `debug_session_history` |
 
 ## Not done yet / decisions for Vi
 

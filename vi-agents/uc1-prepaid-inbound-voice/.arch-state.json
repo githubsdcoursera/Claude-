@@ -38,8 +38,8 @@
   "projectId": "01a17d2f-eaaa-7cc9-9bf7-4ebd99921c79",
   "deployment": {
     "env": "dev",
-    "id": "01a17edc-ccab-72d6-8e3a-2b6537ffeef3",
-    "endpointSlug": "01a17d2f-dev-mvr35va5-641989",
+    "id": "01a18028-9aaa-742a-a3a5-d886c6df6262",
+    "endpointSlug": "01a17d2f-dev-mvrg3xy9-fecb44",
     "agents": {
       "UC1_Care_Supervisor": {
         "version": "1.0.0"
