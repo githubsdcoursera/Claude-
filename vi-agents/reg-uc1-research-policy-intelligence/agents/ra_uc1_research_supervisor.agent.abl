@@ -25,10 +25,14 @@ EXECUTION:
   tool_timeout: 8000
 
 TOOLS:
-  #include-tools: rp_parse, rp01_source_poll, rp01_propose_obligation, rp02_summarise, rp03_precedents, rp04_competitor_map, rp05_brief, rp_followup, r_kb_search, r_cite_verify, r_notify, r_audit_log
+  #include-tools: rp_parse, rp01_source_poll, rp01_propose_obligation, rp02_summarise, rp03_precedents, rp04_competitor_map, rp05_brief, rp_followup, r_kb_search, r_cite_verify, r_notify, r_audit_log, doc_docx
 
 MEMORY:
   session:
+    - udoc
+    - doc_md
+    - doc_title
+    - followup
     - user
     - request
     - req
@@ -51,6 +55,8 @@ FLOW:
   s0_start:
     REASONING: false
     SET:
+      doc_title = "none"
+      doc_md = "none"
       user = FIRST_NON_EMPTY(session.messageMetadata.user, REGEX_EXTRACT(input, "user=([a-z]+\\.[a-z]+)", 1), "officer.asha")
       request = input
       current_doc = ""
@@ -87,8 +93,124 @@ FLOW:
         THEN: k1_search
       - IF: req.output.intent == "done"
         THEN: s9_end
+      - IF: req.output.intent == "uploaded"
+        THEN: u0_audit
       - ELSE:
         THEN: s2_help
+
+  # ---- BEGIN generated document path 'u' (build/add_upload_path.py) ----
+  u0_audit:
+    REASONING: false
+    CALL: r_audit_log
+      WITH:
+        user: user
+        disposition: "UPLOADED_DOC_RESEARCHED"
+        object: "uploaded document"
+        detail: "Model review of an uploaded or pasted document"
+      AS: audit
+    THEN: u1_review
+
+  u1_review:
+    REASONING: true
+    GOAL: |
+      The officer asked: "{{request}}". Read the regulatory document they uploaded or pasted in this conversation (TRAI or DoT
+      consultation paper, direction, regulation, order, or licence amendment). If no document is visible, say so in one sentence
+      and ask them to upload it again with the request in the same message; do not guess.
+      Produce a research brief:
+      1. Document identity: issuer, title, reference number, date, type, and the comment and counter-comment deadlines exactly as stated.
+      2. Issue-by-issue summary in the document's own numbering: what it proposes, each question for stakeholders (keep the
+      question numbers), and the paragraph references.
+      3. Impact on Vi: which business areas, financial or operational exposure, and obligations or deadlines that would bind Vi.
+      4. Points for Vi's response and open questions for the officer.
+      5. A short executive summary of at most 5 lines.
+      End by offering: follow-up questions on this document, or say Word to download it as a .docx.
+    STEP_CONSTRAINTS:
+      - "Quote only text that appears in the document, with its paragraph or page reference; never invent citations, dates or numbers"
+      - "Separate what the document says from Vi's position and from your own analysis; mark unsupported statements [unverified]"
+      - "Never send, file or submit anything to a regulator; a named Vi officer reviews and approves"
+    MAX_TURNS: 2
+    THEN: u2_route
+
+  # The zone hands over on the user's next message: follow-ups stay with the document, Word builds a
+  # .docx, a new command goes back to the parser
+  u2_route:
+    REASONING: false
+    ON_INPUT:
+      - IF: input matches "^[^a-z]*(done|exit|thanks|thank you|that's all|thats all)([^a-z]|$)"
+        THEN: s9_end
+      - IF: input matches "(word|docx|download|as a file|document file)"
+        SET: followup = input
+        THEN: u4_doc_prepare
+      - IF: input matches "([a-z]+-syn-[a-z]+|new document|another document|different document|start over|monitor|check (the )?sources|competitor|precedent)"
+        SET: request = input
+        THEN: s1_parse
+      - ELSE:
+        SET: followup = input
+        THEN: u3_followup
+
+  u3_followup:
+    REASONING: true
+    GOAL: |
+      The user is following up on the document they uploaded or pasted earlier in this conversation and your
+      earlier answer. Their message: "{{followup}}".
+      Answer from the document and your earlier brief only, with paragraph references. If they ask for a comparison with other regulators or past Vi positions you cannot see, say what needs to be checked in the R-KB rather than guessing.
+      End by asking whether anything else is needed on this document, or say Word to download it.
+    STEP_CONSTRAINTS:
+      - "Quote only text that appears in the document, with its paragraph or page reference; never invent citations, dates or numbers"
+      - "Separate what the document says from Vi's position and from your own analysis; mark unsupported statements [unverified]"
+      - "Never send, file or submit anything to a regulator; a named Vi officer reviews and approves"
+    MAX_TURNS: 2
+    THEN: u2_route
+
+  u4_doc_prepare:
+    REASONING: true
+    GOAL: |
+      The user wants a downloadable Word document ("{{followup}}"). Do not write it in your reply. Set these session
+      fields in a single update:
+      doc_title: a short title.
+      doc_md: the full document body in simple markdown: # and ## headings, plain paragraphs, - bullets, and tables
+      as | col | col | rows with a header row. Use real line breaks.
+      Write the full research brief: document identity and deadlines, executive summary, issue-by-issue summary with question numbers and paragraph references, impact on Vi, points for response, open questions.
+      Then reply with one short sentence: "Preparing the Word document."
+    CONTEXT_UPDATES: [doc_title, doc_md]
+    STEP_CONSTRAINTS:
+      - "Quote only text that appears in the document, with its paragraph or page reference; never invent citations, dates or numbers"
+      - "Separate what the document says from Vi's position and from your own analysis; mark unsupported statements [unverified]"
+      - "Never send, file or submit anything to a regulator; a named Vi officer reviews and approves"
+    EXIT_WHEN: always
+    MAX_TURNS: 4
+    THEN: u5_doc_build
+
+  u5_doc_build:
+    REASONING: false
+    CALL: doc_docx
+      WITH:
+        title: doc_title
+        markdown: doc_md
+        footer_note: "AI research brief for Vi Regulatory officer review (autonomy L1). Citations must be checked before use; nothing has been filed or sent."
+      AS: udoc
+    ON_RESULT:
+      - IF: udoc.output.ok == true
+        THEN: u6_doc_ready
+      - ELSE:
+        THEN: u7_doc_failed
+
+  u6_doc_ready:
+    REASONING: false
+    RESPOND: "{{udoc.output.message}} It is an AI draft for review; nothing has been sent. Anything else on this document, or a new request?"
+      FORMATS:
+        FILE:
+          url: "{{udoc.output.url}}"
+          filename: "{{udoc.output.filename}}"
+          mime_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    THEN: u2_route
+
+  u7_doc_failed:
+    REASONING: false
+    RESPOND: "I couldn't build the Word document this time. Ask for Word again, or I can answer in the chat."
+    THEN: u2_route
+
+  # ---- END generated document path 'u' ----
 
   s2_help:
     REASONING: false
@@ -164,7 +286,19 @@ FLOW:
 
   b7_say:
     REASONING: false
-    RESPOND: "AI research brief {{brief.output.brief_id}}, for officer review.\n\n1. Why it matters: {{brief.output.why}}\n2. Key findings (source says): {{brief.output.findings}}\n3. Issue-by-issue: {{sum.output.issues}} Deadlines: {{sum.output.deadlines}}. Definitions: {{sum.output.definitions}}. Cross-references: {{sum.output.cross_refs}}.\n4. Precedents: {{prec.output.indian}} International comparison ({{prec.output.jurisdictions}} jurisdictions): {{prec.output.international}}. {{prec.output.analysis}}\n5. Stakeholder positions (public sources only): {{comp.output.rows}}\n6. Vi's past positions and gaps: {{brief.output.vi_positions}}\n7. Open questions for the officer: {{brief.output.open_questions}}\n8. Verification (R-CV): {{cv.output.supported}} supported, {{cv.output.partial}} partial, {{cv.output.unsupported}} unsupported. {{cv.output.table}}\n\nAnything else?"
+    RESPOND: |
+      AI research brief {{brief.output.brief_id}}, for officer review.
+
+      1. Why it matters: {{brief.output.why}}
+      2. Key findings (source says): {{brief.output.findings}}
+      3. Issue-by-issue: {{sum.output.issues}} Deadlines: {{sum.output.deadlines}}. Definitions: {{sum.output.definitions}}. Cross-references: {{sum.output.cross_refs}}.
+      4. Precedents: {{prec.output.indian}} International comparison ({{prec.output.jurisdictions}} jurisdictions): {{prec.output.international}}. {{prec.output.analysis}}
+      5. Stakeholder positions (public sources only): {{comp.output.rows}}
+      6. Vi's past positions and gaps: {{brief.output.vi_positions}}
+      7. Open questions for the officer: {{brief.output.open_questions}}
+      8. Verification (R-CV): {{cv.output.supported}} supported, {{cv.output.partial}} partial, {{cv.output.unsupported}} unsupported. {{cv.output.table}}
+
+      Anything else?
     ON_INPUT:
       - ELSE:
         SET: request = input
@@ -245,7 +379,12 @@ FLOW:
 
   p3_say:
     REASONING: false
-    RESPOND: "Precedents on {{topic}}: {{prec.output.indian}}\n\nInternational comparison ({{prec.output.jurisdictions}} jurisdictions; jurisdiction | regulator | instrument | approach | date | status): {{prec.output.international}}\n\n{{prec.output.analysis}} Anything else?"
+    RESPOND: |
+      Precedents on {{topic}}: {{prec.output.indian}}
+
+      International comparison ({{prec.output.jurisdictions}} jurisdictions; jurisdiction | regulator | instrument | approach | date | status): {{prec.output.international}}
+
+      {{prec.output.analysis}} Anything else?
     ON_INPUT:
       - ELSE:
         SET: request = input

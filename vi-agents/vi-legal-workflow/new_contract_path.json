@@ -1,0 +1,19 @@
+{
+ "prefix": "n",
+ "intent": "new_contract",
+ "audit_tool": "lg_audit",
+ "disposition": "NEW_CONTRACT_DRAFTED",
+ "parse_step": "s1_parse",
+ "parse_var": "req",
+ "insert_before": "s2_help",
+ "exit_regex": "((nda|mou|vc|dp)-[0-9][0-9]|new matter|another document|different document|start over|what is due|gold label|run the eval)",
+ "review_goal": "The user asked: \"{{request}}\". Draft a new agreement on Vi's paper (Vodafone Idea Limited, \"Vi\"), using any term sheet,\nemail or document they uploaded or pasted in this conversation for the parties and commercial facts.\nChoose the template from the request: mutual NDA, AI partner MoU, vendor or AI services agreement, or amendment.\nBuild it from Vi's GREEN playbook positions:\n- NDA: mutual; specific purpose; oral, written and electronic information, no marking needed; standard four exclusions, no\nresiduals; compelled disclosure with prior notice where lawful and DoT, TRAI and regulator disclosure permitted; 2-year term;\n3-year survival, trade secrets and personal data while confidential; DPDP-compliant personal data clause and no transfer\noutside India without Vi approval; return or destruction with certificate; injunctive relief for both; no indemnity; laws of\nIndia; arbitration seated in Mumbai; no non-compete, exclusivity or standstill; no assignment without consent; no publicity.\n- AI partner MoU: sections S1-S16 (parties, vision, distinctiveness, scope with named use cases, Vi AI Lab delivery, phasing,\ncommercial principles only, governance, data protection and residency in India with no training on Vi data, Responsible AI\n(GRACIE), IP with background IP retained and Vi-specific outputs owned by Vi, confidentiality, publicity by mutual consent,\nnon-exclusive, 12-24 month term with 30-60 days' notice, non-binding except confidentiality, publicity, exclusivity and legal\nprovisions; Indian law, India-seated arbitration).\n- Vendor or AI agreement: Vi MSA prevails; defined deliverables and acceptance; fixed or capped fees, 60-day payment; Vi\nconvenience termination on 30 days; Vi owns deliverables and Vi-specific outputs; Vi data used only for the services, no\ntraining; data in India; breach notice within 24 hours and audit rights; GRACIE R1-R10 Responsible AI pack; sub-contracting\nwith consent; liability cap 1x annual fees with carve-outs; Indian law, Mumbai seat; exit assistance with deletion certificate.\nWrite the full agreement with numbered clauses, then list the facts marked [to be confirmed] and the approvals needed.",
+ "followup_goal": "Revise the draft as asked, keeping Vi's playbook positions. If the user asks for a term outside the playbook, draft it but flag it for lawyer approval and say which playbook item it departs from.",
+ "doc_goal": "Write the complete agreement as it stands after any revisions: title, parties block, recitals, numbered clauses with headings, signature blocks left blank, and a final section listing [to be confirmed] items and required approvals.",
+ "doc_footer": "AI first draft on Vi paper for Vi Legal review. Not approved, not signed and not sent to any counterparty.",
+ "constraints": [
+  "Use only Vi playbook positions; never invent statutory references (mark any statute [verify]) and never present the draft as approved",
+  "Never sign, send, accept or agree anything on Vi's behalf; a named Vi lawyer approves and a human signs",
+  "Mark every commercial value you were not given as [to be confirmed] instead of inventing it"
+ ]
+}

@@ -17,4 +17,6 @@ else if (/(approve|file).*(final)/.test(l)) intent = "file_final";
 else if (/(what did we say|what was our position|did we say)/.test(l)) intent = "lookup";
 else if (/(memo|note to management|internal note)/.test(l)) intent = "memo";
 else if (/(draft|response|counter-comment|reply)/.test(l)) intent = "draft";
+// Uploaded or pasted document with no corpus id: reviewed by the model step
+if (!doc && ["help","draft","memo","lookup"].indexOf(intent) >= 0 && (t.length > 400 || t.split("\n").length > 4 || /(upload|attach|pasted|(this|attached|uploaded) ([a-z]+ ){0,3}(paper|document|consultation|notification|direction|order|letter|notice|circular|report|file|pdf)|the (attached|uploaded))/.test(l))) intent = "uploaded";
 return { intent: intent, doc_id: doc, topic: topic, year: year, draft_id: draft, depth: depth, reason: reason, claims: t.replace(/^\s*verify:?\s*/i, "") };

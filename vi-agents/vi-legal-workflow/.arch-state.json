@@ -17,8 +17,8 @@
     "lg_redline_docx": "01a18093-fb4d-7595-afe9-7d89dd68b4e8"
   },
   "workflow_versions": {
-    "lg01_intake": "v1.0.7",
-    "lg02_nda_triage": "v1.0.7",
+    "lg01_intake": "v1.0.8",
+    "lg02_nda_triage": "v1.0.8",
     "lg03_mou": "v1.0.7",
     "lg04_vendor_review": "v1.0.7",
     "lg05_execution_check": "v1.0.10",

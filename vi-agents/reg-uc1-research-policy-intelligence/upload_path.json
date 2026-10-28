@@ -1,0 +1,18 @@
+{
+ "prefix": "u",
+ "audit_tool": "r_audit_log",
+ "disposition": "UPLOADED_DOC_RESEARCHED",
+ "parse_step": "s1_parse",
+ "parse_var": "req",
+ "insert_before": "s2_help",
+ "exit_regex": "([a-z]+-syn-[a-z]+|new document|another document|different document|start over|monitor|check (the )?sources|competitor|precedent)",
+ "review_goal": "The officer asked: \"{{request}}\". Read the regulatory document they uploaded or pasted in this conversation (TRAI or DoT\nconsultation paper, direction, regulation, order, or licence amendment). If no document is visible, say so in one sentence\nand ask them to upload it again with the request in the same message; do not guess.\nProduce a research brief:\n1. Document identity: issuer, title, reference number, date, type, and the comment and counter-comment deadlines exactly as stated.\n2. Issue-by-issue summary in the document's own numbering: what it proposes, each question for stakeholders (keep the\nquestion numbers), and the paragraph references.\n3. Impact on Vi: which business areas, financial or operational exposure, and obligations or deadlines that would bind Vi.\n4. Points for Vi's response and open questions for the officer.\n5. A short executive summary of at most 5 lines.",
+ "followup_goal": "Answer from the document and your earlier brief only, with paragraph references. If they ask for a comparison with other regulators or past Vi positions you cannot see, say what needs to be checked in the R-KB rather than guessing.",
+ "doc_goal": "Write the full research brief: document identity and deadlines, executive summary, issue-by-issue summary with question numbers and paragraph references, impact on Vi, points for response, open questions.",
+ "doc_footer": "AI research brief for Vi Regulatory officer review (autonomy L1). Citations must be checked before use; nothing has been filed or sent.",
+ "constraints": [
+  "Quote only text that appears in the document, with its paragraph or page reference; never invent citations, dates or numbers",
+  "Separate what the document says from Vi's position and from your own analysis; mark unsupported statements [unverified]",
+  "Never send, file or submit anything to a regulator; a named Vi officer reviews and approves"
+ ]
+}

@@ -10,6 +10,7 @@ const pol = l.match(/(sign (it|this|the)|send (it|this|the) to the (counterparty
 const pasted = !id && (t.length > 400 || t.split("\n").length > 4);
 let intent = "help";
 if (/^\s*(done|exit|thanks|thank you|that's all|thats all)\b/.test(l)) intent = "done";
+else if (!id && /(draft|generate|create|prepare|write|make)\s+(me\s+)?([a-z.-]+\s+){0,4}?(nda|non.disclosure|contract|agreement|mou|memorandum|msa|sow|statement of work|addendum|amendment)/.test(l)) intent = "new_contract";
 else if (pasted) intent = "uploaded";
 else if (pol) intent = "policy_block";
 else if (/(run (the )?eval|evaluation|gold.label|golden|run the fixtures)/.test(l)) intent = "eval";

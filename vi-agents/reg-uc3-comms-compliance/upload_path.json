@@ -1,0 +1,18 @@
+{
+ "prefix": "u",
+ "audit_tool": "r_audit_log",
+ "disposition": "UPLOADED_COMM_TRIAGED",
+ "parse_step": "s1_parse",
+ "parse_var": "req",
+ "insert_before": "s2_help",
+ "exit_regex": "(mail-syn-|obl-syn-|drf-|dashboard|overdue|escalat|replay|reassign|new document|another document|start over)",
+ "review_goal": "The officer asked: \"{{request}}\". Read the regulatory communication they uploaded or pasted in this conversation (letter, direction,\nshow-cause notice, order, circular or email from TRAI, DoT, a court or another authority). If none is visible, say so in one\nsentence and ask them to upload it again with the request in the same message; do not guess.\nProduce a compliance intake note:\n1. Classification: sender authority, reference number, date received, type (direction, show-cause, information request,\nconsultation, circular, order, other) and urgency.\n2. Obligations: a table with each obligation, the exact quoted text and paragraph, the deadline exactly as stated (and the\ncomputed calendar date only if the document gives a start date), the suggested Vi owner function, and the deliverable.\n3. Penalties or consequences stated for non-compliance.\n4. Recommended next steps and who must approve any reply.",
+ "followup_goal": "Answer from the communication and your intake note only. If asked for a reply draft, write it as an AI draft for officer review with the reference quoted; never send it.",
+ "doc_goal": "Write the compliance intake note: classification, obligations table (obligation, quoted text and paragraph, deadline, owner, deliverable), penalties, next steps and approvals.",
+ "doc_footer": "AI compliance intake note for Vi Regulatory review. Deadlines must be confirmed by the officer; nothing has been sent to the authority.",
+ "constraints": [
+  "Quote only text that appears in the document, with its paragraph or page reference; never invent citations, dates or numbers",
+  "Separate what the document says from Vi's position and from your own analysis; mark unsupported statements [unverified]",
+  "Never send, file or submit anything to a regulator; a named Vi officer reviews and approves"
+ ]
+}

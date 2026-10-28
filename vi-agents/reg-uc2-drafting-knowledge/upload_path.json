@@ -1,0 +1,18 @@
+{
+ "prefix": "u",
+ "audit_tool": "r_audit_log",
+ "disposition": "UPLOADED_DOC_DRAFTED",
+ "parse_step": "s1_parse",
+ "parse_var": "req",
+ "insert_before": "s2_help",
+ "exit_regex": "([a-z]+-syn-[a-z]+|vidraft-|new document|another document|different document|start over|what did we say|memo)",
+ "review_goal": "The officer asked: \"{{request}}\". Read the consultation paper or regulatory document they uploaded or pasted in this\nconversation. If no document is visible, say so in one sentence and ask them to upload it again with the request in the same\nmessage; do not guess.\nPrepare a first draft of Vi's response, labelled \"AI draft, for officer review\":\n1. Drafting brief: regulator, paper title and reference, comments and counter-comments due dates exactly as stated, and the questions.\n2. The response in the regulator's own question numbering (Q1, Q2 ...): for each question, Vi's proposed answer in formal\nIndian-English regulatory register, with inline references to the paper's paragraphs.\n3. Where Vi's approved position is not known to you, write [Officer to confirm Vi position] instead of inventing one.\n4. A list of officer decisions required and any statements marked [unverified].",
+ "followup_goal": "Revise or extend the draft response as asked, keeping the regulator's question numbering and paragraph references. Never present a draft as Vi's approved position.",
+ "doc_goal": "Write the full draft response: title block (to the regulator, subject, reference), short covering paragraph, then each question with its number, the question text quoted, and Vi's draft answer; then officer decisions required. Keep [Officer to confirm Vi position] markers.",
+ "doc_footer": "AI draft response for Vi Regulatory officer review (autonomy L1). A named approver must approve and file; nothing has been submitted.",
+ "constraints": [
+  "Quote only text that appears in the document, with its paragraph or page reference; never invent citations, dates or numbers",
+  "Separate what the document says from Vi's position and from your own analysis; mark unsupported statements [unverified]",
+  "Never send, file or submit anything to a regulator; a named Vi officer reviews and approves"
+ ]
+}

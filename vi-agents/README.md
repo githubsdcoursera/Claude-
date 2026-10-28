@@ -158,13 +158,26 @@ personas (`arch.json` `mock_prelude`); the three Regulatory projects also share 
   The rules pass reproduces all 32 gold labels (`lg_eval`); the W5 gate records approvals only from an
   authorised approver (RED needs senior counsel / GC), and nothing is signed or sent.
 
-### Uploaded documents (Legal)
+### Uploaded documents and Word downloads (Legal, Tower Co, Regulatory)
 
 The platform passes an uploaded file only to the model, not to scripted (`REASONING: false`) steps, which see just the
-typed text. Requests that name a test document (NDA-01, MOU-04, VC-03, DP-02) run the deterministic engine. An uploaded or
-pasted NDA, MoU or vendor agreement with no test ID goes to a model step (`u1_review`), which applies the Vi playbooks item
-by item with quotes and tiers, writes a business summary and a privileged lawyer note, and logs `UPLOADED_DOC_REVIEWED`.
-Upload the file with the request in the same message (for example "triage this NDA"); a message sent after the upload may not carry the file.
+typed text. Upload the file with the request in the same message (for example "triage this NDA"); a message sent after the
+upload may not carry the file. Each back-office agent routes an upload (or long pasted text) with no test ID to a model step:
+
+| Agent | Upload | What it does | Word download |
+|---|---|---|---|
+| Legal | NDA, MoU, vendor or AI agreement | Playbook review item by item with quotes, tiers, business summary, privileged lawyer note; follow-ups stay on the document | "Word redline": `.docx` with tracked changes (`lg_redline_docx`) |
+| Legal | Term sheet or none ("draft a new mutual NDA ...") | New agreement on Vi paper from the GREEN playbook positions | "Word": full agreement (`doc_docx`) |
+| Tower Co | Vendor invoice | The model only copies the lines; `tc_invoice_reconcile` checks every line against the rule book (MATCH, OVERBILLED, UNDERBILLED, DUPLICATE, NOT_IN_REGISTER) | "Word report": reconciliation report built from the tool output |
+| RA-UC1 | TRAI or DoT paper | Research brief: identity and deadlines, issue-by-issue summary with question numbers, impact on Vi | "Word": research brief |
+| RA-UC2 | Consultation paper | First-draft response in the regulator's numbering, with [Officer to confirm Vi position] markers | "Word": draft response |
+| RA-UC3 | Letter, direction, notice | Compliance intake note: classification, obligations table with quoted deadlines, penalties, next steps | "Word": intake note |
+
+`build/add_upload_path.py <agent.abl> <spec.json>` generates the model-review, follow-up and Word-download steps from a
+spec (`upload_path.json`, `new_contract_path.json`). Word files are built inside the workflow (`shared/mocks/doc_docx.js`,
+no library) and returned as a `FILE` response. The file is currently embedded as a `data:` URL; the platform documents
+`FILE` as needing a reachable URL, so production should store the file in Vi document storage (SharePoint, Azure Blob or
+S3 through a platform integration) and return that link.
 
 ## Platform behaviours found while building
 
@@ -186,6 +199,9 @@ Upload the file with the request in the same message (for example "triage this N
 | Passing a number to a string parameter errors | Numbers are passed as templates, for example `"{{neg_count}}"` |
 | Output fields whose names contain "token" are shown as `[REDACTED]` in replies | Renamed, for example `sr_number` |
 | Deployment preflight reports `UNBOUND_TOOL ... check could not be completed` for some projects (UC3, UC4, UC5, UC7, UC8, Prepaid Retention) | No tool is missing and the tests pass; worth confirming with Kore.ai |
+| `\n` inside a quoted `RESPOND: "..."` is shown literally | Multi-line replies use `RESPOND: |` blocks |
+| The MCP client refuses workflow code that looks like a credential (for example `const AUTH = "..."`) | Renamed |
+| A reasoning step with `EXIT_WHEN: flag == true` never exits if the model writes the flag as the string "true" | Steps that write data use `EXIT_WHEN: always`; the next tool validates the data |
 | Live traces cut long replies at about 200 characters | The test runner reads full replies from `debug_session_history` |
 
 ## Not done yet / decisions for Vi

@@ -25,10 +25,14 @@ EXECUTION:
   tool_timeout: 8000
 
 TOOLS:
-  #include-tools: rd_parse, rd01_scope, rd02_positions, rd03_check_consistency, rd04_draft, rd06_file_final, rd06_capture_edits, rd_lookup, rd_memo, r_cite_verify, r_notify, r_audit_log
+  #include-tools: rd_parse, rd01_scope, rd02_positions, rd03_check_consistency, rd04_draft, rd06_file_final, rd06_capture_edits, rd_lookup, rd_memo, r_cite_verify, r_notify, r_audit_log, doc_docx
 
 MEMORY:
   session:
+    - udoc
+    - doc_md
+    - doc_title
+    - followup
     - user
     - request
     - req
@@ -49,6 +53,8 @@ FLOW:
   s0_start:
     REASONING: false
     SET:
+      doc_title = "none"
+      doc_md = "none"
       user = FIRST_NON_EMPTY(session.messageMetadata.user, REGEX_EXTRACT(input, "user=([a-z]+\\.[a-z]+)", 1), "officer.asha")
       request = input
       disposition = "IN_PROGRESS"
@@ -75,8 +81,123 @@ FLOW:
         THEN: v1_verify
       - IF: req.output.intent == "done"
         THEN: s9_end
+      - IF: req.output.intent == "uploaded"
+        THEN: u0_audit
       - ELSE:
         THEN: s2_help
+
+  # ---- BEGIN generated document path 'u' (build/add_upload_path.py) ----
+  u0_audit:
+    REASONING: false
+    CALL: r_audit_log
+      WITH:
+        user: user
+        disposition: "UPLOADED_DOC_DRAFTED"
+        object: "uploaded document"
+        detail: "Model review of an uploaded or pasted document"
+      AS: audit
+    THEN: u1_review
+
+  u1_review:
+    REASONING: true
+    GOAL: |
+      The officer asked: "{{request}}". Read the consultation paper or regulatory document they uploaded or pasted in this
+      conversation. If no document is visible, say so in one sentence and ask them to upload it again with the request in the same
+      message; do not guess.
+      Prepare a first draft of Vi's response, labelled "AI draft, for officer review":
+      1. Drafting brief: regulator, paper title and reference, comments and counter-comments due dates exactly as stated, and the questions.
+      2. The response in the regulator's own question numbering (Q1, Q2 ...): for each question, Vi's proposed answer in formal
+      Indian-English regulatory register, with inline references to the paper's paragraphs.
+      3. Where Vi's approved position is not known to you, write [Officer to confirm Vi position] instead of inventing one.
+      4. A list of officer decisions required and any statements marked [unverified].
+      End by offering: follow-up questions on this document, or say Word to download it as a .docx.
+    STEP_CONSTRAINTS:
+      - "Quote only text that appears in the document, with its paragraph or page reference; never invent citations, dates or numbers"
+      - "Separate what the document says from Vi's position and from your own analysis; mark unsupported statements [unverified]"
+      - "Never send, file or submit anything to a regulator; a named Vi officer reviews and approves"
+    MAX_TURNS: 2
+    THEN: u2_route
+
+  # The zone hands over on the user's next message: follow-ups stay with the document, Word builds a
+  # .docx, a new command goes back to the parser
+  u2_route:
+    REASONING: false
+    ON_INPUT:
+      - IF: input matches "^[^a-z]*(done|exit|thanks|thank you|that's all|thats all)([^a-z]|$)"
+        THEN: s9_end
+      - IF: input matches "(word|docx|download|as a file|document file)"
+        SET: followup = input
+        THEN: u4_doc_prepare
+      - IF: input matches "([a-z]+-syn-[a-z]+|vidraft-|new document|another document|different document|start over|what did we say|memo)"
+        SET: request = input
+        THEN: s1_parse
+      - ELSE:
+        SET: followup = input
+        THEN: u3_followup
+
+  u3_followup:
+    REASONING: true
+    GOAL: |
+      The user is following up on the document they uploaded or pasted earlier in this conversation and your
+      earlier answer. Their message: "{{followup}}".
+      Revise or extend the draft response as asked, keeping the regulator's question numbering and paragraph references. Never present a draft as Vi's approved position.
+      End by asking whether anything else is needed on this document, or say Word to download it.
+    STEP_CONSTRAINTS:
+      - "Quote only text that appears in the document, with its paragraph or page reference; never invent citations, dates or numbers"
+      - "Separate what the document says from Vi's position and from your own analysis; mark unsupported statements [unverified]"
+      - "Never send, file or submit anything to a regulator; a named Vi officer reviews and approves"
+    MAX_TURNS: 2
+    THEN: u2_route
+
+  u4_doc_prepare:
+    REASONING: true
+    GOAL: |
+      The user wants a downloadable Word document ("{{followup}}"). Do not write it in your reply. Set these session
+      fields in a single update:
+      doc_title: a short title.
+      doc_md: the full document body in simple markdown: # and ## headings, plain paragraphs, - bullets, and tables
+      as | col | col | rows with a header row. Use real line breaks.
+      Write the full draft response: title block (to the regulator, subject, reference), short covering paragraph, then each question with its number, the question text quoted, and Vi's draft answer; then officer decisions required. Keep [Officer to confirm Vi position] markers.
+      Then reply with one short sentence: "Preparing the Word document."
+    CONTEXT_UPDATES: [doc_title, doc_md]
+    STEP_CONSTRAINTS:
+      - "Quote only text that appears in the document, with its paragraph or page reference; never invent citations, dates or numbers"
+      - "Separate what the document says from Vi's position and from your own analysis; mark unsupported statements [unverified]"
+      - "Never send, file or submit anything to a regulator; a named Vi officer reviews and approves"
+    EXIT_WHEN: always
+    MAX_TURNS: 4
+    THEN: u5_doc_build
+
+  u5_doc_build:
+    REASONING: false
+    CALL: doc_docx
+      WITH:
+        title: doc_title
+        markdown: doc_md
+        footer_note: "AI draft response for Vi Regulatory officer review (autonomy L1). A named approver must approve and file; nothing has been submitted."
+      AS: udoc
+    ON_RESULT:
+      - IF: udoc.output.ok == true
+        THEN: u6_doc_ready
+      - ELSE:
+        THEN: u7_doc_failed
+
+  u6_doc_ready:
+    REASONING: false
+    RESPOND: "{{udoc.output.message}} It is an AI draft for review; nothing has been sent. Anything else on this document, or a new request?"
+      FORMATS:
+        FILE:
+          url: "{{udoc.output.url}}"
+          filename: "{{udoc.output.filename}}"
+          mime_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    THEN: u2_route
+
+  u7_doc_failed:
+    REASONING: false
+    RESPOND: "I couldn't build the Word document this time. Ask for Word again, or I can answer in the chat."
+    THEN: u2_route
+
+  # ---- END generated document path 'u' ----
 
   s2_help:
     REASONING: false
@@ -158,7 +279,20 @@ FLOW:
 
   d7_say:
     REASONING: false
-    RESPOND: "{{draft.output.label}}\n\nDrafting brief: {{brief.output.draft_type}} to {{brief.output.audience}} on {{brief.output.title}}; comments due {{brief.output.deadline}}; questions {{brief.output.questions}}.{{#if brief.output.clarifying}} Clarifying question: {{brief.output.clarifying}}{{/if}}\n\nDraft {{draft.output.draft_id}}: {{draft.output.draft}}\n\nConsistency report: {{cons.output.flags}}\nOfficer decisions required: {{draft.output.decisions}}\nClosest past submission: {{draft.output.closest}}\n{{#if pos.output.related_notes}}Related internal notes you are authorised to see: {{pos.output.related_notes}}\n{{/if}}Verification (R-CV): {{cv.output.supported}} supported, {{cv.output.partial}} partial, {{cv.output.unsupported}} unsupported. {{cv.output.table}}\n\nAnything else?"
+    RESPOND: |
+      {{draft.output.label}}
+
+      Drafting brief: {{brief.output.draft_type}} to {{brief.output.audience}} on {{brief.output.title}}; comments due {{brief.output.deadline}}; questions {{brief.output.questions}}.{{#if brief.output.clarifying}} Clarifying question: {{brief.output.clarifying}}{{/if}}
+
+      Draft {{draft.output.draft_id}}: {{draft.output.draft}}
+
+      Consistency report: {{cons.output.flags}}
+      Officer decisions required: {{draft.output.decisions}}
+      Closest past submission: {{draft.output.closest}}
+      {{#if pos.output.related_notes}}Related internal notes you are authorised to see: {{pos.output.related_notes}}
+      {{/if}}Verification (R-CV): {{cv.output.supported}} supported, {{cv.output.partial}} partial, {{cv.output.unsupported}} unsupported. {{cv.output.table}}
+
+      Anything else?
     ON_INPUT:
       - ELSE:
         SET: request = input
@@ -214,7 +348,10 @@ FLOW:
 
   m5_say:
     REASONING: false
-    RESPOND: "AI draft, for officer review. {{memo.output.memo}}\n\nConsistency report: {{cons.output.flags}}{{#if cons.output.conflict}} The conflict has been escalated to the Head, Regulatory; I have not picked either position.{{/if}} Anything else?"
+    RESPOND: |
+      AI draft, for officer review. {{memo.output.memo}}
+
+      Consistency report: {{cons.output.flags}}{{#if cons.output.conflict}} The conflict has been escalated to the Head, Regulatory; I have not picked either position.{{/if}} Anything else?
     ON_INPUT:
       - ELSE:
         SET: request = input

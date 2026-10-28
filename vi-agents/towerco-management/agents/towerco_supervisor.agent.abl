@@ -24,7 +24,7 @@ EXECUTION:
   tool_timeout: 8000
 
 TOOLS:
-  #include-tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_eb_check, tc_dispute_prepare, tc_request_approval, tc_payment_readiness, tc_period_summary, tc_provision, tc_golden_regression, tc_record_case
+  #include-tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_eb_check, tc_dispute_prepare, tc_request_approval, tc_payment_readiness, tc_period_summary, tc_provision, tc_golden_regression, tc_record_case, tc_invoice_reconcile, doc_docx
 
 MEMORY:
   session:
@@ -45,6 +45,11 @@ MEMORY:
     - golden
     - disposition
     - audit
+    - inv_lines
+    - inv_no
+    - inv_vendor
+    - irec
+    - tdoc
 
 FLOW:
   s0_start:
@@ -52,6 +57,9 @@ FLOW:
     SET:
       request = input
       disposition = "IN_PROGRESS"
+      inv_lines = "none"
+      inv_no = "none"
+      inv_vendor = "none"
     THEN: s1_parse
 
   # ---- A00: validate mandatory context and pick the domain path ----
@@ -78,12 +86,118 @@ FLOW:
         THEN: s9_end
       - IF: req.output.intent == "need_period"
         THEN: s2_need_period
+      - IF: req.output.intent == "uploaded"
+        THEN: u1_read_invoice
       - ELSE:
         THEN: s2_help
 
+  # ---- Uploaded or pasted vendor invoice: the model only reads the lines; every number is checked deterministically ----
+  u1_read_invoice:
+    REASONING: true
+    GOAL: |
+      The user uploaded or pasted a tower vendor invoice ("{{request}}"). Read the invoice in this conversation and
+      set these session fields in a single update:
+      inv_lines: a JSON array with one object per charge line: {"line_ref": line or row number, "site_id": the site id
+      exactly as printed (for example MHGOA-SYN-0006), "period": the billing month as YYYY-MM, "component": rent, loading
+      or energy, "amount": the amount billed as a number without currency symbols or tax}.
+      inv_no: the invoice number. inv_vendor: the vendor name.
+      Copy values exactly as printed; do not calculate, correct or estimate anything. If no invoice is visible, set
+      inv_lines to "none".
+      Then reply with one short sentence: "Reading the invoice and checking each line against the rule book."
+    CONTEXT_UPDATES: [inv_lines, inv_no, inv_vendor]
+    STEP_CONSTRAINTS:
+      - "Never invent, round or compute an amount; copy only what the invoice shows"
+    EXIT_WHEN: always
+    MAX_TURNS: 4
+    THEN: u2_reconcile
+
+  u2_reconcile:
+    REASONING: false
+    CALL: tc_invoice_reconcile
+      WITH:
+        lines: inv_lines
+        invoice_no: inv_no
+        vendor: inv_vendor
+      AS: irec
+    ON_RESULT:
+      - IF: irec.output.found == true
+        SET: disposition = "UPLOADED_INVOICE_RECONCILED"
+        THEN: u3_record
+      - ELSE:
+        THEN: u9_no_invoice
+
+  u3_record:
+    REASONING: false
+    CALL: tc_record_case
+      WITH:
+        case_ref: "UPLOAD-{{inv_no}}"
+        disposition: disposition
+        summary: "Uploaded invoice {{inv_no}}: {{irec.output.lines}} lines, {{irec.output.exceptions}} exceptions, overbilled {{irec.output.overbilled}}"
+      AS: audit
+    THEN: u4_say
+
+  u4_say:
+    REASONING: false
+    RESPOND: |
+      Invoice {{inv_no}}{{#if inv_vendor}} from {{inv_vendor}}{{/if}}: {{irec.output.lines}} lines read, {{irec.output.matched}} match Vi's rule book and {{irec.output.exceptions}} need attention. Billed {{irec.output.billed_total}} against expected {{irec.output.expected_total}}; overbilled (including duplicates) {{irec.output.overbilled}}, underbilled {{irec.output.underbilled}}.
+
+      Line results: {{irec.output.table}}
+
+      Findings: {{irec.output.findings}}
+      Not in Vi's register: {{irec.output.not_in_register}}.
+
+      {{#if irec.output.dispute_needed}}I recommend holding the overbilled amount and preparing a dispute evidence pack; nothing goes to the vendor until a Vi approver confirms it. {{/if}}Say Word report to download this reconciliation as a .docx, give a site and period from the invoice to run the full case (for example: reconcile {{irec.output.sites}} for {{irec.output.periods}}), or say done.
+    THEN: u5_route
+
+  u5_route:
+    REASONING: false
+    ON_INPUT:
+      - IF: input matches "(word|docx|report|download|document|file)"
+        THEN: u6_build_doc
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  u6_build_doc:
+    REASONING: false
+    CALL: doc_docx
+      WITH:
+        title: "Tower invoice {{inv_no}} reconciliation"
+        markdown: irec.output.report_md
+        footer_note: "AI-assisted reconciliation for Vi Finance COE review. Payment release, debit notes and disputes are human decisions; nothing has been sent to the vendor."
+      AS: tdoc
+    ON_RESULT:
+      - IF: tdoc.output.ok == true
+        THEN: u7_doc_ready
+      - ELSE:
+        THEN: u8_doc_failed
+
+  u7_doc_ready:
+    REASONING: false
+    RESPOND: "{{tdoc.output.message}} It has the summary, every line with billed and expected amounts, the calculation and clause for each exception, and next steps. Anything else?"
+      FORMATS:
+        FILE:
+          url: "{{tdoc.output.url}}"
+          filename: "{{tdoc.output.filename}}"
+          mime_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    THEN: u5_route
+
+  u8_doc_failed:
+    REASONING: false
+    RESPOND: "I couldn't build the Word report this time. The results above are complete; ask for the Word report again if you need the file."
+    THEN: u5_route
+
+  u9_no_invoice:
+    REASONING: false
+    RESPOND: "I couldn't read any invoice lines. Please upload the invoice again with your request in the same message (for example: reconcile this invoice), or paste the lines with site id, billing month, charge type and amount."
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
   s2_help:
     REASONING: false
-    RESPOND: "I can reconcile a site and billing period (for example: reconcile MHGOA-SYN-0003 for 2026-06), summarise a period, give the month-end provision, check an EB consumer number, or run the golden regression. What would you like?"
+    RESPOND: "I can reconcile a site and billing period (for example: reconcile MHGOA-SYN-0003 for 2026-06), summarise a period, give the month-end provision, check an EB consumer number, run the golden regression, or reconcile a vendor invoice you upload or paste (upload it with your request in the same message, for example: reconcile this invoice). What would you like?"
     ON_INPUT:
       - ELSE:
         SET: request = input
@@ -234,7 +348,18 @@ FLOW:
 
   c12_say:
     REASONING: false
-    RESPOND: "Case {{ctx.output.case_ref}} under {{ctx.output.agreement}}, rule book {{shadow.output.rule_version}}, frozen input {{ctx.output.freeze_version}}. Site status: {{ctx.output.status_label}}; billable from {{order.output.billable_from}}.\n\nShadow bill: rent {{shadow.output.rent_math}}; loading {{shadow.output.loading_math}}; energy {{shadow.output.energy_math}}. Expected {{shadow.output.total_expected}} against billed {{recon.output.billed_total}} on {{ctx.output.invoices}}.\n\nReconciliation: {{recon.output.findings}} {{#if dup.output.duplicates}}{{dup.output.finding}} {{/if}}{{#if ebc.output.reused}}{{ebc.output.finding}} {{/if}}{{#if docs.output.missing}}Supporting documents incomplete: {{docs.output.missing}} missing. Vendor request {{docs.output.vendor_request_ref}} opened; the invoice is not marked complete and no dispute is raised until the documents arrive. {{/if}}{{#if disp.output.existing}}Already under dispute {{disp.output.dispute_id}} (control {{disp.output.control_no}}, {{disp.output.status}}); no duplicate dispute raised. {{/if}}{{#if disp.output.created}}Draft dispute {{disp.output.dispute_id}} prepared with evidence pack {{disp.output.evidence_pack}}; DN recommendation {{disp.output.dn_amount}} pre-tax. Pending {{appr.output.approver}} approval {{appr.output.approval_id}}; nothing has been sent to the vendor. {{/if}}\n\nPayment readiness: {{pay.output.recommendation}}, payable {{pay.output.payable}}, held {{pay.output.held}} ({{pay.output.reason}}). {{pay.output.upside_note}} Payment release stays with authorised Finance. Audit {{audit.output.audit_id}}.\n\nCitations: {{shadow.output.citations}}. {{order.output.evidence_note}}\n\nAnything else?"
+    RESPOND: |
+      Case {{ctx.output.case_ref}} under {{ctx.output.agreement}}, rule book {{shadow.output.rule_version}}, frozen input {{ctx.output.freeze_version}}. Site status: {{ctx.output.status_label}}; billable from {{order.output.billable_from}}.
+
+      Shadow bill: rent {{shadow.output.rent_math}}; loading {{shadow.output.loading_math}}; energy {{shadow.output.energy_math}}. Expected {{shadow.output.total_expected}} against billed {{recon.output.billed_total}} on {{ctx.output.invoices}}.
+
+      Reconciliation: {{recon.output.findings}} {{#if dup.output.duplicates}}{{dup.output.finding}} {{/if}}{{#if ebc.output.reused}}{{ebc.output.finding}} {{/if}}{{#if docs.output.missing}}Supporting documents incomplete: {{docs.output.missing}} missing. Vendor request {{docs.output.vendor_request_ref}} opened; the invoice is not marked complete and no dispute is raised until the documents arrive. {{/if}}{{#if disp.output.existing}}Already under dispute {{disp.output.dispute_id}} (control {{disp.output.control_no}}, {{disp.output.status}}); no duplicate dispute raised. {{/if}}{{#if disp.output.created}}Draft dispute {{disp.output.dispute_id}} prepared with evidence pack {{disp.output.evidence_pack}}; DN recommendation {{disp.output.dn_amount}} pre-tax. Pending {{appr.output.approver}} approval {{appr.output.approval_id}}; nothing has been sent to the vendor. {{/if}}
+
+      Payment readiness: {{pay.output.recommendation}}, payable {{pay.output.payable}}, held {{pay.output.held}} ({{pay.output.reason}}). {{pay.output.upside_note}} Payment release stays with authorised Finance. Audit {{audit.output.audit_id}}.
+
+      Citations: {{shadow.output.citations}}. {{order.output.evidence_note}}
+
+      Anything else?
     ON_INPUT:
       - ELSE:
         SET: request = input

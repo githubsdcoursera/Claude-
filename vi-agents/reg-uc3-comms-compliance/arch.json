@@ -3,10 +3,40 @@
   "description": "Regulatory AI RA-UC3: AI-enabled communications and compliance manager. RC01 inbox classifier with sender register and spoof detection, RC02 obligation extractor with dual-check deadlines and internal buffer, RC03 ownership router with leave handling, RC04 escalation ladder, RC05 response preparer (routine template awaiting approver token, substantive to RA-UC2), RC06 permission-trimmed dashboard, shared R-NT and R-GOV. Pilot autonomy L0-L2. SYNTHETIC corpus.",
   "entry_agent": "RA_UC3_Compliance_Supervisor",
   "model": "gemma4",
-  "agents": { "RA_UC3_Compliance_Supervisor": "agents/ra_uc3_compliance_supervisor.agent.abl" },
+  "agents": {
+    "RA_UC3_Compliance_Supervisor": "agents/ra_uc3_compliance_supervisor.agent.abl"
+  },
   "mock_prelude": "../regulatory-common/reg-data.js",
-  "extra_mock_dirs": ["../regulatory-common/mocks"],
-  "shared_mocks": [],
-  "smoke_inputs": { "text": "INBOUND mail=MAIL-SYN-001", "mail_id": "MAIL-SYN-001", "user": "officer.asha", "type": "information_request", "approver": "manager.neel", "draft_id": "DRF-1M1ZJP7", "as_of": "2026-10-27", "view": "all", "obligation_id": "OBL-SYN-0100", "new_owner": "officer.asha", "reason": "smoke", "size": "200", "to": "officer.asha", "message": "smoke", "disposition": "SMOKE", "object": "smoke", "detail": "smoke", "query": "satellite spectrum", "doc_id": "TRAI-SYN-CP-2026-11", "claims": "smoke [TRAI-SYN-CP-2026-11, p47]" },
+  "extra_mock_dirs": [
+    "../regulatory-common/mocks"
+  ],
+  "shared_mocks": [
+    "doc_docx"
+  ],
+  "smoke_inputs": {
+    "text": "INBOUND mail=MAIL-SYN-001",
+    "mail_id": "MAIL-SYN-001",
+    "user": "officer.asha",
+    "type": "information_request",
+    "approver": "manager.neel",
+    "draft_id": "DRF-1M1ZJP7",
+    "as_of": "2026-10-27",
+    "view": "all",
+    "obligation_id": "OBL-SYN-0100",
+    "new_owner": "officer.asha",
+    "reason": "smoke",
+    "size": "200",
+    "to": "officer.asha",
+    "message": "smoke",
+    "disposition": "SMOKE",
+    "object": "smoke",
+    "detail": "smoke",
+    "query": "satellite spectrum",
+    "doc_id": "TRAI-SYN-CP-2026-11",
+    "claims": "smoke [TRAI-SYN-CP-2026-11, p47]",
+    "title": "Smoke",
+    "markdown": "# Smoke\nok",
+    "footer_note": "smoke"
+  },
   "deployment_label": "ra-uc3-v1"
 }

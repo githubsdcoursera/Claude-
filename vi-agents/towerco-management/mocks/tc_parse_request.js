@@ -16,6 +16,7 @@ let intent = "help", action = "", gate = "";
 if (pol) { intent = "policy_block"; action = pol[0];
   gate = /sap|post/.test(action) ? "sap_posting" : /(dn|debit|cn|credit)/.test(action) ? "dn_cn_action" : /settle/.test(action) ? "settlement" : /dispute/.test(action) ? "dispute_confirmation" : /(contract|rule)/.test(action) ? "rule_activation" : "payment_release"; }
 else if (/^\s*(done|exit|quit|thanks|thank you|that's all|thats all|nothing else|no thanks)\b/.test(l)) intent = "done";
+else if (t.length > 400 || t.split("\n").length > 4 || /(upload|attach|pasted|this invoice|the invoice i|invoice (below|attached|here)|vendor invoice|reconcile (this|the|my) (invoice|bill))/.test(l)) intent = "uploaded";
 else if (/(golden|regression|accuracy|release gate)/.test(l)) intent = "golden";
 else if (consumer) intent = "consumer_check";
 else if (site && period) intent = "case";

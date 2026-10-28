@@ -3,9 +3,30 @@
   "description": "Vi End-to-End Tower Co Management agent mesh (A00 supervisor over order evidence, document completeness, duplicate integrity, deterministic shadow billing for rent with escalation, loading and EB passthrough, line-level reconciliation, EB consumer integrity, dispute evidence pack and DN recommendation, payment readiness, provision, golden regression and audit). Human approval for every binding financial action. SYNTHETIC data only.",
   "entry_agent": "TowerCo_Supervisor",
   "model": "gemma4",
-  "agents": { "TowerCo_Supervisor": "agents/towerco_supervisor.agent.abl" },
+  "agents": {
+    "TowerCo_Supervisor": "agents/towerco_supervisor.agent.abl"
+  },
   "mock_prelude": "towerco-data.js",
-  "shared_mocks": [],
-  "smoke_inputs": { "text": "RUN_CASE site=MHGOA-SYN-0003 period=2026-06", "site_id": "MHGOA-SYN-0003", "period": "2026-06", "consumer_no": "CONS-SYN-00014", "gate": "payment_release", "subject": "smoke", "summary": "smoke", "scope": "all", "case_ref": "smoke", "disposition": "SMOKE" },
+  "shared_mocks": [
+    "doc_docx"
+  ],
+  "smoke_inputs": {
+    "text": "RUN_CASE site=MHGOA-SYN-0003 period=2026-06",
+    "site_id": "MHGOA-SYN-0003",
+    "period": "2026-06",
+    "consumer_no": "CONS-SYN-00014",
+    "gate": "payment_release",
+    "subject": "smoke",
+    "summary": "smoke",
+    "scope": "all",
+    "case_ref": "smoke",
+    "disposition": "SMOKE",
+    "lines": "[{\"line_ref\":\"1\",\"site_id\":\"MHGOA-SYN-0006\",\"period\":\"2026-06\",\"component\":\"loading\",\"amount\":12500}]",
+    "invoice_no": "SMOKE-1",
+    "vendor": "Smoke",
+    "title": "Smoke",
+    "markdown": "# Smoke\nok",
+    "footer_note": "smoke"
+  },
   "deployment_label": "towerco-v1"
 }
