@@ -25,7 +25,7 @@ EXECUTION:
   tool_timeout: 8000
 
 TOOLS:
-  #include-tools: lg_parse, lg01_intake, lg02_nda_triage, lg03_mou, lg04_vendor_review, lg05_execution_check, lg06_obligations, lg06_watch, lg07_dpdp, lg_tr_verify, lg_pr_strip, lg_approve, lg_eval, lg_audit
+  #include-tools: lg_parse, lg01_intake, lg02_nda_triage, lg03_mou, lg04_vendor_review, lg05_execution_check, lg06_obligations, lg06_watch, lg07_dpdp, lg_tr_verify, lg_pr_strip, lg_approve, lg_eval, lg_audit, lg_redline_docx
 
 MEMORY:
   session:
@@ -48,6 +48,11 @@ MEMORY:
     - disposition
     - audit
     - followup
+    - redline_changes
+    - redline_title
+    - redline_counterparty
+    - redline_ready
+    - rdoc
 
 FLOW:
   s0_start:
@@ -57,6 +62,10 @@ FLOW:
       request = input
       approval_ref = "none"
       disposition = "IN_PROGRESS"
+      redline_ready = false
+      redline_changes = "none"
+      redline_title = "none"
+      redline_counterparty = "none"
     THEN: s1_parse
 
   s1_parse:
@@ -143,7 +152,7 @@ FLOW:
       End with: a business summary of at most 5 lines with no internal tiers or fallbacks (sign as is, or do not
       sign as is and what must change, and who decides: RED goes to senior counsel or the GC, YELLOW to Legal
       counsel with the business owner), then a lawyer note headed "Privileged & Confidential, prepared for Vi
-      Legal. AI draft for lawyer review." Then ask whether they want counterparty-ready redline wording.
+      Legal. AI draft for lawyer review." Then ask whether they want counterparty-ready redline wording as text, or a downloadable Word redline (.docx with tracked changes).
     STEP_CONSTRAINTS:
       - "Quote only text that appears in the document; never invent clause numbers or quotes"
       - "Never sign, accept, send or agree anything on Vi's behalf, and never lower a tier for a strategic counterparty or a close deadline"
@@ -161,6 +170,9 @@ FLOW:
       - IF: input matches "((nda|mou|vc|dp)-[0-9][0-9]|new matter|another document|different document|start over|what is due|gold label|run the eval)"
         SET: request = input
         THEN: s1_parse
+      - IF: input matches "(docx|word file|word doc|ms word|download|redlined (document|doc|file|version|copy)|redline (document|doc|file)|tracked changes|as a file|document file)"
+        SET: followup = input
+        THEN: u4_docx_prepare
       - ELSE:
         SET: followup = input
         THEN: u3_followup
@@ -174,8 +186,7 @@ FLOW:
       wording, give it clause by clause: clause reference, the current text quoted exactly, then the proposed
       Vi wording, and a one-line reason a counterparty can read. Counterparty-ready text must contain no internal
       tiers (GREEN, YELLOW, RED), no fallback positions, no playbook names and no negotiation notes. If they ask
-      for a document file, explain that you provide the redline as text here for the lawyer to apply in the
-      document, because nothing is sent to the counterparty from this assistant. If they agree to sign, send or
+      for a document file, tell them to say "Word redline" to get a downloadable .docx with tracked changes. If they agree to sign, send or
       accept, decline: a named Vi lawyer must approve and a human signs.
       End by asking whether anything else is needed on this document, or say "new matter" to start another.
     STEP_CONSTRAINTS:
@@ -183,6 +194,72 @@ FLOW:
       - "Never sign, accept, send or agree anything on Vi's behalf, and never lower a tier for a strategic counterparty or a close deadline"
       - "This is an AI draft for lawyer review, not legal advice; mark statutory references [verify]"
     MAX_TURNS: 2
+    THEN: u2_route
+
+  # ---- Downloadable Word redline: the model writes the changes as data, a workflow builds the .docx ----
+  u4_docx_prepare:
+    REASONING: true
+    GOAL: |
+      The user wants a downloadable Word redline of the document reviewed earlier in this conversation
+      ("{{followup}}"). Do not write the redline in your reply. Instead set these session fields:
+      redline_changes: a JSON array, one object per change, each {"clause": clause reference and short title,
+      "current": the current document text quoted exactly ("" for a new clause), "proposed": the Vi wording
+      ("" to delete the clause), "reason": one sentence a counterparty can read}. Include every YELLOW and RED
+      item from your review. Counterparty-ready only: no tiers (GREEN, YELLOW, RED), fallbacks, playbook names
+      or negotiation notes.
+      redline_title: a short document title such as "Kore.ai - Vi AI Partner MoU".
+      redline_counterparty: the counterparty's legal name.
+      redline_ready: true, set last, once the other three are set.
+      Then reply with one short sentence: "Preparing the Word redline."
+      Set all four fields in a single update before replying.
+    CONTEXT_UPDATES: [redline_changes, redline_title, redline_counterparty, redline_ready]
+    STEP_CONSTRAINTS:
+      - "Quote only text that appears in the document; never invent clause numbers or quotes"
+      - "Never sign, accept, send or agree anything on Vi's behalf"
+    EXIT_WHEN: always
+    MAX_TURNS: 4
+    THEN: u5_docx_build
+
+  u5_docx_build:
+    REASONING: false
+    CALL: lg_redline_docx
+      WITH:
+        changes: redline_changes
+        title: redline_title
+        counterparty: redline_counterparty
+      AS: rdoc
+    ON_RESULT:
+      - IF: rdoc.output.ok == true
+        SET: redline_ready = false
+        THEN: u6_docx_audit
+      - ELSE:
+        SET: redline_ready = false
+        THEN: u7_docx_failed
+
+  u6_docx_audit:
+    REASONING: false
+    CALL: lg_audit
+      WITH:
+        user: user
+        disposition: "REDLINE_DOCX_PREPARED"
+        object: rdoc.output.filename
+        detail: "{{rdoc.output.change_count}} tracked changes; for lawyer review, not sent"
+      AS: audit
+    THEN: u6_docx_ready
+
+  u6_docx_ready:
+    REASONING: false
+    RESPOND: "{{rdoc.output.message}} Download {{rdoc.output.filename}} below. Each change is a Word tracked change (accept or reject it in Word) with the reason underneath. It is an AI draft for a Vi lawyer to check before anything is shared; nothing has been sent. Anything else on this document, or say new matter to start another?"
+      FORMATS:
+        FILE:
+          url: "{{rdoc.output.url}}"
+          filename: "{{rdoc.output.filename}}"
+          mime_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    THEN: u2_route
+
+  u7_docx_failed:
+    REASONING: false
+    RESPOND: "I couldn't build the Word file this time. I can give you the redline as text to paste into the document instead: say give me the redline. Or ask for the Word redline again."
     THEN: u2_route
 
   s2_help:
