@@ -20,12 +20,12 @@
     "doc_docx": "01a180a5-5c5a-7c94-ac75-89837ea3107e"
   },
   "workflow_versions": {
-    "tc_case_context": "v1.0.1",
-    "tc_dispute_prepare": "v1.0.1",
-    "tc_document_check": "v1.0.1",
-    "tc_duplicate_check": "v1.0.1",
+    "tc_case_context": "v1.0.2",
+    "tc_dispute_prepare": "v1.0.2",
+    "tc_document_check": "v1.0.2",
+    "tc_duplicate_check": "v1.0.2",
     "tc_eb_consumer_check": "v1.0.3",
-    "tc_golden_regression": "v1.0.1",
+    "tc_golden_regression": "v1.0.2",
     "tc_order_evidence": "v1.0.1",
     "tc_parse_request": "v1.0.1",
     "tc_payment_readiness": "v1.0.1",
@@ -35,8 +35,8 @@
     "tc_record_case": "v1.0.1",
     "tc_request_approval": "v1.0.1",
     "tc_shadow_bill": "v1.0.1",
-    "tc_eb_check": "v1.0.1",
-    "tc_invoice_reconcile": "v1.0.0",
+    "tc_eb_check": "v1.0.2",
+    "tc_invoice_reconcile": "v1.0.1",
     "doc_docx": "v1.0.0"
   },
   "projectId": "01a17dee-ebee-7037-b42e-6fea9fa65523",

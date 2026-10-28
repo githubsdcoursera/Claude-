@@ -34,7 +34,7 @@ def block(sp):
         user: user
         disposition: "{sp['disposition']}"
         object: "uploaded document"
-        detail: "Model review of an uploaded or pasted document"
+        detail: "{sp.get('audit_detail', 'Model review of an uploaded or pasted document')}"
       AS: audit
     THEN: {p}1_review
 
@@ -87,6 +87,7 @@ def block(sp):
       as | col | col | rows with a header row. Use real line breaks.
 {indent(sp['doc_goal'], 6)}
       Then reply with one short sentence: "Preparing the Word document."
+    AVAILABLE_TOOLS: [{sp['audit_tool']}]
     CONTEXT_UPDATES: [doc_title, doc_md]
     STEP_CONSTRAINTS:
 {indent(chr(10).join('- "' + c + '"' for c in sp['constraints']), 6)}

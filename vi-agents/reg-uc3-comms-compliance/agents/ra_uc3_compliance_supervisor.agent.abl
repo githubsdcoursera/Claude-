@@ -161,6 +161,7 @@ FLOW:
       as | col | col | rows with a header row. Use real line breaks.
       Write the compliance intake note: classification, obligations table (obligation, quoted text and paragraph, deadline, owner, deliverable), penalties, next steps and approvals.
       Then reply with one short sentence: "Preparing the Word document."
+    AVAILABLE_TOOLS: [r_audit_log]
     CONTEXT_UPDATES: [doc_title, doc_md]
     STEP_CONSTRAINTS:
       - "Quote only text that appears in the document, with its paragraph or page reference; never invent citations, dates or numbers"

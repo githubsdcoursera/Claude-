@@ -159,6 +159,7 @@ FLOW:
       as | col | col | rows with a header row. Use real line breaks.
       Write the full draft response: title block (to the regulator, subject, reference), short covering paragraph, then each question with its number, the question text quoted, and Vi's draft answer; then officer decisions required. Keep [Officer to confirm Vi position] markers.
       Then reply with one short sentence: "Preparing the Word document."
+    AVAILABLE_TOOLS: [r_audit_log]
     CONTEXT_UPDATES: [doc_title, doc_md]
     STEP_CONSTRAINTS:
       - "Quote only text that appears in the document, with its paragraph or page reference; never invent citations, dates or numbers"

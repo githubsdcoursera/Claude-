@@ -219,6 +219,7 @@ FLOW:
       redline_ready: true, set last, once the other three are set.
       Then reply with one short sentence: "Preparing the Word redline."
       Set all four fields in a single update before replying.
+    AVAILABLE_TOOLS: [lg_audit]
     CONTEXT_UPDATES: [redline_changes, redline_title, redline_counterparty, redline_ready]
     STEP_CONSTRAINTS:
       - "Quote only text that appears in the document; never invent clause numbers or quotes"
@@ -277,7 +278,7 @@ FLOW:
         user: user
         disposition: "NEW_CONTRACT_DRAFTED"
         object: "uploaded document"
-        detail: "Model review of an uploaded or pasted document"
+        detail: "Model first draft of a new agreement on Vi paper"
       AS: audit
     THEN: n1_review
 
@@ -352,6 +353,7 @@ FLOW:
       as | col | col | rows with a header row. Use real line breaks.
       Write the complete agreement as it stands after any revisions: title, parties block, recitals, numbered clauses with headings, signature blocks left blank, and a final section listing [to be confirmed] items and required approvals.
       Then reply with one short sentence: "Preparing the Word document."
+    AVAILABLE_TOOLS: [lg_audit]
     CONTEXT_UPDATES: [doc_title, doc_md]
     STEP_CONSTRAINTS:
       - "Use only Vi playbook positions; never invent statutory references (mark any statute [verify]) and never present the draft as approved"

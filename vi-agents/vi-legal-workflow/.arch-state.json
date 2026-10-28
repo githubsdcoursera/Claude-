@@ -14,33 +14,35 @@
     "lg_parse": "01a17e1b-0671-72e9-97ec-ece1106126ca",
     "lg_pr_strip": "01a17e1b-12de-76ba-937f-9af3169fb016",
     "lg_tr_verify": "01a17e1b-f26f-7b9b-af79-2cc182952210",
-    "lg_redline_docx": "01a18093-fb4d-7595-afe9-7d89dd68b4e8"
+    "lg_redline_docx": "01a18093-fb4d-7595-afe9-7d89dd68b4e8",
+    "doc_docx": "01a180af-d436-74d9-9d1b-ee8cfe41cc16"
   },
   "workflow_versions": {
     "lg01_intake": "v1.0.8",
     "lg02_nda_triage": "v1.0.8",
-    "lg03_mou": "v1.0.7",
-    "lg04_vendor_review": "v1.0.7",
-    "lg05_execution_check": "v1.0.10",
-    "lg06_obligations": "v1.0.7",
-    "lg06_watch": "v1.0.7",
-    "lg07_dpdp": "v1.0.7",
-    "lg_approve": "v1.0.7",
-    "lg_audit": "v1.0.7",
-    "lg_eval": "v1.0.6",
-    "lg_parse": "v1.0.6",
-    "lg_pr_strip": "v1.0.6",
-    "lg_tr_verify": "v1.0.3",
-    "lg_redline_docx": "v1.0.0"
+    "lg03_mou": "v1.0.8",
+    "lg04_vendor_review": "v1.0.8",
+    "lg05_execution_check": "v1.0.11",
+    "lg06_obligations": "v1.0.8",
+    "lg06_watch": "v1.0.8",
+    "lg07_dpdp": "v1.0.8",
+    "lg_approve": "v1.0.8",
+    "lg_audit": "v1.0.8",
+    "lg_eval": "v1.0.7",
+    "lg_parse": "v1.0.7",
+    "lg_pr_strip": "v1.0.7",
+    "lg_tr_verify": "v1.0.4",
+    "lg_redline_docx": "v1.0.1",
+    "doc_docx": "v1.0.0"
   },
   "projectId": "01a17e17-3685-7685-8d67-491f8dffefe7",
   "deployment": {
     "env": "dev",
-    "id": "01a1809d-282e-78ff-ad7f-2ad91f2a44dc",
-    "endpointSlug": "01a17e17-dev-mvrknns6-0f4c81",
+    "id": "01a180b1-bab9-7ff4-9c0d-f6b592d755e9",
+    "endpointSlug": "01a17e17-dev-mvrlgk34-d0abe1",
     "agents": {
       "Legal_Supervisor": {
-        "version": "1.0.5"
+        "version": "1.0.6"
       }
     },
     "preflight": "ready"
