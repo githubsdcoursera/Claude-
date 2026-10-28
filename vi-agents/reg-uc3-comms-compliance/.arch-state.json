@@ -17,8 +17,8 @@
     "r_notify": "01a17e00-43c1-7444-935e-c48fb9f60db6"
   },
   "workflow_versions": {
-    "rc01_classify": "v1.0.0",
-    "rc02_extract": "v1.0.0",
+    "rc01_classify": "v1.0.1",
+    "rc02_extract": "v1.0.1",
     "rc03_route": "v1.0.0",
     "rc04_escalations": "v1.0.0",
     "rc05_prepare": "v1.0.0",

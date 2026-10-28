@@ -14,7 +14,8 @@
     "r_doc_extract": "01a17e06-9036-7d27-a228-db2426f6fb84",
     "r_kb_search": "01a17e06-98ae-7b5a-8ace-1ed216a623ce",
     "r_notify": "01a17e07-7906-7af2-8a70-339653b6ec08",
-    "rd03_check_consistency": "01a17e74-ea14-76bc-a8df-ecfa3f659dae"
+    "rd03_check_consistency": "01a17e74-ea14-76bc-a8df-ecfa3f659dae",
+    "doc_docx": "01a180c7-76f6-7f6e-a874-c3bc18d6b4b8"
   },
   "workflow_versions": {
     "rd01_scope": "v1.0.1",
@@ -30,17 +31,18 @@
     "r_cite_verify": "v1.0.1",
     "r_doc_extract": "v1.0.1",
     "r_kb_search": "v1.0.1",
-    "r_notify": "v1.0.0",
-    "rd03_check_consistency": "v1.0.1"
+    "r_notify": "v1.0.1",
+    "rd03_check_consistency": "v1.0.1",
+    "doc_docx": "v1.0.0"
   },
   "projectId": "01a17e02-c98e-7aff-ada8-d0acd8cdfa34",
   "deployment": {
     "env": "dev",
-    "id": "01a17eee-f178-7b75-ab02-f4c0423f2443",
-    "endpointSlug": "01a17e02-dev-mvr3vcs1-5a1c0a",
+    "id": "01a180ca-2536-7509-99ab-6d9e9fd36b0f",
+    "endpointSlug": "01a17e02-dev-mvrmeur4-37e5c1",
     "agents": {
       "RA_UC2_Drafting_Supervisor": {
-        "version": "1.0.0"
+        "version": "1.0.1"
       }
     },
     "preflight": "ready"
