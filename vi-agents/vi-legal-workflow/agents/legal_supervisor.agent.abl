@@ -81,12 +81,85 @@ FLOW:
         THEN: h1_block
       - IF: req.output.intent == "done"
         THEN: s9_end
+      - IF: req.output.intent == "uploaded"
+        THEN: u1_review
       - ELSE:
         THEN: s2_help
 
+  # ---- Uploaded or pasted document (no fixture id): the model reads it against the Vi playbooks ----
+  u1_review:
+    REASONING: true
+    GOAL: |
+      The user asked: "{{request}}" (document type hint: {{req.output.doc_kind}}). Review the document the user
+      uploaded or pasted in this conversation. If no document text is visible to you, say so in one sentence and
+      ask the user to upload it again with the request in the same message, or paste the clause text; do not guess.
+
+      First state the document type (NDA, AI partner MoU, vendor or AI contract, other), the parties and the Vi entity.
+      Then apply the matching Vi playbook (v1.0 DRAFT) item by item. For each item give: item, clause reference,
+      an exact quote of at most 25 words from the document (or "not found"), the Vi position, tier GREEN, YELLOW
+      or RED, and for YELLOW or RED a proposed Vi wording. Overall tier is the worst item tier.
+
+      Vi NDA playbook (GREEN / YELLOW / RED):
+      N1 Parties: correct Vi entity (Vodafone Idea Limited) and counterparty legal name / affiliate extension with consent / wrong Vi entity or signatory without authority.
+      N2 Mutuality: mutual or one-way protecting Vi / one-way protecting counterparty where Vi discloses nothing material / one-way protecting counterparty where Vi discloses material information.
+      N3 Purpose: specific / broad within one business area / none or any purpose.
+      N4 Confidential Information: oral, written, electronic, marking not required / marking with 30-day written confirmation of oral / only marked written information.
+      N5 Exclusions: standard four / without burden of proof on recipient / residuals or unaided memory.
+      N6 Compelled disclosure: prior notice where lawful, DoT, TRAI and regulator disclosure permitted / notice where practicable / no carve-out.
+      N7 Term: 2 years / up to 3 years / perpetual.
+      N8 Survival: 3 years, trade secrets and personal data while confidential / 2 to 5 years / under 2 years or none.
+      N9 Personal data: none or DPDP-compliant clause / per applicable law only / unprotected, or transfer outside India without Vi approval.
+      N10 Return or destruction: on request with certificate / without certificate / none.
+      N11 Remedies: injunctive relief for both / for discloser only / liquidated damages or penalty.
+      N12 Liability: no indemnity / mutual indemnity limited to confidentiality breach / one-sided or uncapped indemnity against Vi.
+      N13 Governing law: laws of India / none / foreign law.
+      N14 Disputes: arbitration seated in Mumbai or Mumbai courts / SIAC rules with Indian seat / foreign seat or courts (GC approval only).
+      N15 Hidden commercial terms: none / mutual employee non-solicit up to 12 months with general-advertising carve-out / non-compete, exclusivity, standstill, licence grant, residuals or data-sharing obligation.
+      N16 Assignment and publicity: no assignment without consent, no publicity / assignment to affiliate on notice / publicity or use of Vi name or logo.
+      Also run a hidden-term sweep for N15 and N16 anywhere in the text, and flag any AI or model-training language.
+
+      Vi AI partner MoU red lines: deleting the Responsible AI (GRACIE) clause; any training on Vi data; Vi data
+      outside India; partner ownership of Vi data or Vi-specific outputs; any exclusivity, MFN or first right;
+      unilateral publicity; binding price or volume commitments; foreign courts. Required: non-binding except
+      confidentiality, publicity, exclusivity, legal provisions; Indian law, India-seated arbitration; 12-24 month
+      term with 30-60 days' termination notice.
+      Vi vendor and AI contract red lines: vendor terms prevail over the Vi MSA; no Vi convenience termination;
+      vendor owns Vi-specific outputs or models trained on Vi data; secondary use or training on Vi data; offshore
+      data by default; no breach notice or audit right; any GRACIE R1-R10 item deleted; free sub-contracting;
+      liability cap below fees or Vi uncapped; no carve-outs; foreign law or seat; no exit support.
+
+      End with: a business summary of at most 5 lines with no internal tiers or fallbacks (sign as is, or do not
+      sign as is and what must change, and who decides: RED goes to senior counsel or the GC, YELLOW to Legal
+      counsel with the business owner), then a lawyer note headed "Privileged & Confidential, prepared for Vi
+      Legal. AI draft for lawyer review." Then ask whether they want counterparty-ready redline wording.
+    STEP_CONSTRAINTS:
+      - "Quote only text that appears in the document; never invent clause numbers or quotes"
+      - "Never sign, accept, send or agree anything on Vi's behalf, and never lower a tier for a strategic counterparty or a close deadline"
+      - "This is an AI draft for lawyer review, not legal advice; mark statutory references [verify]"
+    MAX_TURNS: 2
+    THEN: u2_audit
+
+  u2_audit:
+    REASONING: false
+    CALL: lg_audit
+      WITH:
+        user: user
+        disposition: "UPLOADED_DOC_REVIEWED"
+        object: "uploaded:{{req.output.doc_kind}}"
+        detail: "Model review of an uploaded document against the Vi playbooks"
+      AS: audit
+    THEN: u3_next
+
+  u3_next:
+    REASONING: false
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
   s2_help:
     REASONING: false
-    RESPOND: "I can take a matter through the legal workflow: intake and route a request, triage an NDA, draft or review an AI partner MoU, review a vendor or AI agreement, run the execution check, register obligations, show what is due, handle a DPDP request, record an approval (authorised approvers only), or run the gold-label evaluation. For example: run end-to-end MOU-04. What would you like?"
+    RESPOND: "I can take a matter through the legal workflow: intake and route a request, triage an NDA, draft or review an AI partner MoU, review a vendor or AI agreement, run the execution check, register obligations, show what is due, handle a DPDP request, record an approval (authorised approvers only), or run the gold-label evaluation. You can also upload an NDA, MoU or vendor agreement with your request in the same message (for example: triage this NDA). For example: run end-to-end MOU-04. What would you like?"
     ON_INPUT:
       - ELSE:
         SET: request = input

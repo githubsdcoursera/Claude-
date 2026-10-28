@@ -398,5 +398,25 @@
    "exit": "complete",
    "max_turn_ms": 3000
   }
+ },
+ {
+  "name": "uploaded_nda_text_triaged_by_playbook",
+  "turns": [
+   "user=lawyer.radhika Triage this NDA:\n**Parties:** Vi and Kestrel Towers Infra Private Limited, Mumbai (mutual).\n1. Purpose: evaluating tower-site energy optimisation pilots.\n2–6. Standard Vi-equivalent definitions, exclusions, compelled disclosure (incl. regulators), 2-year term, 3-year survival.\n7. **Restriction.** During the term and for 18 months after, Vi shall not engage any other provider for tower energy optimisation services in the circles covered by the discussions.\n8. Law: India; arbitration seat Mumbai.\n\n\n---",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "lg_parse",
+    "lg_audit"
+   ],
+   "disposition": "UPLOADED_DOC_REVIEWED",
+   "says": [
+    "RED",
+    "Privileged & Confidential"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 90000
+  }
  }
 ]

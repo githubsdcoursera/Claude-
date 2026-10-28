@@ -158,6 +158,14 @@ personas (`arch.json` `mock_prelude`); the three Regulatory projects also share 
   The rules pass reproduces all 32 gold labels (`lg_eval`); the W5 gate records approvals only from an
   authorised approver (RED needs senior counsel / GC), and nothing is signed or sent.
 
+### Uploaded documents (Legal)
+
+The platform passes an uploaded file only to the model, not to scripted (`REASONING: false`) steps, which see just the
+typed text. Requests that name a test document (NDA-01, MOU-04, VC-03, DP-02) run the deterministic engine. An uploaded or
+pasted NDA, MoU or vendor agreement with no test ID goes to a model step (`u1_review`), which applies the Vi playbooks item
+by item with quotes and tiers, writes a business summary and a privileged lawyer note, and logs `UPLOADED_DOC_REVIEWED`.
+Upload the file with the request in the same message (for example "triage this NDA"); a message sent after the upload may not carry the file.
+
 ## Platform behaviours found while building
 
 | Behaviour | How the agents handle it |
