@@ -60,7 +60,7 @@ TOOLS:
         description: "File id"
       expires_in_seconds:
         description: "Link lifetime in seconds, up to 86400"
-  #include-tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_eb_check, tc_dispute_prepare, tc_request_approval, tc_payment_readiness, tc_period_summary, tc_provision, tc_golden_regression, tc_record_case, tc_invoice_reconcile, doc_docx
+  #include-tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_eb_check, tc_dispute_prepare, tc_request_approval, tc_payment_readiness, tc_period_summary, tc_provision, tc_golden_regression, tc_record_case, tc_invoice_reconcile, tc_invoice_audit, doc_docx
 
 MEMORY:
   session:
@@ -92,6 +92,9 @@ MEMORY:
     - disposition
     - audit
     - inv_lines
+    - inv_docs
+    - rate_card
+    - msa_summary
     - inv_no
     - inv_vendor
     - irec
@@ -106,6 +109,9 @@ FLOW:
       request = input
       disposition = "IN_PROGRESS"
       inv_lines = "none"
+      inv_docs = "none"
+      rate_card = "none"
+      msa_summary = ""
       inv_no = "none"
       inv_vendor = "none"
     THEN: s1_parse
@@ -184,17 +190,18 @@ FLOW:
   u1_read_invoice:
     REASONING: true
     GOAL: |
-      The user uploaded or pasted a tower vendor invoice ("{{request}}"). Read the invoice in this conversation and
-      set these session fields in a single update:
-      inv_lines: a JSON array with one object per charge line: {"line_ref": line or row number, "site_id": the site id
-      exactly as printed (for example MHGOA-SYN-0006), "period": the billing month as YYYY-MM, "component": rent, loading
-      or energy, "amount": the amount billed as a number without currency symbols or tax}.
-      inv_no: the invoice number. inv_vendor: the vendor name.
-      Copy values exactly as printed; do not calculate, correct or estimate anything. If no invoice is visible, set
-      inv_lines to "none".
-      Then reply with one short sentence: "Reading the invoice and checking each line against the rule book."
-    AVAILABLE_TOOLS: [tc_record_case]
-    CONTEXT_UPDATES: [inv_lines, inv_no, inv_vendor]
+      The user uploaded or pasted tower-company documents ("{{request}}"): vendor invoices, and possibly the MSA or rate
+      card they are billed under. Read them and set these session fields in a single update:
+      inv_docs: a JSON array with one object per invoice: {"invoice_no", "period" (YYYY-MM when it is a single month,
+      otherwise as printed), "lines": [{"site_id", "description", "qty", "rate", "amount"}], "taxable", "tax_pct" (total
+      tax rate, for example 18 for CGST 9% + SGST 9%), "tax_amount" (total tax), "total"}. One line per charge row, credits
+      negative, numbers without currency symbols or commas.
+      rate_card: a JSON array of {"item", "rate"} for every rate the MSA or rate card states, or "none" if it states none.
+      inv_vendor: the vendor name.
+      msa_summary: if an MSA or rate card is included, at most 5 short lines on its commercial terms (rental basis, escalation,
+      loading, energy regime, disputes and payment), quoting clause numbers; otherwise an empty string.
+      Copy values exactly as printed; do not calculate, correct or estimate anything. If no invoice is visible, set inv_docs
+      to "none".
       Text extracted from the most recently uploaded file ({{doc_name}}):
       <<<
       {{doc_text}}
@@ -203,23 +210,26 @@ FLOW:
       their message instead. If it is "UNREADABLE", the platform could not extract the file's text: say so and ask the
       user to paste the text or upload a text-based PDF or Word file. If there is no document text at all, say so in
       one sentence. Never describe, summarise or review a document you cannot see.
+      Then reply with one short sentence: "Reading the documents and checking every invoice line."
+    AVAILABLE_TOOLS: [tc_record_case]
+    CONTEXT_UPDATES: [inv_docs, rate_card, inv_vendor, msa_summary]
     STEP_CONSTRAINTS:
-      - "Never invent, round or compute an amount; copy only what the invoice shows"
+      - "Never invent, round or compute an amount; copy only what the documents show"
     EXIT_WHEN: always
     MAX_TURNS: 4
     THEN: u2_reconcile
 
   u2_reconcile:
     REASONING: false
-    CALL: tc_invoice_reconcile
+    CALL: tc_invoice_audit
       WITH:
-        lines: inv_lines
-        invoice_no: inv_no
+        invoices: inv_docs
+        rate_card: rate_card
         vendor: inv_vendor
       AS: irec
     ON_RESULT:
       - IF: irec.output.found == true
-        SET: disposition = "UPLOADED_INVOICE_RECONCILED"
+        SET: disposition = "UPLOADED_INVOICES_AUDITED"
         THEN: u3_record
       - ELSE:
         THEN: u9_no_invoice
@@ -228,23 +238,24 @@ FLOW:
     REASONING: false
     CALL: tc_record_case
       WITH:
-        case_ref: "UPLOAD-{{inv_no}}"
+        case_ref: "UPLOAD-{{inv_vendor}}"
         disposition: disposition
-        summary: "Uploaded invoice {{inv_no}}: {{irec.output.lines}} lines, {{irec.output.exceptions}} exceptions, overbilled {{irec.output.overbilled}}"
+        summary: "Uploaded invoices: {{irec.output.invoices_count}} invoices, {{irec.output.lines}} lines, {{irec.output.exceptions}} exceptions, hold {{irec.output.hold_total}}"
       AS: audit
     THEN: u4_say
 
   u4_say:
     REASONING: false
     RESPOND: |
-      Invoice {{inv_no}}{{#if inv_vendor}} from {{inv_vendor}}{{/if}}: {{irec.output.lines}} lines read, {{irec.output.matched}} match Vi's rule book and {{irec.output.exceptions}} need attention. Billed {{irec.output.billed_total}} against expected {{irec.output.expected_total}}; overbilled (including duplicates) {{irec.output.overbilled}}, underbilled {{irec.output.underbilled}}.
+      {{#if msa_summary}}Contract terms read: {{msa_summary}}
 
-      Line results: {{irec.output.table}}
+      {{/if}}{{irec.output.invoices_count}} invoice(s){{#if inv_vendor}} from {{inv_vendor}}{{/if}}, {{irec.output.lines}} lines checked, {{irec.output.exceptions}} need attention. Claimed {{irec.output.claimed_total}}; recommended hold / DN {{irec.output.hold_total}} including tax; payable after holds {{irec.output.payable_total}}.
+
+      Totals and tax: {{irec.output.totals_check}}
 
       Findings: {{irec.output.findings}}
-      Not in Vi's register: {{irec.output.not_in_register}}.
 
-      {{#if irec.output.dispute_needed}}I recommend holding the overbilled amount and preparing a dispute evidence pack; nothing goes to the vendor until a Vi approver confirms it. {{/if}}Say Word report to download this reconciliation as a .docx, give a site and period from the invoice to run the full case (for example: reconcile {{irec.output.sites}} for {{irec.output.periods}}), or say done.
+      {{#if irec.output.dispute_needed}}I recommend holding these amounts and preparing a dispute evidence pack; nothing goes to the vendor until a Vi approver confirms it. {{/if}}Say Word report to download the full line-by-line audit as a .docx, give a site and period to run a full case for a site in Vi's register, or say done.
     THEN: u5_route
 
   u5_route:
@@ -260,7 +271,7 @@ FLOW:
     REASONING: false
     CALL: doc_docx
       WITH:
-        title: "Tower invoice {{inv_no}} reconciliation"
+        title: "Tower Co invoice audit {{inv_vendor}}"
         markdown: irec.output.report_md
         footer_note: "AI-assisted reconciliation for Vi Finance COE review. Payment release, debit notes and disputes are human decisions; nothing has been sent to the vendor."
       AS: tdoc

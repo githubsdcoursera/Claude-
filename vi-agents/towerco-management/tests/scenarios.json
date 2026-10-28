@@ -338,5 +338,25 @@
    ],
    "max_turn_ms": 3000
   }
+ },
+ {
+  "name": "pasted_invoices_audited",
+  "turns": [
+   "Please audit these tower invoices.\n\nSYNTHETIC TEST INVOICE - Example Towers Pvt Ltd\nInvoice no. EXT-SYN-ENE-001   Billing period: October 2026\nSite ID | Charge | Qty | Rate | Amount\nEX-SYN-001 | EB passthrough - consumer 100001 | 1000 | 8.00 | 8,000.00\nEX-SYN-001 | DG diesel - 20 L | 20 | 90.00 | 1,800.00\nEX-SYN-002 | DG O&M - 10 hrs | 10 | 15.00 | 160.00\nEX-SYN-002 | Late payment surcharge | 1 | 500.00 | 500.00\nTaxable value 10,460.00   GST @ 18% 1,882.80   Invoice total 12,342.80\n\nSYNTHETIC TEST INVOICE - Example Towers Pvt Ltd\nInvoice no. EXT-SYN-ADJ-002   Billing period: Jul-Sep 2026\nEX-SYN-003 | Rental after recorded exit date | 1 | 30,000.00 | 30,000.00\nEX-SYN-001 | EB period Aug-2026 rebilled | 1 | 8,000.00 | 8,000.00\nTaxable value 38,000.00   GST @ 18% 6,840.00   Invoice total 44,840.00",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "tc_invoice_audit",
+    "tc_record_case"
+   ],
+   "disposition": "UPLOADED_INVOICES_AUDITED",
+   "says": [
+    "Late payment surcharge",
+    "AMOUNT_MISMATCH"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 90000
+  }
  }
 ]

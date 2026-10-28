@@ -17,36 +17,38 @@
     "tc_shadow_bill": "01a17df3-b448-7fd8-93c4-1926b65e25ec",
     "tc_eb_check": "01a17e42-dd86-733c-aed8-88b46e3203dd",
     "tc_invoice_reconcile": "01a180a1-a455-7a90-a206-b5fbce8adac9",
-    "doc_docx": "01a180a5-5c5a-7c94-ac75-89837ea3107e"
+    "doc_docx": "01a180a5-5c5a-7c94-ac75-89837ea3107e",
+    "tc_invoice_audit": "01a181fc-40ce-7ec0-a137-744e13e2a272"
   },
   "workflow_versions": {
-    "tc_case_context": "v1.0.3",
-    "tc_dispute_prepare": "v1.0.3",
-    "tc_document_check": "v1.0.3",
-    "tc_duplicate_check": "v1.0.3",
+    "tc_case_context": "v1.0.5",
+    "tc_dispute_prepare": "v1.0.5",
+    "tc_document_check": "v1.0.5",
+    "tc_duplicate_check": "v1.0.5",
     "tc_eb_consumer_check": "v1.0.3",
-    "tc_golden_regression": "v1.0.3",
-    "tc_order_evidence": "v1.0.3",
-    "tc_parse_request": "v1.0.3",
-    "tc_payment_readiness": "v1.0.3",
-    "tc_period_summary": "v1.0.3",
-    "tc_provision": "v1.0.3",
-    "tc_reconcile": "v1.0.3",
-    "tc_record_case": "v1.0.3",
-    "tc_request_approval": "v1.0.3",
-    "tc_shadow_bill": "v1.0.3",
-    "tc_eb_check": "v1.0.3",
-    "tc_invoice_reconcile": "v1.0.2",
-    "doc_docx": "v1.0.2"
+    "tc_golden_regression": "v1.0.5",
+    "tc_order_evidence": "v1.0.5",
+    "tc_parse_request": "v1.0.5",
+    "tc_payment_readiness": "v1.0.5",
+    "tc_period_summary": "v1.0.5",
+    "tc_provision": "v1.0.5",
+    "tc_reconcile": "v1.0.5",
+    "tc_record_case": "v1.0.5",
+    "tc_request_approval": "v1.0.5",
+    "tc_shadow_bill": "v1.0.5",
+    "tc_eb_check": "v1.0.5",
+    "tc_invoice_reconcile": "v1.0.4",
+    "doc_docx": "v1.0.4",
+    "tc_invoice_audit": "v1.0.1"
   },
   "projectId": "01a17dee-ebee-7037-b42e-6fea9fa65523",
   "deployment": {
     "env": "dev",
-    "id": "01a18130-066f-7fe5-bd29-b63a416ff979",
-    "endpointSlug": "01a17dee-dev-mvrqdylj-bf45a4",
+    "id": "01a1821d-11c5-7310-af09-67336817a3c1",
+    "endpointSlug": "01a17dee-dev-mvrzmxfl-bfd5bd",
     "agents": {
       "TowerCo_Supervisor": {
-        "version": "1.0.4"
+        "version": "1.0.6"
       }
     },
     "preflight": "ready"

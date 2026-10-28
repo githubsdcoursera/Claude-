@@ -26,7 +26,9 @@
     "vendor": "Smoke",
     "title": "Smoke",
     "markdown": "# Smoke\nok",
-    "footer_note": "smoke"
+    "footer_note": "smoke",
+    "invoices": "[{\"invoice_no\":\"SMOKE\",\"tax_pct\":18,\"lines\":[{\"site_id\":\"X\",\"description\":\"Late payment surcharge\",\"qty\":1,\"rate\":100,\"amount\":100}]}]",
+    "rate_card": "none"
   },
   "deployment_label": "towerco-v1"
 }

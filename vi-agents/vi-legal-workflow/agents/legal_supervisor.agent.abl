@@ -365,8 +365,6 @@ FLOW:
       redline_ready: true, set last, once the other three are set.
       Then reply with one short sentence: "Preparing the Word redline."
       Set all four fields in a single update before replying.
-    AVAILABLE_TOOLS: [lg_audit]
-    CONTEXT_UPDATES: [redline_changes, redline_title, redline_counterparty, redline_ready]
       Text extracted from the most recently uploaded file ({{doc_name}}):
       <<<
       {{doc_text}}
@@ -375,6 +373,8 @@ FLOW:
       their message instead. If it is "UNREADABLE", the platform could not extract the file's text: say so and ask the
       user to paste the text or upload a text-based PDF or Word file. If there is no document text at all, say so in
       one sentence. Never describe, summarise or review a document you cannot see.
+    AVAILABLE_TOOLS: [lg_audit]
+    CONTEXT_UPDATES: [redline_changes, redline_title, redline_counterparty, redline_ready]
     STEP_CONSTRAINTS:
       - "Quote only text that appears in the document; never invent clause numbers or quotes"
       - "Never sign, accept, send or agree anything on Vi's behalf"

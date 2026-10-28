@@ -13,10 +13,13 @@ if (sm) site = siteId(Number(sm[1]));
 const consumer = ((t.match(/CONS-SYN-\d{5}/i) || [""])[0]).toUpperCase();
 const pol = l.match(/(release (the )?payment|approve (the )?payment|pay the vendor|make the payment|post (it |this )?(to|in) sap|sap posting|approve (the )?(dn|debit note|cn|credit note)|issue (the )?(dn|debit note)|settle|settlement|send (the )?dispute to (the )?vendor|raise (the )?dispute with (the )?vendor|amend (the )?contract|activate (the )?rule)/);
 let intent = "help", action = "", gate = "";
-if (pol) { intent = "policy_block"; action = pol[0];
+// Pasted or uploaded documents (MSA, invoices) are reviewed, never read as a command, even when they mention settlement or payment
+const pasted = t.length > 400 || t.split("\n").length > 4;
+if (pasted) intent = "uploaded";
+else if (pol) { intent = "policy_block"; action = pol[0];
   gate = /sap|post/.test(action) ? "sap_posting" : /(dn|debit|cn|credit)/.test(action) ? "dn_cn_action" : /settle/.test(action) ? "settlement" : /dispute/.test(action) ? "dispute_confirmation" : /(contract|rule)/.test(action) ? "rule_activation" : "payment_release"; }
 else if (/^\s*(done|exit|quit|thanks|thank you|that's all|thats all|nothing else|no thanks)\b/.test(l)) intent = "done";
-else if (t.length > 400 || t.split("\n").length > 4 || /(upload|attach|pasted|this invoice|the invoice i|invoice (below|attached|here)|vendor invoice|reconcile (this|the|my) (invoice|bill))/.test(l)) intent = "uploaded";
+else if (/(upload|attach|pasted|this invoice|the invoice i|invoice (below|attached|here)|vendor invoice|reconcile (this|the|my) (invoice|bill))/.test(l)) intent = "uploaded";
 else if (/(golden|regression|accuracy|release gate)/.test(l)) intent = "golden";
 else if (consumer) intent = "consumer_check";
 else if (site && period) intent = "case";
