@@ -27,9 +27,9 @@
     "rd_memo": "v1.0.1",
     "rd_parse": "v1.0.1",
     "r_audit_log": "v1.0.1",
-    "r_cite_verify": "v1.0.0",
-    "r_doc_extract": "v1.0.0",
-    "r_kb_search": "v1.0.0",
+    "r_cite_verify": "v1.0.1",
+    "r_doc_extract": "v1.0.1",
+    "r_kb_search": "v1.0.1",
     "r_notify": "v1.0.0",
     "rd03_check_consistency": "v1.0.1"
   },
