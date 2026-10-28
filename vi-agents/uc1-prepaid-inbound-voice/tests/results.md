@@ -1,24 +1,24 @@
 # Test results: Vi UC1 Prepaid Inbound Care Voice
 
-10/11 scenarios passed. Run 2026-10-27 13:31 UTC against the draft agent through Arch debug sessions; backend systems are mock workflows.
+11/11 scenarios passed. Run 2026-10-28 02:06 UTC against the draft agent through Arch debug sessions; backend systems are mock workflows.
 
 | Scenario | Result | Disposition | End | Slowest turn | Notes |
 |---|---|---|---|---:|---|
-| balance_then_csat | PASS | RESOLVED | complete | 330 ms |  |
-| vas_deactivation_with_consent_and_otp | PASS | RESOLVED | complete | 504 ms |  |
-| unexpected_deduction_explained | PASS | RESOLVED | complete | 289 ms |  |
-| recharge_link_sent | PASS | RESOLVED | complete | 296 ms |  |
-| data_addon_insufficient_balance_offers_link | FAIL | - | complete | 725 ms | disposition None != RESOLVED |
-| network_complaint_logged | PASS | RESOLVED | complete | 332 ms |  |
-| porting_knowledge_answer | PASS | RESOLVED | complete | 312 ms |  |
-| multi_request_in_one_call | PASS | RESOLVED | complete | 579 ms |  |
-| unclear_request_classified_and_confirmed | PASS | RESOLVED | complete | 289 ms |  |
-| vulnerability_cue_warm_transfer | PASS | HANDOFF_VULNERABILITY | escalate | 323 ms |  |
-| asks_for_human | PASS | HANDOFF_CUSTOMER_REQUEST | escalate | 332 ms |  |
+| balance_then_csat | PASS | RESOLVED | complete | 300 ms |  |
+| vas_deactivation_with_consent_and_otp | PASS | RESOLVED | complete | 296 ms |  |
+| unexpected_deduction_explained | PASS | RESOLVED | complete | 290 ms |  |
+| recharge_link_sent | PASS | RESOLVED | complete | 294 ms |  |
+| data_addon_insufficient_balance_offers_link | PASS | RESOLVED | complete | 315 ms |  |
+| network_complaint_logged | PASS | RESOLVED | complete | 276 ms |  |
+| porting_knowledge_answer | PASS | RESOLVED | complete | 267 ms |  |
+| multi_request_in_one_call | PASS | RESOLVED | complete | 281 ms |  |
+| unclear_request_classified_and_confirmed | PASS | RESOLVED | complete | 285 ms |  |
+| vulnerability_cue_warm_transfer | PASS | HANDOFF_VULNERABILITY | escalate | 292 ms |  |
+| asks_for_human | PASS | HANDOFF_CUSTOMER_REQUEST | escalate | 310 ms |  |
 
 ## balance_then_csat
 
-Session `d6269e67-c855-492e-b250-80830319a80b`. Tools: a03_get_customer_360, a11_record_csat, a11_write_post_call.
+Session `b7c03b6b-d51e-4898-96b9-b8d93a1dc673`. Tools: a03_get_customer_360, a11_record_csat, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -30,7 +30,7 @@ Session `d6269e67-c855-492e-b250-80830319a80b`. Tools: a03_get_customer_360, a11
 
 ## vas_deactivation_with_consent_and_otp
 
-Session `12246115-167c-4a9c-9277-435f089ed47a`. Tools: a03_get_customer_360, a14_list_vas, a10_kb_answer, a08_record_consent, a04_send_otp, a04_verify_otp, a14_deactivate_vas, a11_record_csat, a11_write_post_call.
+Session `c5108f5f-d526-4fa1-b4fb-c1a22f50f5cc`. Tools: a03_get_customer_360, a14_list_vas, a10_kb_answer, a08_record_consent, a04_send_otp, a04_verify_otp, a14_deactivate_vas, a11_record_csat, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -39,13 +39,13 @@ Session `12246115-167c-4a9c-9277-435f089ed47a`. Tools: a03_get_customer_360, a14
 | please stop my caller tune subscription | You have two subscriptions: one, Hello Tunes at ₹49 per month, and two, Vi Movies and TV Pro at ₹99 per month. Which one would you like to stop? Say one or two. |
 | two | To confirm: stop Vi Movies and TV Pro at ₹99 per month. Charges for a value-added service stop from the date it is deactivated. Charges already applied for the current period are not refunded. Do you agree? |
 | yes I agree | I've sent a six-digit OTP to your Vi number. Please read it out. |
-| 123456 | Done. Vi Movies and TV Pro has been stopped, reference VDX-1RCXRE2, effective immediately. Is there anything else I can help you with? |
+| 123456 | Done. Vi Movies and TV Pro has been stopped, reference VDX-1LKLSN4, effective immediately. Is there anything else I can help you with? |
 | no | Before you go, on a scale of 1 to 5, how satisfied are you with this call? |
 | 4 | Thank you for calling Vi. Have a good day. |
 
 ## unexpected_deduction_explained
 
-Session `ac096ed8-30c1-4a09-b7fa-c7242cb79b3f`. Tools: a03_get_customer_360, a12_get_recent_charges, a11_record_csat, a11_write_post_call.
+Session `06239876-51fe-42d4-9810-a5672ed987dd`. Tools: a03_get_customer_360, a12_get_recent_charges, a11_record_csat, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -58,7 +58,7 @@ Session `ac096ed8-30c1-4a09-b7fa-c7242cb79b3f`. Tools: a03_get_customer_360, a12
 
 ## recharge_link_sent
 
-Session `95a23588-9005-4762-ac54-b89292bb9eaa`. Tools: a03_get_customer_360, a13_get_plans, a12_send_recharge_link, a11_record_csat, a11_write_post_call.
+Session `dbe62d70-7a78-4360-88c5-bdd91c9fdd3e`. Tools: a03_get_customer_360, a13_get_plans, a12_send_recharge_link, a11_record_csat, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -71,7 +71,7 @@ Session `95a23588-9005-4762-ac54-b89292bb9eaa`. Tools: a03_get_customer_360, a13
 
 ## data_addon_insufficient_balance_offers_link
 
-Session `963de389-3246-4230-b5a6-351bddbb396b`. Tools: a03_get_customer_360, a13_get_plans, a08_record_consent, a13_buy_data_pack, a11_record_csat.
+Session `31b9e062-67e7-4c7d-9e17-5c547ecadc79`. Tools: a03_get_customer_360, a13_get_plans, a08_record_consent, a13_buy_data_pack, a11_record_csat, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -86,7 +86,7 @@ Session `963de389-3246-4230-b5a6-351bddbb396b`. Tools: a03_get_customer_360, a13
 
 ## network_complaint_logged
 
-Session `1498e3fa-6422-4a0b-ac3b-849f58f2672b`. Tools: a03_get_customer_360, a14_network_status, a14_raise_complaint, a11_record_csat, a11_write_post_call.
+Session `a9e3d820-0fca-4e9a-abc4-f388e5d17915`. Tools: a03_get_customer_360, a14_network_status, a14_raise_complaint, a11_record_csat, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -98,7 +98,7 @@ Session `1498e3fa-6422-4a0b-ac3b-849f58f2672b`. Tools: a03_get_customer_360, a14
 
 ## porting_knowledge_answer
 
-Session `0e2ff0fc-0317-4e4e-b204-0a301e6d7be2`. Tools: a03_get_customer_360, a10_kb_answer, a11_record_csat, a11_write_post_call.
+Session `03b55d43-f989-4622-a4f1-c5a5c2f856a6`. Tools: a03_get_customer_360, a10_kb_answer, a11_record_csat, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -111,7 +111,7 @@ Session `0e2ff0fc-0317-4e4e-b204-0a301e6d7be2`. Tools: a03_get_customer_360, a10
 
 ## multi_request_in_one_call
 
-Session `7509d6e6-bffd-4f3a-a824-0d1c7f5bc7b5`. Tools: a03_get_customer_360, a14_network_status, a14_raise_complaint, a11_record_csat, a11_write_post_call.
+Session `6c7558b1-c722-46f4-9db4-8c8370142fb8`. Tools: a03_get_customer_360, a14_network_status, a14_raise_complaint, a11_record_csat, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -124,7 +124,7 @@ Session `7509d6e6-bffd-4f3a-a824-0d1c7f5bc7b5`. Tools: a03_get_customer_360, a14
 
 ## unclear_request_classified_and_confirmed
 
-Session `63782418-3be1-4cac-b225-7bb21981b25e`. Tools: a03_get_customer_360, a13_get_plans, a11_record_csat, a11_write_post_call.
+Session `e35af744-679b-49b7-9b51-68bcb52542c6`. Tools: a03_get_customer_360, a13_get_plans, a11_record_csat, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -138,7 +138,7 @@ Session `63782418-3be1-4cac-b225-7bb21981b25e`. Tools: a03_get_customer_360, a13
 
 ## vulnerability_cue_warm_transfer
 
-Session `06947539-b3ea-49c3-8968-09f944907eb0`. Tools: a03_get_customer_360, a09_create_handoff, a11_write_post_call.
+Session `1be98022-7dac-4029-9f96-e428c1c28c3e`. Tools: a03_get_customer_360, a09_create_handoff, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -148,7 +148,7 @@ Session `06947539-b3ea-49c3-8968-09f944907eb0`. Tools: a03_get_customer_360, a09
 
 ## asks_for_human
 
-Session `b4abbf7a-de8a-4e48-a157-3bb5410f9aad`. Tools: a03_get_customer_360, a09_create_handoff, a11_write_post_call.
+Session `f6cd0938-2b2b-4bd9-8a7d-0ced8f2cdff9`. Tools: a03_get_customer_360, a09_create_handoff, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
