@@ -1,22 +1,22 @@
 # Test results: Vi UC3 Enterprise Collections
 
-8/9 scenarios passed. Run 2026-10-28 01:07 UTC against the draft agent through Arch debug sessions; backend systems are mock workflows.
+9/9 scenarios passed. Run 2026-10-28 01:52 UTC against the draft agent through Arch debug sessions; backend systems are mock workflows.
 
 | Scenario | Result | Disposition | End | Slowest turn | Notes |
 |---|---|---|---|---:|---|
-| verified_contact_pays_now | PASS | PAYMENT_LINK_SENT | complete | 316 ms |  |
-| promise_to_pay_within_policy | PASS | PTP_RECORDED | complete | 397 ms |  |
-| dispute_sr_number_and_dunning_paused | FAIL | DISPUTE_RAISED | complete | 479 ms | tool a24_pause_dunning not called |
-| callback_scheduled | PASS | CALLBACK_SCHEDULED | complete | 479 ms |  |
-| paid_invoice_auto_closed_no_contact | PASS | PAID_AUTO_CLOSED | complete | 581 ms |  |
-| reminder_run_schedules_and_sends_link | PASS | REMINDERS_SCHEDULED | complete | 697 ms |  |
-| wrong_person_no_amount_disclosed | PASS | WRONG_PARTY | complete | 331 ms |  |
-| promise_beyond_policy_goes_to_desk | PASS | HANDOFF_PTP_BEYOND_POLICY | escalate | 445 ms |  |
-| waiver_request_to_collections_desk | PASS | HANDOFF_WAIVER_REQUEST | escalate | 298 ms |  |
+| verified_contact_pays_now | PASS | PAYMENT_LINK_SENT | complete | 519 ms |  |
+| promise_to_pay_within_policy | PASS | PTP_RECORDED | complete | 508 ms |  |
+| dispute_sr_number_and_dunning_paused | PASS | DISPUTE_RAISED | complete | 621 ms |  |
+| callback_scheduled | PASS | CALLBACK_SCHEDULED | complete | 563 ms |  |
+| paid_invoice_auto_closed_no_contact | PASS | PAID_AUTO_CLOSED | complete | 288 ms |  |
+| reminder_run_schedules_and_sends_link | PASS | REMINDERS_SCHEDULED | complete | 420 ms |  |
+| wrong_person_no_amount_disclosed | PASS | WRONG_PARTY | complete | 296 ms |  |
+| promise_beyond_policy_goes_to_desk | PASS | HANDOFF_PTP_BEYOND_POLICY | escalate | 679 ms |  |
+| waiver_request_to_collections_desk | PASS | HANDOFF_WAIVER_REQUEST | escalate | 477 ms |  |
 
 ## verified_contact_pays_now
 
-Session `a2a70199-0b52-4c18-ae4a-fff5263209d8`. Tools: a03_get_billing_status, a06_compliance_gate, a04_verify_billing_contact, a23_send_payment_link, a11_write_post_call.
+Session `c038aad2-4819-49c0-81a5-bf7efb85beeb`. Tools: a03_get_billing_status, a06_compliance_gate, a04_verify_billing_contact, a23_send_payment_link, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -26,7 +26,7 @@ Session `a2a70199-0b52-4c18-ae4a-fff5263209d8`. Tools: a03_get_billing_status, a
 
 ## promise_to_pay_within_policy
 
-Session `30ea7bb5-25ff-4740-ad0e-0aac2e78be7d`. Tools: a03_get_billing_status, a06_compliance_gate, a04_verify_billing_contact, a23_record_ptp, a23_send_message, a11_write_post_call.
+Session `cb3bb313-4a97-4c37-8859-c5765dc7eb83`. Tools: a03_get_billing_status, a06_compliance_gate, a04_verify_billing_contact, a23_record_ptp, a23_send_message, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -36,7 +36,7 @@ Session `30ea7bb5-25ff-4740-ad0e-0aac2e78be7d`. Tools: a03_get_billing_status, a
 
 ## dispute_sr_number_and_dunning_paused
 
-Session `1b29ab99-0c68-4d15-a1d7-2ce67a339048`. Tools: a03_get_billing_status, a06_compliance_gate, a04_verify_billing_contact, a24_create_dispute_sr, a23_send_message, a11_write_post_call.
+Session `0ff2a39e-7120-47ce-87c5-8500c384c574`. Tools: a03_get_billing_status, a06_compliance_gate, a04_verify_billing_contact, a24_create_dispute_sr, a24_pause_dunning, a23_send_message, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -49,7 +49,7 @@ Session `1b29ab99-0c68-4d15-a1d7-2ce67a339048`. Tools: a03_get_billing_status, a
 
 ## callback_scheduled
 
-Session `d2bab26e-04ca-4c72-8364-ed4ff71aec1a`. Tools: a03_get_billing_status, a06_compliance_gate, a04_verify_billing_contact, a23_schedule_callback, a11_write_post_call.
+Session `aa0297d2-c5fa-4286-b421-1076afd95044`. Tools: a03_get_billing_status, a06_compliance_gate, a04_verify_billing_contact, a23_schedule_callback, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -60,7 +60,7 @@ Session `d2bab26e-04ca-4c72-8364-ed4ff71aec1a`. Tools: a03_get_billing_status, a
 
 ## paid_invoice_auto_closed_no_contact
 
-Session `e7c55805-0657-4c7e-b4b6-08de628537b2`. Tools: a03_get_billing_status, a11_write_post_call.
+Session `58f4afdb-f72b-45a5-8218-dc964eb55c18`. Tools: a03_get_billing_status, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -68,7 +68,7 @@ Session `e7c55805-0657-4c7e-b4b6-08de628537b2`. Tools: a03_get_billing_status, a
 
 ## reminder_run_schedules_and_sends_link
 
-Session `5a7d85ea-c7a0-4d98-ba02-46cfc58e3d5e`. Tools: a03_get_billing_status, a22_schedule_reminders, a11_write_post_call.
+Session `1d13e88a-f9c6-440d-8c1f-5a7cb81dade4`. Tools: a03_get_billing_status, a22_schedule_reminders, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -76,7 +76,7 @@ Session `5a7d85ea-c7a0-4d98-ba02-46cfc58e3d5e`. Tools: a03_get_billing_status, a
 
 ## wrong_person_no_amount_disclosed
 
-Session `e37cc95b-8b8c-4c57-b92a-8372d6b96668`. Tools: a03_get_billing_status, a06_compliance_gate, a11_write_post_call.
+Session `7740d840-a6f8-42cf-a478-390e3d3539b1`. Tools: a03_get_billing_status, a06_compliance_gate, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -85,7 +85,7 @@ Session `e37cc95b-8b8c-4c57-b92a-8372d6b96668`. Tools: a03_get_billing_status, a
 
 ## promise_beyond_policy_goes_to_desk
 
-Session `12d7b914-e1f9-47b9-a68f-85eb79b1d244`. Tools: a03_get_billing_status, a06_compliance_gate, a04_verify_billing_contact, a23_record_ptp, a09_create_handoff, a11_write_post_call.
+Session `f56a1a8d-f150-47a2-b721-bf18c8de2e11`. Tools: a03_get_billing_status, a06_compliance_gate, a04_verify_billing_contact, a23_record_ptp, a09_create_handoff, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
@@ -96,7 +96,7 @@ Session `12d7b914-e1f9-47b9-a68f-85eb79b1d244`. Tools: a03_get_billing_status, a
 
 ## waiver_request_to_collections_desk
 
-Session `ca78b780-f11e-460e-9567-cad0bbd8b16f`. Tools: a03_get_billing_status, a06_compliance_gate, a04_verify_billing_contact, a09_create_handoff, a11_write_post_call.
+Session `ef97b421-e9e3-47dd-8a5d-7adad54c792d`. Tools: a03_get_billing_status, a06_compliance_gate, a04_verify_billing_contact, a09_create_handoff, a11_write_post_call.
 
 | Caller | Agent |
 |---|---|
