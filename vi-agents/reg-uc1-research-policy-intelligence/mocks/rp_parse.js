@@ -17,5 +17,5 @@ else if (/(summar|summary|read)/.test(l) && doc) intent = "summary";
 else if (q || /(deadline|definition|due date|cross.ref)/.test(l)) intent = "followup";
 else if (/(search|find|look for)/.test(l) || doc) intent = doc ? "summary" : "search";
 // Uploaded or pasted document with no corpus id: reviewed by the model step
-if (!doc && ["help","search","followup","summary","brief"].indexOf(intent) >= 0 && (t.length > 400 || t.split("\n").length > 4 || /(upload|attach|pasted|(this|attached|uploaded) ([a-z]+ ){0,3}(paper|document|consultation|notification|direction|order|letter|notice|circular|report|file|pdf)|the (attached|uploaded))/.test(l))) intent = "uploaded";
+if (((!doc) || (t.length > 400 || t.split("\n").length > 4)) && ["help","search","followup","summary","brief"].indexOf(intent) >= 0 && (t.length > 400 || t.split("\n").length > 4 || /(upload|attach|pasted|(this|attached|uploaded) ([a-z]+ ){0,3}(paper|document|consultation|notification|direction|order|letter|notice|circular|report|file|pdf)|the (attached|uploaded))/.test(l))) intent = "uploaded";
 return { intent: intent, doc_id: doc, topic: topic, question: q || (/(deadline|due date)/.test(l) ? "deadline" : /definition/.test(l) ? "definitions" : ""), claims: t.replace(/^\s*verify:?\s*/i, "") };

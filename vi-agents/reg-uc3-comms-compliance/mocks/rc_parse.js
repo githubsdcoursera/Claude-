@@ -20,5 +20,5 @@ else if (/(dashboard|overdue|due this week|my items|awaiting approval|my team|op
   view = /overdue/.test(l) ? "overdue" : /due this week/.test(l) ? "due_this_week" : /awaiting approval/.test(l) ? "awaiting_approval" : /my items/.test(l) ? "my_items" : "all";
 }
 // Uploaded or pasted document with no corpus id: reviewed by the model step
-if (!mail && !obl && !draft && ["help","dashboard"].indexOf(intent) >= 0 && (t.length > 400 || t.split("\n").length > 4 || /(upload|attach|pasted|(this|attached|uploaded) ([a-z]+ ){0,3}(paper|document|consultation|notification|direction|order|letter|notice|circular|report|file|pdf)|the (attached|uploaded))/.test(l))) intent = "uploaded";
+if (((!mail && !obl && !draft) || (t.length > 400 || t.split("\n").length > 4)) && ["help","dashboard"].indexOf(intent) >= 0 && (t.length > 400 || t.split("\n").length > 4 || /(upload|attach|pasted|(this|attached|uploaded) ([a-z]+ ){0,3}(paper|document|consultation|notification|direction|order|letter|notice|circular|report|file|pdf)|the (attached|uploaded))/.test(l))) intent = "uploaded";
 return { intent: intent, mail_id: mail, obligation_id: obl, draft_id: draft, target_user: target, view: view, as_of: asof, reason: reason };
