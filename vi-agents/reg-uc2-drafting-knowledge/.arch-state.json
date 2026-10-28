@@ -18,31 +18,31 @@
     "doc_docx": "01a180c7-76f6-7f6e-a874-c3bc18d6b4b8"
   },
   "workflow_versions": {
-    "rd01_scope": "v1.0.1",
-    "rd02_positions": "v1.0.1",
+    "rd01_scope": "v1.0.2",
+    "rd02_positions": "v1.0.2",
     "rd03_consistency": "v1.0.1",
-    "rd04_draft": "v1.0.1",
-    "rd06_capture_edits": "v1.0.3",
-    "rd06_file_final": "v1.0.1",
-    "rd_lookup": "v1.0.3",
-    "rd_memo": "v1.0.1",
-    "rd_parse": "v1.0.1",
-    "r_audit_log": "v1.0.1",
-    "r_cite_verify": "v1.0.1",
-    "r_doc_extract": "v1.0.1",
-    "r_kb_search": "v1.0.1",
-    "r_notify": "v1.0.1",
-    "rd03_check_consistency": "v1.0.1",
-    "doc_docx": "v1.0.0"
+    "rd04_draft": "v1.0.2",
+    "rd06_capture_edits": "v1.0.4",
+    "rd06_file_final": "v1.0.2",
+    "rd_lookup": "v1.0.4",
+    "rd_memo": "v1.0.2",
+    "rd_parse": "v1.0.2",
+    "r_audit_log": "v1.0.2",
+    "r_cite_verify": "v1.0.2",
+    "r_doc_extract": "v1.0.2",
+    "r_kb_search": "v1.0.2",
+    "r_notify": "v1.0.2",
+    "rd03_check_consistency": "v1.0.2",
+    "doc_docx": "v1.0.1"
   },
   "projectId": "01a17e02-c98e-7aff-ada8-d0acd8cdfa34",
   "deployment": {
     "env": "dev",
-    "id": "01a180ca-2536-7509-99ab-6d9e9fd36b0f",
-    "endpointSlug": "01a17e02-dev-mvrmeur4-37e5c1",
+    "id": "01a180e2-c722-7952-a661-212d46fb49e7",
+    "endpointSlug": "01a17e02-dev-mvrndgda-fc6a1e",
     "agents": {
       "RA_UC2_Drafting_Supervisor": {
-        "version": "1.0.1"
+        "version": "1.0.2"
       }
     },
     "preflight": "ready"

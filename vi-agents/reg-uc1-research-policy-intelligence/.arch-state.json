@@ -17,28 +17,28 @@
   },
   "workflow_versions": {
     "rp01_propose_obligation": "v1.0.2",
-    "rp01_source_poll": "v1.0.1",
-    "rp02_summarise": "v1.0.1",
-    "rp03_precedents": "v1.0.1",
-    "rp04_competitor_map": "v1.0.1",
-    "rp05_brief": "v1.0.1",
-    "rp_followup": "v1.0.3",
-    "rp_parse": "v1.0.2",
-    "r_audit_log": "v1.0.1",
-    "r_cite_verify": "v1.0.1",
-    "r_doc_extract": "v1.0.1",
-    "r_kb_search": "v1.0.1",
-    "r_notify": "v1.0.1",
-    "doc_docx": "v1.0.0"
+    "rp01_source_poll": "v1.0.2",
+    "rp02_summarise": "v1.0.2",
+    "rp03_precedents": "v1.0.2",
+    "rp04_competitor_map": "v1.0.2",
+    "rp05_brief": "v1.0.2",
+    "rp_followup": "v1.0.4",
+    "rp_parse": "v1.0.3",
+    "r_audit_log": "v1.0.2",
+    "r_cite_verify": "v1.0.2",
+    "r_doc_extract": "v1.0.2",
+    "r_kb_search": "v1.0.2",
+    "r_notify": "v1.0.2",
+    "doc_docx": "v1.0.1"
   },
   "projectId": "01a17e09-b402-7854-8a91-715fd9c6e63c",
   "deployment": {
     "env": "dev",
-    "id": "01a180c1-d59f-71ca-81b8-81c60a66c9d5",
-    "endpointSlug": "01a17e09-dev-mvrm36hn-8a12c8",
+    "id": "01a180db-3840-7c24-ac03-51fde360b239",
+    "endpointSlug": "01a17e09-dev-mvrn2u61-5bb55e",
     "agents": {
       "RA_UC1_Research_Supervisor": {
-        "version": "1.0.1"
+        "version": "1.0.2"
       }
     },
     "preflight": "ready"
