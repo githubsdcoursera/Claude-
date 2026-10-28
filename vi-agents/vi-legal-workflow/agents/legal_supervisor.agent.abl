@@ -47,6 +47,7 @@ MEMORY:
     - ev
     - disposition
     - audit
+    - followup
 
 FLOW:
   s0_start:
@@ -82,11 +83,22 @@ FLOW:
       - IF: req.output.intent == "done"
         THEN: s9_end
       - IF: req.output.intent == "uploaded"
-        THEN: u1_review
+        THEN: u0_audit
       - ELSE:
         THEN: s2_help
 
   # ---- Uploaded or pasted document (no fixture id): the model reads it against the Vi playbooks ----
+  u0_audit:
+    REASONING: false
+    CALL: lg_audit
+      WITH:
+        user: user
+        disposition: "UPLOADED_DOC_REVIEWED"
+        object: "uploaded:{{req.output.doc_kind}}"
+        detail: "Model review of an uploaded document against the Vi playbooks"
+      AS: audit
+    THEN: u1_review
+
   u1_review:
     REASONING: true
     GOAL: |
@@ -137,25 +149,41 @@ FLOW:
       - "Never sign, accept, send or agree anything on Vi's behalf, and never lower a tier for a strategic counterparty or a close deadline"
       - "This is an AI draft for lawyer review, not legal advice; mark statutory references [verify]"
     MAX_TURNS: 2
-    THEN: u2_audit
+    THEN: u2_route
 
-  u2_audit:
-    REASONING: false
-    CALL: lg_audit
-      WITH:
-        user: user
-        disposition: "UPLOADED_DOC_REVIEWED"
-        object: "uploaded:{{req.output.doc_kind}}"
-        detail: "Model review of an uploaded document against the Vi playbooks"
-      AS: audit
-    THEN: u3_next
-
-  u3_next:
+  # The zone hands over on the user's next message: follow-ups stay with the reviewed document,
+  # a new command goes back to the parser
+  u2_route:
     REASONING: false
     ON_INPUT:
-      - ELSE:
+      - IF: input matches "^[^a-z]*(done|exit|thanks|thank you|that's all|thats all)([^a-z]|$)"
+        THEN: s9_end
+      - IF: input matches "((nda|mou|vc|dp)-[0-9][0-9]|new matter|another document|different document|start over|what is due|gold label|run the eval)"
         SET: request = input
         THEN: s1_parse
+      - ELSE:
+        SET: followup = input
+        THEN: u3_followup
+
+  u3_followup:
+    REASONING: true
+    GOAL: |
+      The user is following up on your review of the document they uploaded or pasted earlier in this
+      conversation. Their message: "{{followup}}".
+      Answer from the document and your earlier review only. If they ask for a redline or counterparty-ready
+      wording, give it clause by clause: clause reference, the current text quoted exactly, then the proposed
+      Vi wording, and a one-line reason a counterparty can read. Counterparty-ready text must contain no internal
+      tiers (GREEN, YELLOW, RED), no fallback positions, no playbook names and no negotiation notes. If they ask
+      for a document file, explain that you provide the redline as text here for the lawyer to apply in the
+      document, because nothing is sent to the counterparty from this assistant. If they agree to sign, send or
+      accept, decline: a named Vi lawyer must approve and a human signs.
+      End by asking whether anything else is needed on this document, or say "new matter" to start another.
+    STEP_CONSTRAINTS:
+      - "Quote only text that appears in the document; never invent clause numbers or quotes"
+      - "Never sign, accept, send or agree anything on Vi's behalf, and never lower a tier for a strategic counterparty or a close deadline"
+      - "This is an AI draft for lawyer review, not legal advice; mark statutory references [verify]"
+    MAX_TURNS: 2
+    THEN: u2_route
 
   s2_help:
     REASONING: false
