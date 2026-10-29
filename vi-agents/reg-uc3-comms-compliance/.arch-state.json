@@ -15,34 +15,36 @@
     "r_doc_extract": "01a17dff-5d89-74aa-8154-3b2741e222bd",
     "r_kb_search": "01a17e00-3bf9-7e49-a500-5363a4648250",
     "r_notify": "01a17e00-43c1-7444-935e-c48fb9f60db6",
-    "doc_docx": "01a180cf-d656-7ef0-b050-e4f172dc7998"
+    "doc_docx": "01a180cf-d656-7ef0-b050-e4f172dc7998",
+    "r_ref_lookup": "01a186ab-98bf-700d-acc1-d4480de0b246"
   },
   "workflow_versions": {
-    "rc01_classify": "v1.0.2",
-    "rc02_extract": "v1.0.2",
-    "rc03_route": "v1.0.2",
-    "rc04_escalations": "v1.0.2",
-    "rc05_prepare": "v1.0.2",
-    "rc06_dashboard": "v1.0.2",
-    "rc_approve": "v1.0.2",
-    "rc_parse": "v1.0.2",
-    "rc_reassign": "v1.0.3",
-    "rc_replay": "v1.0.2",
-    "r_audit_log": "v1.0.2",
-    "r_cite_verify": "v1.0.2",
-    "r_doc_extract": "v1.0.2",
-    "r_kb_search": "v1.0.2",
-    "r_notify": "v1.0.2",
-    "doc_docx": "v1.0.1"
+    "rc01_classify": "v1.0.3",
+    "rc02_extract": "v1.0.3",
+    "rc03_route": "v1.0.3",
+    "rc04_escalations": "v1.0.3",
+    "rc05_prepare": "v1.0.3",
+    "rc06_dashboard": "v1.0.3",
+    "rc_approve": "v1.0.3",
+    "rc_parse": "v1.0.3",
+    "rc_reassign": "v1.0.4",
+    "rc_replay": "v1.0.3",
+    "r_audit_log": "v1.0.3",
+    "r_cite_verify": "v1.0.3",
+    "r_doc_extract": "v1.0.3",
+    "r_kb_search": "v1.0.3",
+    "r_notify": "v1.0.3",
+    "doc_docx": "v1.0.2",
+    "r_ref_lookup": "v1.0.0"
   },
   "projectId": "01a17dfb-876e-783e-8430-148e24c95082",
   "deployment": {
     "env": "dev",
-    "id": "01a18148-53a3-7cd0-ba32-c3d87f08c53a",
-    "endpointSlug": "01a17dfb-dev-mvrrc3h8-ca59d6",
+    "id": "01a186ad-8d08-727b-89ae-4d61974cfa1f",
+    "endpointSlug": "01a17dfb-dev-mvt98936-14fa63",
     "agents": {
       "RA_UC3_Compliance_Supervisor": {
-        "version": "1.0.2"
+        "version": "1.0.3"
       }
     },
     "preflight": "ready"

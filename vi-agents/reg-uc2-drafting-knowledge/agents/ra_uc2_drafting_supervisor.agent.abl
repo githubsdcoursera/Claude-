@@ -61,7 +61,7 @@ TOOLS:
         description: "File id"
       expires_in_seconds:
         description: "Link lifetime in seconds, up to 86400"
-  #include-tools: rd_parse, rd01_scope, rd02_positions, rd03_check_consistency, rd04_draft, rd06_file_final, rd06_capture_edits, rd_lookup, rd_memo, r_cite_verify, r_notify, r_audit_log, doc_docx
+  #include-tools: rd_parse, rd01_scope, rd02_positions, rd03_check_consistency, rd04_draft, rd06_file_final, rd06_capture_edits, rd_lookup, rd_memo, r_cite_verify, r_notify, r_audit_log, r_ref_lookup, doc_docx
 
 MEMORY:
   session:
@@ -94,6 +94,7 @@ MEMORY:
     - edits
     - disposition
     - audit
+    - rref
 
 FLOW:
   s0_start:
@@ -131,6 +132,8 @@ FLOW:
         THEN: s9_end
       - IF: req.output.intent == "uploaded"
         THEN: u0_audit
+      - IF: req.output.intent == "uc2req"
+        THEN: q1_request
       - ELSE:
         THEN: s2_help
 
@@ -369,9 +372,35 @@ FLOW:
 
   # ---- END generated document path 'u' ----
 
+  # ---- Drafting request handed over by RA-UC3: draft the reply to that regulator communication ----
+  q1_request:
+    REASONING: false
+    CALL: r_ref_lookup
+      WITH:
+        ref: req.output.ref
+        user: user
+      AS: rref
+    ON_RESULT:
+      - IF: rref.output.found == true AND rref.output.kind == "drafting_request"
+        SET:
+          doc_text = rref.output.text
+          doc_name = rref.output.subject
+          request = "Draft Vi's reply to this regulator communication, handed over by RA-UC3"
+        THEN: u0_audit
+      - ELSE:
+        THEN: q2_not_found
+
+  q2_not_found:
+    REASONING: false
+    RESPOND: "{{rref.output.summary}} What would you like to draft?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
   s2_help:
     REASONING: false
-    RESPOND: "I can prepare a first draft of a consultation response (for example: draft our response to TRAI-SYN-CP-2026-11), an internal memo on a topic, find what Vi said on a topic in a given year, verify citations in a passage, capture your edits on a draft, or file an approved final (Head, Regulatory only). What would you like?"
+    RESPOND: "I can prepare a first draft of a consultation response (for example: draft our response to TRAI-SYN-CP-2026-11), an internal memo on a topic, find what Vi said on a topic in a given year, verify citations in a passage, capture your edits on a draft, or file an approved final (Head, Regulatory only). You can also type a drafting request from RA-UC3 (for example UC2REQ-1M1ZJP2) or upload a consultation paper. What would you like?"
     ON_INPUT:
       - ELSE:
         SET: request = input

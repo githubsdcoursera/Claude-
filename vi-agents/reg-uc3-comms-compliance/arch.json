@@ -36,7 +36,8 @@
     "claims": "smoke [TRAI-SYN-CP-2026-11, p47]",
     "title": "Smoke",
     "markdown": "# Smoke\nok",
-    "footer_note": "smoke"
+    "footer_note": "smoke",
+    "ref": "UC2REQ-1M1ZJP2"
   },
   "deployment_label": "ra-uc3-v1"
 }

@@ -32,7 +32,8 @@
     "query": "satellite",
     "title": "Smoke",
     "markdown": "# Smoke\nok",
-    "footer_note": "smoke"
+    "footer_note": "smoke",
+    "ref": "UC2REQ-1M1ZJP2"
   },
   "deployment_label": "ra-uc2-v1"
 }

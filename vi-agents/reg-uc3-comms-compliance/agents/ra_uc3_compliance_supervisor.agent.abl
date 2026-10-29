@@ -61,7 +61,7 @@ TOOLS:
         description: "File id"
       expires_in_seconds:
         description: "Link lifetime in seconds, up to 86400"
-  #include-tools: rc_parse, rc01_classify, rc02_extract, rc03_route, rc05_prepare, rc_approve, rc04_escalations, rc06_dashboard, rc_reassign, rc_replay, r_notify, r_audit_log, doc_docx
+  #include-tools: rc_parse, rc01_classify, rc02_extract, rc03_route, rc05_prepare, rc_approve, rc04_escalations, rc06_dashboard, rc_reassign, rc_replay, r_notify, r_audit_log, r_ref_lookup, doc_docx
 
 MEMORY:
   session:
@@ -95,6 +95,7 @@ MEMORY:
     - ntf
     - disposition
     - audit
+    - rref
 
 FLOW:
   s0_start:
@@ -132,6 +133,10 @@ FLOW:
         THEN: s9_end
       - IF: req.output.intent == "uploaded"
         THEN: u0_audit
+      - IF: req.output.intent == "lookup"
+        THEN: k1_lookup
+      - IF: req.output.intent == "ack"
+        THEN: k3_ack
       - ELSE:
         THEN: s2_help
 
@@ -371,6 +376,32 @@ FLOW:
 
   # ---- END generated document path 'u' ----
 
+  # ---- References returned earlier (drafting request, audit, task, obligation) ----
+  k1_lookup:
+    REASONING: false
+    CALL: r_ref_lookup
+      WITH:
+        ref: req.output.ref
+        user: user
+      AS: rref
+    THEN: k2_say
+
+  k2_say:
+    REASONING: false
+    RESPOND: "{{rref.output.summary}} Anything else? For example: show my items, due this week, or another mail."
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  k3_ack:
+    REASONING: false
+    RESPOND: "Noted. Anything else? For example: show my items, overdue, due this week, process another mail (INBOUND mail=MAIL-SYN-002), or done."
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
   s2_help:
     REASONING: false
     RESPOND: "I can process an inbound communication (for example: INBOUND mail=MAIL-SYN-001), show the dashboard (all, my items, overdue, due this week, awaiting approval), run escalations as of a date, reassign an obligation (managers), record an approver's decision on a prepared reply, or replay the historical inbox evaluation. What would you like?"
@@ -470,7 +501,9 @@ FLOW:
 
       Owner {{route.output.owner_name}}{{#if route.output.on_leave}} (the matrix owner is on leave, so the deputy is assigned and {{route.output.manager_notified}} has been notified){{/if}}; approver {{route.output.approver}}; task {{route.output.task_id}}; forwarded to {{route.output.forwarded_to}}.
 
-      {{#if prep.output.draft_id}}Routine reply drafted from the approved template ({{prep.output.draft_id}}): '{{prep.output.draft_text}}' It will not be sent without the approver's token.{{/if}}{{#if prep.output.uc2_request}}Substantive item: drafting request {{prep.output.uc2_request}} sent to RA-UC2; no templated reply.{{/if}} Audit {{audit.output.audit_id}}. Anything else?
+      {{#if prep.output.draft_id}}Routine reply drafted from the approved template ({{prep.output.draft_id}}): '{{prep.output.draft_text}}' It will not be sent without the approver's token.{{/if}}{{#if prep.output.uc2_request}}Substantive item: drafting request {{prep.output.uc2_request}} sent to RA-UC2; no templated reply.{{/if}} Audit record {{audit.output.audit_id}}.
+
+      Next: {{#if prep.output.uc2_request}}to draft the reply, open RA-UC2 Drafting and type {{prep.output.uc2_request}}; {{/if}}{{#if prep.output.draft_id}}the approver can type approve {{prep.output.draft_id}}; {{/if}}say show my items or due this week for the dashboard, give another mail, or say done.
     ON_INPUT:
       - ELSE:
         SET: request = input
