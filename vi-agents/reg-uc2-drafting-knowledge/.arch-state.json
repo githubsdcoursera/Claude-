@@ -40,11 +40,11 @@
   "projectId": "01a17e02-c98e-7aff-ada8-d0acd8cdfa34",
   "deployment": {
     "env": "dev",
-    "id": "01a1813f-3411-7d20-8d6e-06ae3682e280",
-    "endpointSlug": "01a17e02-dev-mvrqza4q-1afe3f",
+    "id": "01a186bd-d761-72be-8b1d-57c00d7802b7",
+    "endpointSlug": "01a17e02-dev-mvt9v4ut-0eb3c5",
     "agents": {
       "RA_UC2_Drafting_Supervisor": {
-        "version": "1.0.3"
+        "version": "1.0.4"
       }
     },
     "preflight": "ready"
