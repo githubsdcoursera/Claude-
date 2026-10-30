@@ -38,11 +38,11 @@
   "projectId": "01a17d0c-6d31-73b2-9fc9-145618e26edc",
   "deployment": {
     "env": "dev",
-    "id": "01a18123-3a51-72fb-a781-5bd965b25da8",
-    "endpointSlug": "01a17d0c-dev-mvrpvzgr-c4d086",
+    "id": "01a18cc7-a2e5-7605-90e1-04d2e19cf5ad",
+    "endpointSlug": "01a17d0c-dev-mvuy6ggv-8fcda3",
     "agents": {
       "Prepaid_Retention_Supervisor": {
-        "version": "1.0.1"
+        "version": "1.0.2"
       }
     },
     "preflight": "warnings"
