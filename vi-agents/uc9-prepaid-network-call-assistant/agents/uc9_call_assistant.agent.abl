@@ -93,7 +93,7 @@ FLOW:
         SET:
           disposition = "NOT_OPTED_IN"
           outcome = "not_opted_in"
-        THEN: s9_write
+        THEN: x0_no_call
 
   # ---- Opt-in: provision CFB / CFNRy / CFNRc ----
   s0_provision:
@@ -112,7 +112,7 @@ FLOW:
         SET:
           disposition = "SYSTEM_FAILURE"
           outcome = "provisioning_failed"
-        THEN: s9_write
+        THEN: x0_no_call
 
   s0_provision_say:
     REASONING: false
@@ -284,6 +284,12 @@ FLOW:
         subscriber: subscriber
         outcome: outcome
       AS: meter
+    THEN: s9_write
+
+  # ---- Pre-call check stopped the contact: in a live campaign nobody is dialled; in a chat, say why ----
+  x0_no_call:
+    REASONING: false
+    RESPOND: "The call assistant did not take this call (outcome {{disposition}}): the subscriber has not opted in to the call assistant service, or forwarding could not be set up. The caller gets the standard network message; the outcome is recorded. In this test chat, 9850000001 is a subscriber who has opted in."
     THEN: s9_write
 
   s9_write:

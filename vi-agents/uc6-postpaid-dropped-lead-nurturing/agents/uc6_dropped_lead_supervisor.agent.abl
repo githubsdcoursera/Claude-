@@ -131,7 +131,7 @@ FLOW:
   s0_need_number:
     REASONING: false
     WHEN: msisdn == "none"
-    RESPOND: "Test chat: no caller number was passed to this session. Please type the 10-digit mobile number of the test customer (for example 9890000006) to start the call."
+    RESPOND: "Test chat: no caller number was passed to this session. Please type the 10-digit mobile number of the test customer (for example 9890000001) to start the call."
     ON_INPUT:
       - IF: input matches "[0-9]{10}"
         SET: msisdn = REGEX_EXTRACT(input, "([0-9]{10})", 1)
@@ -154,17 +154,17 @@ FLOW:
         SET:
           disposition = "NO_CONTACT_EXHAUSTED"
           outcome = "attempt_cap"
-        THEN: s9_write
+        THEN: x0_no_call
       - IF: gate.output.stop_reason == "ncpr_dnd"
         SET:
           disposition = "COMPLIANCE_STOP"
           outcome = "ncpr_dnd"
-        THEN: s9_write
+        THEN: x0_no_call
       - ELSE:
         SET:
           disposition = "COMPLIANCE_STOP"
           outcome = FIRST_NON_EMPTY(gate.output.stop_reason, "gate_unavailable")
-        THEN: s9_write
+        THEN: x0_no_call
 
   # ---- S1 Connect and disclose (MS-01) + S2 right-party check (MS-02): no journey detail yet ----
   s1_disclose:
@@ -654,6 +654,12 @@ FLOW:
     THEN: s9_write
 
   # ---- S9 Post-call (A11): disposition, summary, drop reason, attribution ----
+  # ---- Pre-call check stopped the contact: in a live campaign nobody is dialled; in a chat, say why ----
+  x0_no_call:
+    REASONING: false
+    RESPOND: "No call placed. The pre-call check stopped this contact (outcome {{disposition}}). In a live campaign the customer is not dialled and hears nothing; the outcome is recorded. In this test chat, 9890000001 is a customer who can be called."
+    THEN: s9_write
+
   s9_write:
     REASONING: false
     CALL: a11_write_post_call

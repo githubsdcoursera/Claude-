@@ -116,17 +116,17 @@ FLOW:
         SET:
           disposition = "LEAD_ALREADY_CONVERTED"
           outcome = "no_call_duplicate_or_converted"
-        THEN: s9_write
+        THEN: x0_no_call
       - IF: lead.output.found == true AND lead.output.attempts >= 3
         SET:
           disposition = "MAX_ATTEMPTS_REACHED"
           outcome = "no_call_attempt_cap"
-        THEN: s9_write
+        THEN: x0_no_call
       - ELSE:
         SET:
           disposition = "COMPLIANCE_STOP"
           outcome = "lead_not_callable"
-        THEN: s9_write
+        THEN: x0_no_call
 
   # ---- S0/X4 Contact gate (A06): fail closed ----
   s0_compliance:
@@ -144,7 +144,7 @@ FLOW:
         SET:
           disposition = "COMPLIANCE_STOP"
           outcome = FIRST_NON_EMPTY(gate.output.stop_reason, "compliance_gate_unavailable")
-        THEN: s9_write
+        THEN: x0_no_call
 
   # ---- S1 Disclose (must-say) ----
   s1_disclose:
@@ -357,6 +357,12 @@ FLOW:
     THEN: s9_write
 
   # ---- S9 Post-call: disposition, CRM and conversion attribution (A11) ----
+  # ---- Pre-call check stopped the contact: in a live campaign nobody is dialled; in a chat, say why ----
+  x0_no_call:
+    REASONING: false
+    RESPOND: "No call placed. The pre-call check stopped this contact (outcome {{disposition}}). In a live campaign the customer is not dialled and hears nothing; the outcome is recorded. In this test chat, 9820000001 is a customer who can be called."
+    THEN: s9_write
+
   s9_write:
     REASONING: false
     CALL: a11_write_post_call

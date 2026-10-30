@@ -142,7 +142,7 @@ FLOW:
         SET:
           disposition = "COMPLIANCE_STOP"
           outcome = FIRST_NON_EMPTY(gate.output.stop_reason, "compliance_gate_unavailable")
-        THEN: s9_write
+        THEN: x0_no_call
 
   # ---- S1 Connect and disclose (must-say) ----
   s1_disclose:
@@ -574,6 +574,12 @@ FLOW:
     THEN: s9_write
 
   # ---- S9 Post-call: summary, disposition, CRM and Warehouse (A11) ----
+  # ---- Pre-call check stopped the contact: in a live campaign nobody is dialled; in a chat, say why ----
+  x0_no_call:
+    REASONING: false
+    RESPOND: "No call placed. The pre-call check stopped this contact (outcome {{disposition}}). In a live campaign the customer is not dialled and hears nothing; the outcome is recorded. In this test chat, 9800000001 is a customer who can be called."
+    THEN: s9_write
+
   s9_write:
     REASONING: false
     CALL: a11_write_post_call
