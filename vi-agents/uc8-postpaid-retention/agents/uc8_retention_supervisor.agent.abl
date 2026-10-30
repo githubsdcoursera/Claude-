@@ -147,7 +147,7 @@ FLOW:
     REASONING: false
     SET:
       msisdn = FIRST_NON_EMPTY(session.messageMetadata.msisdn, REGEX_EXTRACT(input, "msisdn=(\\d{10})", 1), customer_id, "none")
-      trigger_code = FIRST_NON_EMPTY(session.messageMetadata.trigger_code, REGEX_EXTRACT(input, "trigger=(T\\d)", 1), "")
+      trigger_code = FIRST_NON_EMPTY(session.messageMetadata.trigger_code, REGEX_EXTRACT(input, "trigger=(T\\d)", 1), "none")
       disposition = "IN_PROGRESS"
       verified = false
       lang_hi = false
