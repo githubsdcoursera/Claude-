@@ -26,11 +26,11 @@
   "projectId": "01a17d19-4516-7449-8d6e-bcc8b17de31c",
   "deployment": {
     "env": "dev",
-    "id": "01a18124-285a-7595-b7eb-a39ef19c5ff9",
-    "endpointSlug": "01a17d19-dev-mvrpxahf-23f48a",
+    "id": "01a18cc9-b8bd-7285-8875-cc94cd1fd5aa",
+    "endpointSlug": "01a17d19-dev-mvuy9dx1-ade8e5",
     "agents": {
       "Prepaid_Dropped_Leads_Supervisor": {
-        "version": "1.0.1"
+        "version": "1.0.2"
       }
     },
     "preflight": "ready"

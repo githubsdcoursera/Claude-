@@ -26,11 +26,11 @@
   "projectId": "01a17d49-4dc2-7ace-bc0f-078e364de170",
   "deployment": {
     "env": "dev",
-    "id": "01a18126-7384-7147-9c3e-d5a5fbadf9d5",
-    "endpointSlug": "01a17d49-dev-mvrq0igu-f6eca2",
+    "id": "01a18ccb-b5b4-77f8-9dbc-329d38a2e137",
+    "endpointSlug": "01a17d49-dev-mvuyc6ge-373bf2",
     "agents": {
       "Business_Sales_Supervisor": {
-        "version": "1.0.1"
+        "version": "1.0.2"
       }
     },
     "preflight": "ready"
