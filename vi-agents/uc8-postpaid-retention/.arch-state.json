@@ -42,19 +42,19 @@
     "a04_send_otp": "v1.0.1",
     "a04_verify_otp": "v1.0.1",
     "a08_record_consent": "v1.0.1",
-    "a06_record_opt_out": "v1.0.0",
-    "a02_sentiment_event": "v1.0.0",
-    "a09_create_handoff": "v1.0.0",
-    "a11_write_post_call": "v1.0.0"
+    "a06_record_opt_out": "v1.0.1",
+    "a02_sentiment_event": "v1.0.1",
+    "a09_create_handoff": "v1.0.1",
+    "a11_write_post_call": "v1.0.1"
   },
   "projectId": "01a17ddf-5944-77f9-88cd-ab7d77e5edfc",
   "deployment": {
     "env": "dev",
-    "id": "01a18cd4-14db-7e6f-84a5-708d668812d3",
-    "endpointSlug": "01a17ddf-dev-mvuynxsk-50edac",
+    "id": "01a18ce2-1d6f-7ee1-ad82-f13d779f86c4",
+    "endpointSlug": "01a17ddf-dev-mvuz7nft-2424eb",
     "agents": {
       "UC8_Retention_Supervisor": {
-        "version": "1.0.4"
+        "version": "1.0.5"
       }
     },
     "preflight": "warnings"
