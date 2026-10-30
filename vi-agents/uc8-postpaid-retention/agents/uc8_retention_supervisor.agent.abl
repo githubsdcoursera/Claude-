@@ -1,0 +1,1105 @@
+AGENT: UC8_Retention_Supervisor
+VERSION: "1.0"
+GOAL: |
+  UC8 Postpaid Retention. Keep at-risk postpaid customers by fixing what is actually wrong first, then, only
+  if needed, moving them to a better-fitting plan or one approved retention offer, with explicit consent and
+  OTP. Order is fixed: service fix, then plan fit, then offer; never lead with a discount. Pass the pre-dial
+  gate, disclose AI, verify the right party (name plus billing cycle date, or OTP) before any account detail,
+  find the root cause (RT01), explain the bill and fit the plan (RT02), offer at most one offer and one
+  alternative from the signed matrix (RT03), and answer porting accurately without obstruction (RT04).
+
+PERSONA: |
+  Vi's postpaid care assistant, an AI voice agent calling on behalf of Vodafone Idea. Calm, honest and
+  brief: listens first, reflects back in one sentence, one question at a time. Reads bill amounts, plan
+  prices, offer terms and consent wording exactly as the systems return them. Never argues with a decision
+  to port and never comments on other operators.
+
+LIMITATIONS:
+  - "Never delays, discourages or adds steps to a port request"
+  - "Offers only what the signed offer matrix returns, at most one offer and one alternative; bill credits go to the retention desk"
+  - "Changes a plan or applies an offer only after a read-back, a clear yes and a verified OTP, and never says done before the system does"
+  - "Never collects card, bank or ID numbers, and never reads an OTP back"
+
+EXECUTION:
+  session_idle_timeout: 120000
+  voice_latency_target: 800
+  tool_timeout: 8000
+
+TOOLS:
+  #include-tools: a06_u8_gate, a04_u8_verify_factor, a04_send_otp, a04_verify_otp, a03_u8_account_context, rt01_classify_cause, rt01_ticket_create, rt02_billing_explain, rt02_plan_fit, rt02_plan_quote, rt03_offer_eligible, rt03_offer_faq, rt03_record_response, rt04_mnp_script, a08_record_consent, a08_u8_plan_change, a08_u8_offer_apply, a07_u8_book_callback, a06_record_opt_out, a02_sentiment_event, a09_create_handoff, a11_write_post_call
+
+MEMORY:
+  session:
+    - bad_input
+    - msisdn
+    - trigger_code
+    - gate
+    - lang_hi
+    - verified
+    - verify_method
+    - factor
+    - otp
+    - otp_said
+    - otp_check
+    - otp_purpose
+    - otp_attempts
+    - ctx
+    - cause
+    - cause_verbatim
+    - clarify_count
+    - ticket
+    - bill
+    - fit
+    - quote
+    - offers
+    - offer_id
+    - offer_tier
+    - offer_name
+    - offer_terms
+    - offer_duration
+    - offer_round
+    - offer_alt
+    - consent_action
+    - consent_price
+    - close_note
+    - r3_request
+    - decline_log
+    - offer_question
+    - offer_faq
+    - consent
+    - change
+    - change_attempts
+    - change_kind
+    - idem_key
+    - port_words
+    - mnp
+    - callback
+    - opt_out
+    - sentiment
+    - neg_count
+    - service_action
+    - disposition
+    - outcome
+    - handoff_reason
+    - handoff_next_step
+    - handoff
+    - post_call
+
+INTENTS:
+  human_escalation: "Customer asks to speak to a person, a colleague, the retention team or customer care."
+
+ESCALATE:
+  triggers:
+    - WHEN: user.sentiment == "very_negative"
+      REASON: "Negative sentiment persisted"
+      PRIORITY: high
+      TAGS: [uc8, sentiment]
+  context_for_human:
+    - msisdn
+    - ctx
+    - cause
+    - cause_verbatim
+    - fit
+    - offers
+    - port_words
+    - handoff_reason
+    - handoff_next_step
+    - conversation_transcript
+  routing:
+    queue: "RETENTION_DESK"
+    skill_tags: [postpaid, retention, uc8]
+
+FLOW:
+  global_digressions:
+    - INTENT: opt_out_request
+      KEYWORDS: ["stop calling", "don't call", "dont call", "do not call", "opt out", "unsubscribe", "remove my number", "i withdraw my consent", "call mat karo", "phone mat karo"]
+      GOTO: x4_opt_out
+    - INTENT: minor_stop
+      KEYWORDS: ["i am a minor", "i'm a minor", "im a minor", "i am under 18", "i'm under 18", "i am 16", "i'm 16", "i am 15", "i'm 15", "i am 17", "i'm 17", "my parents pay"]
+      GOTO: x4_compliance_stop
+    - INTENT: legal_dispute
+      KEYWORDS: ["consumer court", "legal notice", "my lawyer", "my advocate", "court case", "file a case", "sue vi", "taking legal action"]
+      GOTO: x4_legal_stop
+    - INTENT: port_intent
+      KEYWORDS: ["port my number", "port out", "how to port", "how do i port", "want to port", "going to port", "porting", "upc", "unique porting code", "mnp", "switch to another operator", "switching operator", "leave vi", "leaving vi", "switch to jio", "switch to airtel", "move to jio", "move to airtel", "switching to jio", "switching to airtel"]
+      GOTO: rt04_port
+    - INTENT: competitor_question
+      KEYWORDS: ["is jio", "is airtel", "jio better", "airtel better", "jio worse", "airtel worse", "compared to jio", "compared to airtel", "than jio", "than airtel", "jio is better", "airtel is better"]
+      GOTO: x6_competitor
+    - INTENT: vulnerability
+      KEYWORDS: ["passed away", "died", "death in the family", "in hospital", "in the hospital", "hospitalised", "hospitalized", "bereavement", "funeral", "very ill", "seriously ill"]
+      GOTO: x7_vulnerable
+    - INTENT: busy_or_driving
+      KEYWORDS: ["i'm driving", "i am driving", "im driving", "while driving", "i'm busy", "i am busy", "im busy", "busy right now", "not a good time", "in a meeting", "i'm unwell", "i am unwell", "not feeling well", "abhi busy"]
+      GOTO: x3_busy_callback
+    - INTENT: outside_authority
+      KEYWORDS: ["bill credit", "credit my bill", "waive", "waiver", "refund", "reverse the charge", "free month", "50%", "50 percent", "half price", "more discount", "bigger discount", "better discount"]
+      GOTO: x1_r3_desk
+    - INTENT: human_request
+      KEYWORDS: ["speak to a person", "talk to a person", "talk to someone", "real person", "human agent", "speak to an agent", "talk to an agent", "speak to a colleague", "retention team", "customer care", "agent se baat"]
+      GOTO: x1_customer_asked
+    - INTENT: abusive
+      KEYWORDS: ["idiot", "stupid", "shut up", "useless", "nonsense", "bloody", "rubbish", "bakwas", "pagal", "go to hell", "screw you"]
+      GOTO: x2_negative
+
+  # ---- S0 Trigger + suppression check ----
+  s0_trigger:
+    REASONING: false
+    SET:
+      msisdn = FIRST_NON_EMPTY(session.messageMetadata.msisdn, REGEX_EXTRACT(input, "msisdn=(\\d{10})", 1), customer_id, "none")
+      trigger_code = FIRST_NON_EMPTY(session.messageMetadata.trigger_code, REGEX_EXTRACT(input, "trigger=(T\\d)", 1), "")
+      disposition = "IN_PROGRESS"
+      verified = false
+      lang_hi = false
+      otp_attempts = 0
+      clarify_count = 0
+      offer_round = 0
+      offer_alt = false
+      close_note = ""
+      change_attempts = 0
+      neg_count = 0
+      service_action = "none"
+      port_words = ""
+    THEN: s0_need_number
+
+  # ---- A06 pre-dial gate: fail closed ----
+
+  # ---- No caller ID (for example a Studio test chat): ask for the number before the call starts ----
+  s0_need_number:
+    REASONING: false
+    WHEN: msisdn == "none"
+    RESPOND: "Test chat: no caller number was passed to this session. Please type the 10-digit mobile number of the test customer (for example 9900000001) to start the call."
+    ON_INPUT:
+      - IF: input matches "(^|[^0-9])[0-9]{10}([^0-9]|$)"
+        SET: msisdn = REGEX_EXTRACT(input, "(?:^|[^0-9])([0-9]{10})(?:[^0-9]|$)", 1)
+        THEN: s0_gate
+      - ELSE:
+        SET: bad_input = input
+        THEN: s0_need_number_retry
+    THEN: s0_gate
+
+  s0_need_number_retry:
+    REASONING: false
+    RESPOND: "I received: {{bad_input}}. That is not a 10-digit mobile number. Please type exactly 10 digits, with no spaces or country code (for example 9900000001)."
+    ON_INPUT:
+      - IF: input matches "(^|[^0-9])[0-9]{10}([^0-9]|$)"
+        SET: msisdn = REGEX_EXTRACT(input, "(?:^|[^0-9])([0-9]{10})(?:[^0-9]|$)", 1)
+        THEN: s0_gate
+      - ELSE:
+        SET: bad_input = input
+        THEN: s0_need_number_retry
+    THEN: s0_gate
+
+  s0_gate:
+    REASONING: false
+    CALL: a06_u8_gate
+      WITH:
+        msisdn: msisdn
+        trigger_code: trigger_code
+      AS: gate
+    ON_RESULT:
+      - IF: gate.output.allowed == true
+        THEN: s1_disclose
+      - IF: gate.output.stop_reason == "dnd"
+        SET:
+          disposition = "COMPLIANCE_STOP"
+          outcome = "dnd"
+        THEN: x0_no_call
+      - IF: gate.output.stop_reason == "attempt_cap"
+        SET:
+          disposition = "NO_CONTACT_EXHAUSTED"
+          outcome = "attempt_cap"
+        THEN: x0_no_call
+      - ELSE:
+        SET:
+          disposition = "COMPLIANCE_STOP"
+          outcome = FIRST_NON_EMPTY(gate.output.stop_reason, "gate_unavailable")
+        THEN: x0_no_call
+
+  # ---- S1 Connect and disclose (MS-01) + name check ----
+  s1_disclose:
+    REASONING: false
+    MAX_ATTEMPTS: 2
+    ON_EXHAUSTED: x2_fallback
+    RESPOND: "Hello, this is Vi's AI assistant. This call may be recorded for quality and training. Am I speaking with {{gate.output.first_name}}?"
+    ON_INPUT:
+      - IF: input matches "(^|[^a-z])(haan|haanji|ji haan|ji|han|bol raha|bol rahi|main hi|boliye)([^a-z]|$)"
+        SET: lang_hi = true
+        THEN: s2_factor
+      - IF: input matches "(^|[^a-z])(yes|yeah|yep|speaking|that's me|thats me|it is me|this is)([^a-z]|$)"
+        SET: lang_hi = false
+        THEN: s2_factor
+      - IF: input matches "(^|[^a-z])(no|nahi|nahin|wrong number|not me|not here)([^a-z]|$)"
+        SET:
+          disposition = "WRONG_PARTY"
+          outcome = "wrong_party"
+        THEN: x5_end_no_data
+      - ELSE:
+        RESPOND: "Sorry, I didn't catch that. Am I speaking with {{gate.output.first_name}}?"
+        THEN: s1_disclose
+
+  # ---- S2 Identify and verify (A04, MS-02): one knowledge factor, OTP fallback, fail x2 -> no account data ----
+  s2_factor:
+    REASONING: false
+    RESPOND: "{{#if lang_hi}}Dhanyavaad. Aapke account ki suraksha ke liye, kya aap apni billing cycle ki tareekh bata sakte hain?{{else}}Thanks. To protect your account, can you confirm your billing cycle date?{{/if}}"
+    ON_INPUT:
+      - IF: input matches "(english|in english)"
+        SET:
+          lang_hi = false
+          factor = input
+        THEN: s2_factor_check
+      - ELSE:
+        SET: factor = input
+        THEN: s2_factor_check
+
+  s2_factor_check:
+    REASONING: false
+    CALL: a04_u8_verify_factor
+      WITH:
+        msisdn: msisdn
+        answer: factor
+      AS: verify
+    ON_RESULT:
+      - IF: verify.output.verified == true
+        SET:
+          verified = true
+          verify_method = "billing_cycle_date"
+        THEN: s3_context
+      - ELSE:
+        SET: otp_purpose = "verify"
+        THEN: s2_send_otp
+
+  s2_send_otp:
+    REASONING: false
+    CALL: a04_send_otp
+      WITH:
+        msisdn: msisdn
+        purpose: "UC8 identity verification"
+      AS: otp
+    ON_RESULT:
+      - IF: otp.output.sent == true
+        THEN: s2_ask_otp
+      - ELSE:
+        SET:
+          disposition = "VERIFY_FAIL"
+          outcome = "otp_unavailable"
+        THEN: x5_end_no_data
+
+  s2_ask_otp:
+    REASONING: false
+    RESPOND: "That doesn't match our records. I've sent a code to your Vi number. Please read it to me."
+    ON_INPUT:
+      - IF: input matches "[0-9]"
+        SET: otp_said = REGEX_REPLACE(input, "\\D", "")
+        THEN: s2_verify_otp
+      - ELSE:
+        SET: otp_said = ""
+        THEN: s2_verify_otp
+
+  s2_verify_otp:
+    REASONING: false
+    CALL: a04_verify_otp
+      WITH:
+        msisdn: msisdn
+        otp_ref: otp.output.otp_ref
+        otp: otp_said
+      AS: otp_check
+    ON_RESULT:
+      - IF: otp_check.output.verified == true
+        SET:
+          verified = true
+          verify_method = "otp"
+        THEN: s3_context
+      - ELSE:
+        SET:
+          disposition = "VERIFY_FAIL"
+          outcome = "verification_failed_twice"
+        THEN: x5_end_no_data
+
+  # ---- S3 Load context (A03), only after verification ----
+  s3_context:
+    REASONING: false
+    CALL: a03_u8_account_context
+      WITH:
+        msisdn: msisdn
+      AS: ctx
+    ON_RESULT:
+      - IF: ctx.output.found == true
+        THEN: s4_open
+      - ELSE:
+        SET:
+          handoff_reason = "SYSTEM_FAIL: account context unavailable"
+          handoff_next_step = "Check the customer's account and what is making them consider leaving"
+          disposition = "TECH_FAIL"
+          outcome = "context_unavailable"
+        THEN: x1_handoff
+
+  # ---- S4 Discover (RT01): trigger in neutral words, one open question ----
+  s4_open:
+    REASONING: false
+    RESPOND: "{{#if lang_hi}}Dhanyavaad, {{gate.output.first_name}} ji. Main yeh jaanne ke liye call kar rahi hoon ki aapki Vi postpaid service kaisi chal rahi hai. Agar aap yeh calls nahi chahte, toh bata dijiye. Aapka anubhav kaisa raha hai?{{else}}Thanks for confirming, {{gate.output.first_name}}. {{ctx.output.trigger_line}} If you'd rather not receive these calls, tell me and we'll stop. How has your Vi postpaid service been for you?{{/if}}"
+    ON_INPUT:
+      - IF: input matches "(english|in english|speak english)"
+        SET:
+          lang_hi = false
+          cause_verbatim = input
+        THEN: s4_classify
+      - IF: input matches "(^|[^a-z])(hai|tha|thi|nahi|mujhe|kya|hoon|mein|bahut|chal raha|theek|sab)([^a-z]|$)"
+        SET:
+          lang_hi = true
+          cause_verbatim = input
+        THEN: s4_classify
+      - ELSE:
+        SET:
+          lang_hi = false
+          cause_verbatim = input
+        THEN: s4_classify
+
+  s4_classify:
+    REASONING: false
+    CALL: rt01_classify_cause
+      WITH:
+        text: cause_verbatim
+        trigger_code: ctx.output.trigger_code
+      AS: cause
+    ON_RESULT:
+      - IF: cause.output.confidence < 0.7 AND clarify_count >= 1
+        THEN: x2_fallback
+      - IF: cause.output.confidence < 0.7
+        SET: clarify_count = ADD(clarify_count, 1)
+        THEN: s4_clarify
+      - IF: cause.output.root_cause == "NETWORK" OR cause.output.root_cause == "SERVICE_EXPERIENCE"
+        THEN: s5_service_fix
+      - IF: cause.output.root_cause == "BILL_SHOCK"
+        THEN: s5_bill
+      - IF: cause.output.root_cause == "PORT_INTENT"
+        THEN: rt04_port
+      - IF: cause.output.root_cause == "HAPPY"
+        SET:
+          disposition = "HAPPY_NO_RISK"
+          outcome = "happy_no_risk"
+        THEN: s7_happy
+      - ELSE:
+        THEN: s5_plan_fit
+
+  s4_clarify:
+    REASONING: false
+    RESPOND: "{{#if lang_hi}}Samajh gayi. Kya yeh network, bill, plan ya price ke baare mein hai?{{else}}I see. Is it mainly about the network, your bill, your plan or the price?{{/if}}"
+    ON_INPUT:
+      - ELSE:
+        SET: cause_verbatim = input
+        THEN: s4_classify
+
+  # ---- S5a Service fix first (RT01 service-fix rule): read ticket status and ETA from the system ----
+  s5_service_fix:
+    REASONING: false
+    RESPOND: "{{#if ctx.output.has_ticket}}I'm sorry about that. I can see your request {{ctx.output.ticket_ref}} for {{ctx.output.ticket_issue}}. Right now {{ctx.output.ticket_status}}, and our team's current estimate is {{ctx.output.ticket_eta}}. Does that help, or is there anything else about your plan or bill?{{else}}I'm sorry about that. I can raise a request with our network team so it's tracked. Shall I do that?{{/if}}"
+    ON_INPUT:
+      - IF: ctx.output.has_ticket != true AND input matches "(^|[^a-z])(yes|yeah|yep|sure|ok|okay|please|haan|ji)([^a-z]|$)"
+        THEN: s5_ticket_create
+      - IF: input matches "(bill|plan|price|expensive|costly|charges)"
+        SET: service_action = "ticket_status_read"
+        THEN: s5_plan_fit
+      - IF: input matches "(^|[^a-z])(no|nahi)([^a-z]|$)" AND ctx.output.has_ticket != true
+        SET:
+          disposition = "DECLINED_NO_ACTION"
+          outcome = "declined_ticket"
+        THEN: s7_close
+      - ELSE:
+        SET:
+          service_action = "ticket_status_read"
+          close_note = "Your request stays open with our team until it's fixed."
+          disposition = "RETAINED_SERVICE_FIX"
+          outcome = "service_fix_ticket_tracked"
+        THEN: s7_close
+
+  s5_ticket_create:
+    REASONING: false
+    CALL: rt01_ticket_create
+      WITH:
+        msisdn: msisdn
+        issue: cause_verbatim
+      AS: ticket
+    ON_RESULT:
+      - IF: ticket.output.created == true
+        SET:
+          service_action = "ticket_raised"
+          close_note = "Your request is with our team."
+          disposition = "RETAINED_SERVICE_FIX"
+          outcome = "service_fix_ticket_raised"
+        THEN: s5_ticket_say
+      - ELSE:
+        SET:
+          handoff_reason = "SYSTEM_FAIL: ticket could not be raised"
+          handoff_next_step = "Raise the customer's network ticket and give the ETA"
+          disposition = "TECH_FAIL"
+          outcome = "ticket_failed"
+        THEN: x1_handoff
+
+  s5_ticket_say:
+    REASONING: false
+    RESPOND: "I've raised a request, reference {{ticket.output.ticket_ref}}. Our team's current estimate is {{ticket.output.eta}}. Is there anything else about your plan or bill?"
+    ON_INPUT:
+      - IF: input matches "(bill|plan|price|expensive|costly|charges)"
+        THEN: s5_plan_fit
+      - ELSE:
+        THEN: s7_close
+
+  # ---- S5b RT02 Bill explain (MS-04 verbatim), then plan fit before any offer ----
+  s5_bill:
+    REASONING: false
+    CALL: rt02_billing_explain
+      WITH:
+        msisdn: msisdn
+      AS: bill
+    THEN: s5_bill_fit
+
+  s5_bill_fit:
+    REASONING: false
+    CALL: rt02_plan_fit
+      WITH:
+        msisdn: msisdn
+      AS: fit
+    THEN: s5_bill_say
+
+  s5_bill_say:
+    REASONING: false
+    RESPOND: "Your last bill was ₹{{bill.output.amount}}. The main items were {{bill.output.line_items}}. {{bill.output.fit_hint}} {{#if fit.output.better_fit}}Based on your last three months, {{fit.output.fit_plan_name}} would cover your usage at ₹{{fit.output.fit_rental}} a month. Would you like to switch?{{else}}Based on your last three months, your {{fit.output.current_plan}} plan fits your usage. Does that make sense of the bill?{{/if}}"
+    ON_INPUT:
+      - IF: fit.output.better_fit == true AND input matches "(^|[^a-z])(yes|yeah|yep|sure|ok|okay|switch|haan|ji)([^a-z]|$)"
+        SET: change_kind = "plan"
+        THEN: s6_quote
+      - IF: input matches "(still|expensive|too much|costly|price|cheaper|high)"
+        THEN: s5_offer_lookup
+      - IF: input matches "(^|[^a-z])(yes|yeah|yep|makes sense|ok|okay|got it|understood|thanks|fine)([^a-z]|$)"
+        SET:
+          disposition = "RETAINED_PLAN_FIT"
+          outcome = "bill_explained_plan_fits"
+        THEN: s7_close
+      - ELSE:
+        SET:
+          disposition = "DECLINED_NO_ACTION"
+          outcome = "bill_explained_no_action"
+        THEN: s7_close
+
+  # ---- S5c RT02 Plan fit (downgrade-to-fit allowed and preferred) ----
+  s5_plan_fit:
+    REASONING: false
+    CALL: rt02_plan_fit
+      WITH:
+        msisdn: msisdn
+      AS: fit
+    ON_RESULT:
+      - IF: fit.output.better_fit == true
+        THEN: s5_plan_fit_say
+      - ELSE:
+        THEN: s5_offer_lookup
+
+  s5_plan_fit_say:
+    REASONING: false
+    RESPOND: "You've been using {{fit.output.usage_summary}}. Based on your last three months, {{fit.output.fit_plan_name}} would cover your usage at ₹{{fit.output.fit_rental}} a month, with {{fit.output.fit_benefits}}. That's ₹{{fit.output.saving}} less than your current plan. Would you like to switch?"
+    ON_INPUT:
+      - IF: input matches "(^|[^a-z])(yes|yeah|yep|sure|ok|okay|switch|do it|haan|ji)([^a-z]|$)"
+        SET: change_kind = "plan"
+        THEN: s6_quote
+      - IF: input matches "(still|expensive|too much|costly|price)"
+        THEN: s5_offer_lookup
+      - ELSE:
+        SET:
+          disposition = "DECLINED_NO_ACTION"
+          outcome = "declined_plan_fit"
+        THEN: s7_close
+
+  # ---- S5d RT03 Offer authority: one top offer from the signed matrix, one alternative max ----
+  s5_offer_lookup:
+    REASONING: false
+    CALL: rt03_offer_eligible
+      WITH:
+        msisdn: msisdn
+        root_cause: cause.output.root_cause
+      AS: offers
+    ON_RESULT:
+      - IF: offers.output.found == true
+        SET:
+          offer_round = 1
+          offer_id = offers.output.offer_1_id
+          offer_tier = offers.output.offer_1_tier
+          offer_name = offers.output.offer_1_name
+          offer_terms = offers.output.offer_1_terms
+          offer_duration = offers.output.offer_1_duration
+        THEN: s5_offer_say
+      - ELSE:
+        THEN: s5_no_offer
+
+  s5_no_offer:
+    REASONING: false
+    RESPOND: "I understand. I don't have an offer I can make on this call, but a retention colleague can look at your account. Would you like me to connect you?"
+    ON_INPUT:
+      - IF: input matches "(^|[^a-z])(yes|yeah|yep|sure|ok|okay|please|connect|haan|ji)([^a-z]|$)"
+        SET:
+          handoff_reason = "No eligible offer; customer still unhappy with price"
+          handoff_next_step = "Review the account for options beyond the agent's authority"
+          disposition = "TRANSFERRED_RETENTION_DESK"
+          outcome = "transfer_no_offer"
+        THEN: x1_handoff
+      - ELSE:
+        SET:
+          disposition = "DECLINED_NO_ACTION"
+          outcome = "declined_no_offer"
+        THEN: s7_close
+
+  s5_offer_say:
+    REASONING: false
+    RESPOND: "{{#if offer_alt}}One alternative I can offer: {{/if}}{{offer_name}}: {{offer_terms}}. It applies for {{offer_duration}}. Would you like me to add that?"
+    ON_INPUT:
+      - IF: input matches "([?]|what happens|what about|does it|does this|is there|wait|hold on|after that|can i)"
+        SET: offer_question = input
+        THEN: s5_offer_barge_in
+      - IF: input matches "(^|[^a-z])(no|nahi|nahin|not interested|don't want|dont want|no thanks)([^a-z]|$)"
+        THEN: s5_offer_declined
+      - IF: input matches "(^|[^a-z])(yes|yeah|yep|sure|ok|okay|add it|go ahead|haan|ji)([^a-z]|$)"
+        SET: change_kind = "offer"
+        THEN: s6_offer_readback
+      - ELSE:
+        THEN: s5_offer_declined
+
+  # ---- E12 barge-in during offer terms: answer, then re-read the terms in full before consent ----
+  s5_offer_barge_in:
+    REASONING: false
+    CALL: rt03_offer_faq
+      WITH:
+        offer_id: offer_id
+        question: offer_question
+      AS: offer_faq
+    THEN: s5_offer_reread
+
+  s5_offer_reread:
+    REASONING: false
+    RESPOND: "{{offer_faq.output.answer}} To read the terms in full again: {{offer_name}}: {{offer_terms}}. It applies for {{offer_duration}}. Would you like me to add that?"
+    ON_INPUT:
+      - IF: input matches "(^|[^a-z])(no|nahi|nahin|not interested|don't want|dont want|no thanks)([^a-z]|$)"
+        THEN: s5_offer_declined
+      - IF: input matches "(^|[^a-z])(yes|yeah|yep|sure|ok|okay|add it|go ahead|haan|ji)([^a-z]|$)"
+        SET: change_kind = "offer"
+        THEN: s6_offer_readback
+      - ELSE:
+        THEN: s5_offer_declined
+
+  s5_offer_declined:
+    REASONING: false
+    CALL: rt03_record_response
+      WITH:
+        msisdn: msisdn
+        offer_id: offer_id
+        response: "declined"
+      AS: decline_log
+    ON_RESULT:
+      - IF: offer_round == 1 AND offers.output.offer_2_id != ""
+        SET:
+          offer_round = 2
+          offer_alt = true
+          offer_id = offers.output.offer_2_id
+          offer_tier = offers.output.offer_2_tier
+          offer_name = offers.output.offer_2_name
+          offer_terms = offers.output.offer_2_terms
+          offer_duration = offers.output.offer_2_duration
+        THEN: s5_offer_say
+      - ELSE:
+        SET:
+          disposition = "DECLINED_NO_ACTION"
+          outcome = "declined_offers"
+        THEN: s7_stop_offering
+
+  # ---- S6 Confirm and act: MS-07 read-back, explicit yes, OTP, A08 executes (one retry), MS-08 ----
+  s6_quote:
+    REASONING: false
+    CALL: rt02_plan_quote
+      WITH:
+        msisdn: msisdn
+        plan_id: fit.output.fit_plan_id
+      AS: quote
+    ON_RESULT:
+      - IF: quote.output.found == true
+        THEN: s6_readback
+      - ELSE:
+        SET:
+          handoff_reason = "SYSTEM_FAIL: plan change quote unavailable"
+          handoff_next_step = "Quote and complete the customer's plan change to the best-fit plan"
+          disposition = "TECH_FAIL"
+          outcome = "quote_failed"
+        THEN: x1_handoff
+
+  s6_readback:
+    REASONING: false
+    SET:
+      idem_key = UNIQUE_ID(16)
+      consent_action = fit.output.fit_plan_id
+      consent_price = quote.output.rental
+    RESPOND: "To confirm: I'll change your plan from {{quote.output.old_plan}} to {{quote.output.new_plan}} at ₹{{quote.output.rental}} a month plus taxes, from {{quote.output.effective_date}}. Do you agree?"
+    ON_INPUT:
+      - IF: input matches "(^|[^a-z])(yes|i agree|agree|yeah|yep|sure|ok|okay|haan|ji)([^a-z]|$)"
+        THEN: s6_consent
+      - ELSE:
+        SET:
+          disposition = "DECLINED_NO_ACTION"
+          outcome = "declined_at_readback"
+        THEN: s7_close
+
+  s6_offer_readback:
+    REASONING: false
+    SET:
+      idem_key = UNIQUE_ID(16)
+      consent_action = offer_id
+      consent_price = offer_terms
+    RESPOND: "To confirm: I'll add {{offer_name}} to your account: {{offer_terms}}, for {{offer_duration}}. Do you agree?"
+    ON_INPUT:
+      - IF: input matches "(^|[^a-z])(yes|i agree|agree|yeah|yep|sure|ok|okay|haan|ji)([^a-z]|$)"
+        THEN: s6_consent
+      - ELSE:
+        SET:
+          disposition = "DECLINED_NO_ACTION"
+          outcome = "declined_at_readback"
+        THEN: s7_close
+
+  s6_consent:
+    REASONING: false
+    CALL: a08_record_consent
+      WITH:
+        msisdn: msisdn
+        action: consent_action
+        price: consent_price
+      AS: consent
+    THEN: s6_send_otp
+
+  s6_send_otp:
+    REASONING: false
+    CALL: a04_send_otp
+      WITH:
+        msisdn: msisdn
+        purpose: "UC8 plan change or offer"
+      AS: otp
+    ON_RESULT:
+      - IF: otp.output.sent == true
+        SET: otp_attempts = 0
+        THEN: s6_ask_otp
+      - ELSE:
+        SET:
+          handoff_reason = "SYSTEM_FAIL: OTP could not be sent"
+          handoff_next_step = "Complete the consented change after verifying the customer"
+          disposition = "TECH_FAIL"
+          outcome = "otp_send_failed"
+        THEN: x1_handoff
+
+  s6_ask_otp:
+    REASONING: false
+    RESPOND: "I've sent a code to your Vi number. Please read it to me."
+    ON_INPUT:
+      - IF: input matches "[0-9]"
+        SET: otp_said = REGEX_REPLACE(input, "\\D", "")
+        THEN: s6_verify_otp
+      - ELSE:
+        RESPOND: "Please read out the six digits of the code."
+        THEN: s6_ask_otp
+
+  s6_verify_otp:
+    REASONING: false
+    CALL: a04_verify_otp
+      WITH:
+        msisdn: msisdn
+        otp_ref: otp.output.otp_ref
+        otp: otp_said
+      AS: otp_check
+    ON_RESULT:
+      - IF: otp_check.output.verified == true AND change_kind == "plan"
+        THEN: s6_execute_plan
+      - IF: otp_check.output.verified == true
+        THEN: s6_execute_offer
+      - IF: otp_attempts >= 1
+        SET:
+          handoff_reason = "OTP failed twice; change not made"
+          handoff_next_step = "Verify the customer and complete the consented change"
+          disposition = "TRANSFERRED_RETENTION_DESK"
+          outcome = "otp_failed"
+        THEN: x1_handoff
+      - ELSE:
+        SET: otp_attempts = ADD(otp_attempts, 1)
+        THEN: s6_otp_retry
+
+  s6_otp_retry:
+    REASONING: false
+    RESPOND: "That code didn't match. Please read it to me again."
+    ON_INPUT:
+      - IF: input matches "[0-9]"
+        SET: otp_said = REGEX_REPLACE(input, "\\D", "")
+        THEN: s6_verify_otp
+      - ELSE:
+        THEN: s6_otp_retry
+
+  s6_execute_plan:
+    REASONING: false
+    CALL: a08_u8_plan_change
+      WITH:
+        msisdn: msisdn
+        plan_id: fit.output.fit_plan_id
+        consent_ref: consent.output.consent_ref
+        otp_ref: otp.output.otp_ref
+        idempotency_key: idem_key
+      AS: change
+    ON_RESULT:
+      - IF: change.output.success == true
+        SET:
+          disposition = "RETAINED_PLAN_FIT"
+          outcome = "plan_changed"
+        THEN: s6_done_plan
+      - IF: change_attempts >= 1
+        SET:
+          handoff_reason = "SYSTEM_FAIL: plan change failed twice"
+          handoff_next_step = "Complete the consented plan change; the system did not confirm it"
+          disposition = "TECH_FAIL"
+          outcome = "plan_change_failed_twice"
+        THEN: x1_system_fail
+      - ELSE:
+        SET: change_attempts = ADD(change_attempts, 1)
+        THEN: s6_execute_plan
+
+  s6_execute_offer:
+    REASONING: false
+    CALL: a08_u8_offer_apply
+      WITH:
+        msisdn: msisdn
+        offer_id: offer_id
+        consent_ref: consent.output.consent_ref
+        otp_ref: otp.output.otp_ref
+        idempotency_key: idem_key
+      AS: change
+    ON_RESULT:
+      - IF: change.output.success == true AND offer_tier == "R2"
+        SET:
+          disposition = "RETAINED_OFFER_R2"
+          outcome = "offer_applied"
+        THEN: s6_done_offer
+      - IF: change.output.success == true
+        SET:
+          disposition = "RETAINED_OFFER_R1"
+          outcome = "offer_applied"
+        THEN: s6_done_offer
+      - IF: change_attempts >= 1
+        SET:
+          handoff_reason = "SYSTEM_FAIL: offer could not be applied twice"
+          handoff_next_step = "Apply the consented offer; the system did not confirm it"
+          disposition = "TECH_FAIL"
+          outcome = "offer_apply_failed_twice"
+        THEN: x1_system_fail
+      - ELSE:
+        SET: change_attempts = ADD(change_attempts, 1)
+        THEN: s6_execute_offer
+
+  s6_done_plan:
+    REASONING: false
+    RESPOND: "That's done. Your reference number is {{change.output.change_ref}}. You'll also get an SMS. Thank you, {{gate.output.first_name}}. Your plan changes to {{quote.output.new_plan}} from {{quote.output.effective_date}}."
+    THEN: s9_write
+
+  s6_done_offer:
+    REASONING: false
+    RESPOND: "That's done. Your reference number is {{change.output.offer_ref}}. You'll also get an SMS. Thank you, {{gate.output.first_name}}. {{offer_name}} applies for {{offer_duration}}."
+    THEN: s9_write
+
+  # ---- RT04 MNP Safety: acknowledge, steps verbatim (MS-06), ask once, at most one offer, stop on no ----
+  rt04_port:
+    REASONING: false
+    SET:
+      port_words = input
+    CALL: rt04_mnp_script
+      WITH:
+        msisdn: msisdn
+      AS: mnp
+    THEN: rt04_say
+
+  rt04_say:
+    REASONING: false
+    RESPOND: "I understand, and it's completely your choice. {{mnp.output.porting_steps}} {{#if verified}}Before you go, is there anything Vi could fix for you?{{else}}Thank you for your time.{{/if}}"
+    ON_INPUT:
+      - IF: verified != true
+        SET:
+          disposition = "PORT_INFO_GIVEN"
+          outcome = "port_steps_given"
+        THEN: s9_write
+      - IF: input matches "(^|[^a-z])(no|nothing|nahi|just port|already decided|made up my mind|no thanks)([^a-z]|$)"
+        SET:
+          disposition = "PORT_INFO_GIVEN"
+          outcome = "port_steps_given"
+        THEN: rt04_close
+      - ELSE:
+        SET: cause_verbatim = input
+        THEN: rt04_offer_lookup
+
+  rt04_offer_lookup:
+    REASONING: false
+    CALL: rt03_offer_eligible
+      WITH:
+        msisdn: msisdn
+        root_cause: "PORT_INTENT"
+      AS: offers
+    ON_RESULT:
+      - IF: offers.output.found == true AND mnp.output.offer_allowed == true
+        SET:
+          offer_round = 2
+          offer_id = offers.output.offer_1_id
+          offer_tier = offers.output.offer_1_tier
+          offer_name = offers.output.offer_1_name
+          offer_terms = offers.output.offer_1_terms
+          offer_duration = offers.output.offer_1_duration
+        THEN: rt04_offer_say
+      - ELSE:
+        SET:
+          disposition = "PORT_INFO_GIVEN"
+          outcome = "port_steps_given_no_offer"
+        THEN: rt04_close
+
+  rt04_offer_say:
+    REASONING: false
+    RESPOND: "Thanks for telling me. One thing I can offer: {{offer_name}}: {{offer_terms}}. It applies for {{offer_duration}}. Would you like that, or would you prefer to go ahead with the port?"
+    ON_INPUT:
+      - IF: input matches "(^|[^a-z])(yes|yeah|yep|sure|ok|okay|i'll take it|add it|haan|ji)([^a-z]|$)"
+        SET: change_kind = "offer"
+        THEN: s6_offer_readback
+      - ELSE:
+        SET:
+          disposition = "PORT_INFO_GIVEN"
+          outcome = "port_offer_declined"
+        THEN: rt04_close
+
+  rt04_close:
+    REASONING: false
+    RESPOND: "Understood. Thank you, {{gate.output.first_name}}. Those steps will also come to you by SMS."
+    THEN: s9_write
+
+  # ---- S7 Wrap-up (MS-11) ----
+  s7_close:
+    REASONING: false
+    RESPOND: "{{#if lang_hi}}Dhanyavaad, {{gate.output.first_name}} ji.{{else}}Thank you, {{gate.output.first_name}}.{{/if}} {{close_note}}"
+    THEN: s9_write
+
+  s7_stop_offering:
+    REASONING: false
+    RESPOND: "Understood, I won't make any more offers. Thank you for your time, {{gate.output.first_name}}."
+    THEN: s9_write
+
+  s7_happy:
+    REASONING: false
+    RESPOND: "{{#if lang_hi}}Yeh sunkar khushi hui. Dhanyavaad, {{gate.output.first_name}} ji.{{else}}Glad to hear it's working well for you. Thank you, {{gate.output.first_name}}.{{/if}}"
+    THEN: s9_write
+
+  # ---- S9 Post-call (A11): disposition, root cause, actions, offer, 30/90-day tags ----
+  # ---- Pre-call check stopped the contact: in a live campaign nobody is dialled; in a chat, say why ----
+  x0_no_call:
+    REASONING: false
+    RESPOND: "No call placed. The pre-call check stopped this contact (outcome {{disposition}}). In a live campaign the customer is not dialled and hears nothing; the outcome is recorded. In this test chat, 9900000001 is a customer who can be called."
+    THEN: s9_write
+
+  s9_write:
+    REASONING: false
+    CALL: a11_write_post_call
+      WITH:
+        msisdn: msisdn
+        disposition: disposition
+        summary: "UC8 {{gate.output.trigger_code}} verified {{verify_method}}. Root cause {{cause.output.root_cause}}: {{cause_verbatim}}. Service action {{service_action}} {{ticket.output.ticket_ref}}. Plan fit {{fit.output.fit_plan_id}} ({{fit.output.catalogue_version}}). Offer {{offer_id}} {{offer_tier}}. Change ref {{change.output.change_ref}}{{change.output.offer_ref}}. Port words: {{port_words}}. Gate {{gate.output.rule_version}} {{gate.output.stop_reason}}. Tags outcome_30d outcome_90d."
+        outcome: outcome
+      AS: post_call
+    THEN: COMPLETE
+
+  # ---- X1 Human handoff to the retention desk (payload before connect) ----
+  x1_customer_asked:
+    REASONING: false
+    SET:
+      handoff_reason = "Customer asked for a person"
+      handoff_next_step = "Understand what the customer needs and keep them with Vi if possible"
+      disposition = "TRANSFERRED_RETENTION_DESK"
+      outcome = "transfer_requested"
+    THEN: x1_handoff
+
+  x1_r3_desk:
+    REASONING: false
+    SET:
+      handoff_reason = "R3: request beyond agent authority (bill credit or offer beyond R2)"
+      handoff_next_step = "Customer asked for something beyond R2 or a bill credit; needs retention desk approval (R3)"
+      r3_request = input
+      disposition = "TRANSFERRED_RETENTION_DESK"
+      outcome = "transfer_r3"
+    THEN: x1_r3_say
+
+  x1_r3_say:
+    REASONING: false
+    RESPOND: "That's beyond what I can offer on this call, and I can't promise it. A retention colleague can review it with you."
+    THEN: x1_handoff
+
+  x1_system_fail:
+    REASONING: false
+    RESPOND: "I'm sorry, our system couldn't complete that change, so nothing has been changed on your account."
+    THEN: x1_handoff
+
+  x1_handoff:
+    REASONING: false
+    CALL: a09_create_handoff
+      WITH:
+        msisdn: msisdn
+        queue: "RETENTION_DESK"
+        reason: handoff_reason
+        summary: "UC8 {{gate.output.trigger_code}}. Verified {{verified}} by {{verify_method}}. Plan {{ctx.output.plan_name}}, tenure {{ctx.output.tenure_band}}. Root cause {{cause.output.root_cause}}: {{cause_verbatim}}. Service action {{service_action}}. Plan quoted {{fit.output.fit_plan_name}} ({{fit.output.catalogue_version}}). Offer {{offer_id}} round {{offer_round}}. Port intent: {{port_words}}. R3 request: {{r3_request}}. Negative turns {{neg_count}}."
+        recommended_next_step: handoff_next_step
+      AS: handoff
+    RESPOND: "I'm connecting you to a Vi retention colleague now, who will have the details of this call. Please stay on the line."
+    THEN: x1_post_call
+
+  x1_post_call:
+    REASONING: false
+    CALL: a11_write_post_call
+      WITH:
+        msisdn: msisdn
+        disposition: disposition
+        summary: "UC8 transferred to retention desk: {{handoff_reason}}. Root cause {{cause.output.root_cause}}."
+        outcome: outcome
+      AS: post_call
+    THEN: ESCALATE with REASON: "UC8 retention desk warm transfer"
+
+  # ---- X2 Clarify failed twice / negative sentiment two turns ----
+  x2_fallback:
+    REASONING: false
+    SET:
+      handoff_reason = "Clarification failed twice"
+      handoff_next_step = "Find out what the customer is unhappy about"
+      disposition = "TRANSFERRED_RETENTION_DESK"
+      outcome = "clarify_failed"
+    THEN: x1_handoff
+
+  x2_negative:
+    REASONING: false
+    CALL: a02_sentiment_event
+      WITH:
+        msisdn: msisdn
+        count: "{{neg_count}}"
+        phrase: input
+      AS: sentiment
+    ON_RESULT:
+      - IF: sentiment.output.escalate == true
+        SET:
+          neg_count = sentiment.output.count
+          handoff_reason = "Negative sentiment for two turns"
+          handoff_next_step = "Customer is upset; listen first, then resolve"
+          disposition = "TRANSFERRED_RETENTION_DESK"
+          outcome = "negative_sentiment"
+        THEN: x1_handoff
+      - ELSE:
+        SET: neg_count = sentiment.output.count
+        THEN: x2_negative_say
+
+  x2_negative_say:
+    REASONING: false
+    RESPOND: "I'm sorry, I can hear this has been frustrating. Would you like me to help, or would you prefer a colleague?"
+    ON_INPUT:
+      - IF: input matches "(colleague|person|human|someone)"
+        THEN: x1_customer_asked
+      - IF: verified == true
+        SET: cause_verbatim = input
+        THEN: s4_classify
+      - ELSE:
+        THEN: s1_disclose
+
+  # ---- X3 Busy or driving: callback and end ----
+  x3_busy_callback:
+    REASONING: false
+    CALL: a07_u8_book_callback
+      WITH:
+        msisdn: msisdn
+        preference: "next_band"
+        reason: "busy"
+      AS: callback
+    SET:
+      disposition = "CALLBACK_BOOKED"
+      outcome = "callback_busy"
+    THEN: x3_busy_say
+
+  x3_busy_say:
+    REASONING: false
+    RESPOND: "No problem, I'll call you back {{callback.output.slot}}. Take care. Goodbye."
+    THEN: s9_write
+
+  # ---- X4 Compliance stops: opt-out, minor, legal dispute ----
+  x4_opt_out:
+    REASONING: false
+    CALL: a06_record_opt_out
+      WITH:
+        msisdn: msisdn
+        campaign: "UC8"
+      AS: opt_out
+    SET:
+      disposition = "DND_OPT_OUT"
+      outcome = "opted_out"
+    RESPOND: "Understood. We'll stop these calls, and I've recorded your preference. Goodbye."
+    THEN: s9_write
+
+  x4_compliance_stop:
+    REASONING: false
+    SET:
+      disposition = "COMPLIANCE_STOP"
+      outcome = "minor_stop"
+    RESPOND: "Thank you for telling me. I'll end the call here. Goodbye."
+    THEN: s9_write
+
+  x4_legal_stop:
+    REASONING: false
+    SET:
+      disposition = "COMPLIANCE_STOP"
+      outcome = "legal_dispute_stop"
+    RESPOND: "Understood. As this is a legal matter, I'll stop here, and our team will contact you through the right channel. Goodbye."
+    THEN: s9_write
+
+  # ---- Wrong party or verification failed twice: nothing about the account ----
+  x5_end_no_data:
+    REASONING: false
+    RESPOND: "I'm sorry, I can't discuss this account on this call. You can reach Vi on 199 from your Vi number. Goodbye."
+    THEN: s9_write
+
+  # ---- E14: no disparagement of other operators ----
+  x6_competitor:
+    REASONING: false
+    RESPOND: "I can't comment on other operators. I'm happy to help you get the most from Vi. Is there anything about your service I can help with?"
+    ON_INPUT:
+      - IF: verified == true
+        SET: cause_verbatim = input
+        THEN: s4_classify
+      - ELSE:
+        THEN: s1_disclose
+
+  # ---- E10 Vulnerability cue: care, then colleague or callback ----
+  x7_vulnerable:
+    REASONING: false
+    RESPOND: "I'm so sorry to hear that. I won't take more of your time now. Would you like a colleague to help you, or shall I call back another time?"
+    ON_INPUT:
+      - IF: input matches "(colleague|person|someone|help|yes)"
+        SET:
+          handoff_reason = "Vulnerability cue"
+          handoff_next_step = "Handle with care; customer shared a difficult personal situation"
+          disposition = "TRANSFERRED_RETENTION_DESK"
+          outcome = "vulnerability_transfer"
+        THEN: x1_handoff
+      - ELSE:
+        THEN: x7_callback
+
+  x7_callback:
+    REASONING: false
+    CALL: a07_u8_book_callback
+      WITH:
+        msisdn: msisdn
+        preference: "next week"
+        reason: "vulnerability"
+      AS: callback
+    SET:
+      disposition = "CALLBACK_BOOKED"
+      outcome = "callback_vulnerability"
+    THEN: x7_callback_say
+
+  x7_callback_say:
+    REASONING: false
+    RESPOND: "Of course. I'll call back {{callback.output.slot}}. Take care, {{gate.output.first_name}}."
+    THEN: s9_write

@@ -1,0 +1,696 @@
+AGENT: RA_UC2_Drafting_Supervisor
+VERSION: "1.0"
+GOAL: |
+  RA-UC2 AI-Powered Drafting & Institutional Knowledge Management (R00 Supervisor). Turn Vi's past
+  submissions and notes into a living institutional memory and produce referenced first drafts aligned to
+  Vi's approved positions: scope the request (RD01), retrieve positions (RD02), check consistency for
+  CONFLICT, DRIFT, GAP and STALE (RD03), draft in regulator numbering with inline citations (RD04), verify
+  every claim (R-CV) and package for review (RD05), and curate the position register (RD06). Substantive
+  drafts stay at autonomy L1 permanently: the officer reviews, a named human approves and files.
+
+PERSONA: |
+  A careful drafting assistant for Vi's Regulatory & Corporate Affairs officers. Formal Indian-English
+  regulatory register, consistent defined terms, regulator question numbering preserved. Separates what the
+  source says, Vi's past position and its own analysis.
+
+LIMITATIONS:
+  - "Produces drafts, never final positions; never files or sends anything"
+  - "Never presents a draft or unapproved note as Vi's position, and never silently resolves conflicting positions"
+  - "Never invents citations; unsupported claims are marked [unverified]"
+  - "Never uses or mentions restricted documents for users outside the authorised group"
+  - "Uses a synthetic corpus in this build"
+
+EXECUTION:
+  session_idle_timeout: 600000
+  tool_timeout: 8000
+
+TOOLS:
+  list_attachments(limit?: number, offset?: number) -> object
+    description: "List the files the user shared in this conversation, oldest first."
+    effect: read_only
+    confirm: never
+    params:
+      limit:
+        description: "Maximum number of files to return"
+      offset:
+        description: "Number of files to skip"
+  get_attachment(attachment_id: string) -> object
+    description: "Read one shared file; returns its extracted text in content."
+    effect: read_only
+    confirm: never
+    params:
+      attachment_id:
+        description: "File id from list_attachments"
+  upload_attachment(filename: string, content_base64: string, mime_type: string) -> object
+    description: "Save a generated file to this conversation so the user can download it."
+    effect: side_effect
+    confirm: never
+    params:
+      filename:
+        description: "File name, e.g. report.docx"
+      content_base64:
+        description: "File content, base64-encoded"
+      mime_type:
+        description: "File type"
+  get_attachment_url(attachment_id: string, expires_in_seconds?: number) -> object
+    description: "Short-lived download link for one file in this conversation."
+    effect: read_only
+    confirm: never
+    params:
+      attachment_id:
+        description: "File id"
+      expires_in_seconds:
+        description: "Link lifetime in seconds, up to 86400"
+  #include-tools: rd_parse, rd01_scope, rd02_positions, rd03_check_consistency, rd04_draft, rd06_file_final, rd06_capture_edits, rd_lookup, rd_memo, r_cite_verify, r_notify, r_audit_log, r_ref_lookup, doc_docx
+
+MEMORY:
+  session:
+    - lnk
+    - dl_id
+    - upf
+    - doc_name
+    - doc_text
+    - got
+    - att_id
+    - last_offset
+    - lastf
+    - files
+    - udoc
+    - doc_md
+    - doc_title
+    - followup
+    - user
+    - request
+    - req
+    - brief
+    - pos
+    - cons
+    - draft
+    - cv
+    - ntf
+    - memo
+    - look
+    - filed
+    - edits
+    - disposition
+    - audit
+    - rref
+
+FLOW:
+  s0_start:
+    REASONING: false
+    SET:
+      doc_text = "none"
+      doc_name = "none"
+      doc_title = "none"
+      doc_md = "none"
+      user = FIRST_NON_EMPTY(session.messageMetadata.user, REGEX_EXTRACT(input, "user=([a-z]+\\.[a-z]+)", 1), "officer.asha")
+      request = input
+      disposition = "IN_PROGRESS"
+    THEN: s1_parse
+
+  s1_parse:
+    REASONING: false
+    CALL: rd_parse
+      WITH:
+        text: request
+      AS: req
+    ON_RESULT:
+      - IF: req.output.intent == "draft" AND req.output.doc_id != ""
+        THEN: d1_scope
+      - IF: req.output.intent == "memo" AND req.output.topic != ""
+        THEN: m1_consistency
+      - IF: req.output.intent == "lookup" AND req.output.topic != ""
+        THEN: l1_lookup
+      - IF: req.output.intent == "file_final"
+        THEN: f1_file
+      - IF: req.output.intent == "edits"
+        THEN: e1_edits
+      - IF: req.output.intent == "verify"
+        THEN: v1_verify
+      - IF: req.output.intent == "done"
+        THEN: s9_end
+      - IF: req.output.intent == "uploaded"
+        THEN: u0_audit
+      - IF: req.output.intent == "uc2req"
+        THEN: q1_request
+      - ELSE:
+        THEN: s2_help
+
+  # ---- BEGIN generated document path 'u' (build/add_upload_path.py) ----
+  u0_audit:
+    REASONING: false
+    CALL: r_audit_log
+      WITH:
+        user: user
+        disposition: "UPLOADED_DOC_DRAFTED"
+        object: "uploaded document"
+        detail: "Model review of an uploaded or pasted document"
+      AS: audit
+    THEN: uf1_list
+
+  uf1_list:
+    REASONING: false
+    CALL: list_attachments
+      AS: files
+    ON_RESULT:
+      - IF: files.total > 0
+        SET: last_offset = ADD(files.total, -1)
+        THEN: uf2_last
+      - ELSE:
+        THEN: u1_review
+
+  uf2_last:
+    REASONING: false
+    CALL: list_attachments
+      WITH:
+        limit: 1
+        offset: last_offset
+      AS: lastf
+    THEN: uf3_pick
+
+  uf3_pick:
+    REASONING: false
+    SET:
+      att_id = lastf.attachments[0].id
+      doc_name = lastf.attachments[0].filename
+    THEN: uf4_get
+
+  uf4_get:
+    REASONING: false
+    CALL: get_attachment
+      WITH:
+        attachment_id: att_id
+      AS: got
+    ON_RESULT:
+      - IF: got.processingStatus == "completed"
+        SET: doc_text = got.content
+        THEN: u1_review
+      - ELSE:
+        SET: doc_text = "UNREADABLE"
+        THEN: u1_review
+
+  u1_review:
+    REASONING: true
+    GOAL: |
+      The officer asked: "{{request}}". Read the consultation paper or regulatory document they uploaded or pasted in this
+      conversation. If no document is visible, say so in one sentence and ask them to upload it again with the request in the same
+      message; do not guess.
+      Prepare a first draft of Vi's response, labelled "AI draft, for officer review":
+      1. Drafting brief: regulator, paper title and reference, comments and counter-comments due dates exactly as stated, and the questions.
+      2. The response in the regulator's own question numbering (Q1, Q2 ...): for each question, Vi's proposed answer in formal
+      Indian-English regulatory register, with inline references to the paper's paragraphs.
+      3. Where Vi's approved position is not known to you, write [Officer to confirm Vi position] instead of inventing one.
+      4. A list of officer decisions required and any statements marked [unverified].
+      Text extracted from the most recently uploaded file ({{doc_name}}):
+      <<<
+      {{doc_text}}
+      >>>
+      If that text is "none", the user did not upload a file in this conversation: use any document text pasted in
+      their message instead. If it is "UNREADABLE", the platform could not extract the file's text: say so and ask the
+      user to paste the text or upload a text-based PDF or Word file. If there is no document text at all, say so in
+      one sentence. Never describe, summarise or review a document you cannot see.
+      End by offering: follow-up questions on this document, or say Word to download it as a .docx.
+    STEP_CONSTRAINTS:
+      - "Quote only text that appears in the document, with its paragraph or page reference; never invent citations, dates or numbers"
+      - "Separate what the document says from Vi's position and from your own analysis; mark unsupported statements [unverified]"
+      - "Never send, file or submit anything to a regulator; a named Vi officer reviews and approves"
+    MAX_TURNS: 2
+    THEN: u2_route
+
+  # The zone hands over on the user's next message: follow-ups stay with the document, Word builds a
+  # .docx, a new command goes back to the parser
+  u2_route:
+    REASONING: false
+    ON_INPUT:
+      - IF: input matches "^[^a-z]*(done|exit|thanks|thank you|that's all|thats all)([^a-z]|$)"
+        THEN: s9_end
+      - IF: input matches "(word|docx|download|as a file|document file)"
+        SET: followup = input
+        THEN: u4_doc_prepare
+      - IF: input matches "([a-z]+-syn-[a-z]+|vidraft-|new document|another document|different document|start over|what did we say|memo)"
+        SET: request = input
+        THEN: s1_parse
+      - ELSE:
+        SET: followup = input
+        THEN: ugf1_list
+
+  ugf1_list:
+    REASONING: false
+    CALL: list_attachments
+      AS: files
+    ON_RESULT:
+      - IF: files.total > 0
+        SET: last_offset = ADD(files.total, -1)
+        THEN: ugf2_last
+      - ELSE:
+        THEN: u3_followup
+
+  ugf2_last:
+    REASONING: false
+    CALL: list_attachments
+      WITH:
+        limit: 1
+        offset: last_offset
+      AS: lastf
+    THEN: ugf3_pick
+
+  ugf3_pick:
+    REASONING: false
+    SET:
+      att_id = lastf.attachments[0].id
+      doc_name = lastf.attachments[0].filename
+    THEN: ugf4_get
+
+  ugf4_get:
+    REASONING: false
+    CALL: get_attachment
+      WITH:
+        attachment_id: att_id
+      AS: got
+    ON_RESULT:
+      - IF: got.processingStatus == "completed"
+        SET: doc_text = got.content
+        THEN: u3_followup
+      - ELSE:
+        SET: doc_text = "UNREADABLE"
+        THEN: u3_followup
+
+  u3_followup:
+    REASONING: true
+    GOAL: |
+      The user is following up on the document they uploaded or pasted earlier in this conversation and your
+      earlier answer. Their message: "{{followup}}".
+      Revise or extend the draft response as asked, keeping the regulator's question numbering and paragraph references. Never present a draft as Vi's approved position.
+      Text extracted from the most recently uploaded file ({{doc_name}}):
+      <<<
+      {{doc_text}}
+      >>>
+      If that text is "none", the user did not upload a file in this conversation: use any document text pasted in
+      their message instead. If it is "UNREADABLE", the platform could not extract the file's text: say so and ask the
+      user to paste the text or upload a text-based PDF or Word file. If there is no document text at all, say so in
+      one sentence. Never describe, summarise or review a document you cannot see.
+      End by asking whether anything else is needed on this document, or say Word to download it.
+    STEP_CONSTRAINTS:
+      - "Quote only text that appears in the document, with its paragraph or page reference; never invent citations, dates or numbers"
+      - "Separate what the document says from Vi's position and from your own analysis; mark unsupported statements [unverified]"
+      - "Never send, file or submit anything to a regulator; a named Vi officer reviews and approves"
+    MAX_TURNS: 2
+    THEN: u2_route
+
+  u4_doc_prepare:
+    REASONING: true
+    GOAL: |
+      The user wants a downloadable Word document ("{{followup}}"). Do not write it in your reply. Set these session
+      fields in a single update:
+      doc_title: a short title.
+      doc_md: the full document body in simple markdown: # and ## headings, plain paragraphs, - bullets, and tables
+      as | col | col | rows with a header row. Use real line breaks.
+      Write the full draft response: title block (to the regulator, subject, reference), short covering paragraph, then each question with its number, the question text quoted, and Vi's draft answer; then officer decisions required. Keep [Officer to confirm Vi position] markers.
+      Then reply with one short sentence: "Preparing the Word document."
+    AVAILABLE_TOOLS: [r_audit_log]
+    CONTEXT_UPDATES: [doc_title, doc_md]
+    STEP_CONSTRAINTS:
+      - "Quote only text that appears in the document, with its paragraph or page reference; never invent citations, dates or numbers"
+      - "Separate what the document says from Vi's position and from your own analysis; mark unsupported statements [unverified]"
+      - "Never send, file or submit anything to a regulator; a named Vi officer reviews and approves"
+    EXIT_WHEN: always
+    MAX_TURNS: 4
+    THEN: u5_doc_build
+
+  u5_doc_build:
+    REASONING: false
+    CALL: doc_docx
+      WITH:
+        title: doc_title
+        markdown: doc_md
+        footer_note: "AI draft response for Vi Regulatory officer review (autonomy L1). A named approver must approve and file; nothing has been submitted."
+      AS: udoc
+    ON_RESULT:
+      - IF: udoc.output.ok == true
+        THEN: ud1_upload
+      - ELSE:
+        THEN: u7_doc_failed
+
+  ud1_upload:
+    REASONING: false
+    CALL: upload_attachment
+      WITH:
+        filename: udoc.output.filename
+        content_base64: udoc.output.b64
+        mime_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      AS: upf
+    ON_RESULT:
+      - IF: upf.success == true
+        SET: dl_id = upf.data.attachmentId
+        THEN: ud2_link
+      - ELSE:
+        THEN: u7_doc_failed
+
+  ud2_link:
+    REASONING: false
+    CALL: get_attachment_url
+      WITH:
+        attachment_id: dl_id
+        expires_in_seconds: 3600
+      AS: lnk
+    ON_RESULT:
+      - IF: lnk.success == true
+        THEN: ud3_ready
+      - ELSE:
+        THEN: u7_doc_failed
+
+  ud3_ready:
+    REASONING: false
+    RESPOND: "{{udoc.output.message}} [Download {{udoc.output.filename}}]({{lnk.data.url}}) (the link works for about an hour; the file also stays in this conversation's files). It is an AI draft for review; nothing has been sent. Anything else on this document, or a new request?"
+    THEN: u2_route
+
+  u7_doc_failed:
+    REASONING: false
+    RESPOND: "I couldn't build the Word document this time. Ask for Word again, or I can answer in the chat."
+    THEN: u2_route
+
+  # ---- END generated document path 'u' ----
+
+  # ---- Drafting request handed over by RA-UC3: draft the reply to that regulator communication ----
+  q1_request:
+    REASONING: false
+    CALL: r_ref_lookup
+      WITH:
+        ref: req.output.ref
+        user: user
+      AS: rref
+    ON_RESULT:
+      - IF: rref.output.found == true AND rref.output.kind == "drafting_request"
+        SET:
+          doc_text = rref.output.text
+          doc_name = rref.output.subject
+          request = "Draft Vi's reply to this regulator communication, handed over by RA-UC3"
+        THEN: u0_audit
+      - ELSE:
+        THEN: q2_not_found
+
+  q2_not_found:
+    REASONING: false
+    RESPOND: "{{rref.output.summary}} What would you like to draft?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  s2_help:
+    REASONING: false
+    RESPOND: "I can prepare a first draft of a consultation response (for example: draft our response to TRAI-SYN-CP-2026-11), an internal memo on a topic, find what Vi said on a topic in a given year, verify citations in a passage, capture your edits on a draft, or file an approved final (Head, Regulatory only). You can also type a drafting request from RA-UC3 (for example UC2REQ-1M1ZJP2) or upload a consultation paper. What would you like?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- Step 1-5: scope, positions, consistency, draft, verify and package ----
+  d1_scope:
+    REASONING: false
+    CALL: rd01_scope
+      WITH:
+        user: user
+        doc_id: req.output.doc_id
+      AS: brief
+    ON_RESULT:
+      - IF: brief.output.found == true
+        THEN: d2_positions
+      - ELSE:
+        THEN: d1_not_found
+
+  d1_not_found:
+    REASONING: false
+    RESPOND: "I can't find a consultation document {{req.output.doc_id}} that you are authorised to see. What would you like to draft?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  d2_positions:
+    REASONING: false
+    CALL: rd02_positions
+      WITH:
+        user: user
+        topic: brief.output.topic
+      AS: pos
+    THEN: d3_consistency
+
+  d3_consistency:
+    REASONING: false
+    CALL: rd03_check_consistency
+      WITH:
+        topic: brief.output.topic
+        doc_id: req.output.doc_id
+      AS: cons
+    THEN: d4_draft
+
+  d4_draft:
+    REASONING: false
+    CALL: rd04_draft
+      WITH:
+        user: user
+        doc_id: req.output.doc_id
+      AS: draft
+    THEN: d5_verify
+
+  d5_verify:
+    REASONING: false
+    CALL: r_cite_verify
+      WITH:
+        claims: draft.output.claims
+      AS: cv
+    SET:
+      disposition = "DRAFT_PACKAGED"
+    THEN: d6_audit
+
+  d6_audit:
+    REASONING: false
+    CALL: r_audit_log
+      WITH:
+        user: user
+        disposition: disposition
+        object: draft.output.draft_id
+        detail: "Draft for {{req.output.doc_id}}; consistency: {{cons.output.flags}}; R-CV {{cv.output.supported}} supported, {{cv.output.unsupported}} unsupported"
+      AS: audit
+    THEN: d7_say
+
+  d7_say:
+    REASONING: false
+    RESPOND: |
+      {{draft.output.label}}
+
+      Drafting brief: {{brief.output.draft_type}} to {{brief.output.audience}} on {{brief.output.title}}; comments due {{brief.output.deadline}}; questions {{brief.output.questions}}.{{#if brief.output.clarifying}} Clarifying question: {{brief.output.clarifying}}{{/if}}
+
+      Draft {{draft.output.draft_id}}: {{draft.output.draft}}
+
+      Consistency report: {{cons.output.flags}}
+      Officer decisions required: {{draft.output.decisions}}
+      Closest past submission: {{draft.output.closest}}
+      {{#if pos.output.related_notes}}Related internal notes you are authorised to see: {{pos.output.related_notes}}
+      {{/if}}Verification (R-CV): {{cv.output.supported}} supported, {{cv.output.partial}} partial, {{cv.output.unsupported}} unsupported. {{cv.output.table}}
+
+      Anything else?
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- Internal memo (template), with conflict escalation ----
+  m1_consistency:
+    REASONING: false
+    CALL: rd03_check_consistency
+      WITH:
+        topic: req.output.topic
+      AS: cons
+    ON_RESULT:
+      - IF: cons.output.escalate == true
+        THEN: m2_escalate
+      - ELSE:
+        THEN: m3_memo
+
+  m2_escalate:
+    REASONING: false
+    CALL: r_notify
+      WITH:
+        to: "head.reg"
+        message: "Position conflict needs your decision before drafting: {{cons.output.flags}}"
+      AS: ntf
+    THEN: m3_memo
+
+  m3_memo:
+    REASONING: false
+    CALL: rd_memo
+      WITH:
+        user: user
+        topic: req.output.topic
+      AS: memo
+    ON_RESULT:
+      - IF: cons.output.conflict == true
+        SET: disposition = "MEMO_CONFLICT_ESCALATED"
+        THEN: m4_audit
+      - ELSE:
+        SET: disposition = "MEMO_DRAFTED"
+        THEN: m4_audit
+
+  m4_audit:
+    REASONING: false
+    CALL: r_audit_log
+      WITH:
+        user: user
+        disposition: disposition
+        object: req.output.topic
+        detail: cons.output.flags
+      AS: audit
+    THEN: m5_say
+
+  m5_say:
+    REASONING: false
+    RESPOND: |
+      AI draft, for officer review. {{memo.output.memo}}
+
+      Consistency report: {{cons.output.flags}}{{#if cons.output.conflict}} The conflict has been escalated to the Head, Regulatory; I have not picked either position.{{/if}} Anything else?
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- "What did we say on X in YEAR" ----
+  l1_lookup:
+    REASONING: false
+    CALL: rd_lookup
+      WITH:
+        user: user
+        topic: req.output.topic
+        year: req.output.year
+      AS: look
+    SET:
+      disposition = "POSITION_LOOKUP"
+    THEN: l2_audit
+
+  l2_audit:
+    REASONING: false
+    CALL: r_audit_log
+      WITH:
+        user: user
+        disposition: disposition
+        object: req.output.topic
+        detail: look.output.answer
+      AS: audit
+    THEN: l3_say
+
+  l3_say:
+    REASONING: false
+    RESPOND: "{{look.output.answer}} Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- RD06: file approved final (U2-2 approver only) ----
+  f1_file:
+    REASONING: false
+    CALL: rd06_file_final
+      WITH:
+        user: user
+        draft_id: req.output.draft_id
+      AS: filed
+    ON_RESULT:
+      - IF: filed.output.filed == true
+        SET: disposition = "FINAL_FILED_REGISTER_UPDATED"
+        THEN: f2_audit
+      - ELSE:
+        SET: disposition = "FILE_REFUSED"
+        THEN: f2_audit
+
+  f2_audit:
+    REASONING: false
+    CALL: r_audit_log
+      WITH:
+        user: user
+        disposition: disposition
+        object: req.output.draft_id
+        detail: filed.output.message
+      AS: audit
+    THEN: f3_say
+
+  f3_say:
+    REASONING: false
+    RESPOND: "{{filed.output.message}} Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- RD06: capture officer edits ----
+  e1_edits:
+    REASONING: false
+    CALL: rd06_capture_edits
+      WITH:
+        draft_id: req.output.draft_id
+        depth: req.output.depth
+        reason: req.output.reason
+        user: user
+      AS: edits
+    SET:
+      disposition = "EDITS_CAPTURED"
+    THEN: e2_audit
+
+  e2_audit:
+    REASONING: false
+    CALL: r_audit_log
+      WITH:
+        user: user
+        disposition: disposition
+        object: req.output.draft_id
+        detail: edits.output.message
+      AS: audit
+    THEN: e3_say
+
+  e3_say:
+    REASONING: false
+    RESPOND: "{{edits.output.message}} Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- R-CV on a passage the officer gives ----
+  v1_verify:
+    REASONING: false
+    CALL: r_cite_verify
+      WITH:
+        claims: req.output.claims
+      AS: cv
+    ON_RESULT:
+      - IF: cv.output.unsupported > 0
+        SET: disposition = "UNSUPPORTED_FLAGGED"
+        THEN: v2_audit
+      - ELSE:
+        SET: disposition = "CITATIONS_VERIFIED"
+        THEN: v2_audit
+
+  v2_audit:
+    REASONING: false
+    CALL: r_audit_log
+      WITH:
+        user: user
+        disposition: disposition
+        object: "R-CV"
+        detail: cv.output.table
+      AS: audit
+    THEN: v3_say
+
+  v3_say:
+    REASONING: false
+    RESPOND: "Verification: {{cv.output.supported}} supported, {{cv.output.partial}} partial, {{cv.output.unsupported}} unsupported. {{cv.output.table}}{{#if cv.output.unsupported}} Unsupported claims must be removed or shown as [unverified].{{/if}} Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  s9_end:
+    REASONING: false
+    RESPOND: "Closing the session. Every draft and decision is in the audit trail."
+    THEN: COMPLETE

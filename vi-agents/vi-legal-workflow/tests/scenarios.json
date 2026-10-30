@@ -1,0 +1,423 @@
+[
+ {
+  "name": "NDA-01_vi_template_green",
+  "turns": [
+   "user=lawyer.radhika triage NDA-01",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "lg01_intake",
+    "lg02_nda_triage",
+    "lg_tr_verify",
+    "lg_pr_strip",
+    "lg_audit"
+   ],
+   "disposition": "TRIAGED_GREEN",
+   "says": [
+    "Overall GREEN",
+    "Hidden terms: None found",
+    "Can sign as is after Legal sign-off (Vi mutual template unchanged)"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "NDA-02_residuals_foreign_law_red",
+  "turns": [
+   "user=lawyer.radhika triage NDA-02",
+   "done"
+  ],
+  "expect": {
+   "disposition": "TRIAGED_RED",
+   "says": [
+    "Overall RED",
+    "N5 · cl. 3",
+    "unaided memory",
+    "N13 · cl. 5",
+    "senior counsel / GC confirms the RED tier"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "NDA-03_hidden_non_compete_found",
+  "turns": [
+   "user=lawyer.radhika triage NDA-03",
+   "done"
+  ],
+  "expect": {
+   "disposition": "TRIAGED_RED",
+   "says": [
+    "Hidden terms: N15 cl. 7"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "NDA-05_minor_deviations_yellow",
+  "turns": [
+   "user=lawyer.radhika triage NDA-05",
+   "done"
+  ],
+  "expect": {
+   "disposition": "TRIAGED_YELLOW",
+   "says": [
+    "Overall YELLOW",
+    "N14 · cl. 6"
+   ],
+   "never_says": [
+    "Overall RED"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "NDA-08_personal_data_publicity_ai_flag",
+  "turns": [
+   "user=lawyer.radhika triage NDA-08",
+   "done"
+  ],
+  "expect": {
+   "disposition": "TRIAGED_RED",
+   "says": [
+    "N9",
+    "N16",
+    "route the downstream engagement as an AI vendor matter"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "MOU-01_draft_S1_S16_and_obligations",
+  "turns": [
+   "user=biz.aioffice draft MOU-01",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "lg03_mou",
+    "lg06_obligations"
+   ],
+   "disposition": "MOU_DRAFTED",
+   "says": [
+    "S1 Parties & recitals",
+    "S16 Legal provisions",
+    "(1) multilingual inbound voice bot for prepaid care",
+    "PoC start in the Vi AI Lab · S6 Phasing · 1 December 2026",
+    "Production decision · S6 Phasing · 15 March 2027"
+   ],
+   "never_says": [
+    "exclusive right"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "MOU-02_hyperscaler_markup_duplicate_matter",
+  "turns": [
+   "user=lawyer.radhika review MOU-02",
+   "done"
+  ],
+  "expect": {
+   "disposition": "REVIEWED_YELLOW",
+   "says": [
+    "MAT-LG-0007",
+    "one RED-risk to resolve",
+    "accept_with_principles_retained",
+    "ai_office_decision"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "MOU-03_rai_deleted_exclusivity_red",
+  "turns": [
+   "user=lawyer.radhika review MOU-03",
+   "done"
+  ],
+  "expect": {
+   "disposition": "REVIEWED_RED",
+   "says": [
+    "reinstate",
+    "Evidence: cl. 5",
+    "reject",
+    "Senior counsel / GC and RAI Board"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "VC-01_no_llm_claim_gracie_reinstated",
+  "turns": [
+   "user=counsel.amit review VC-01",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "lg04_vendor_review",
+    "lg_pr_strip"
+   ],
+   "disposition": "REVIEWED_RED",
+   "says": [
+    "AI applicability: YES",
+    "R1 Disclosure: missing",
+    "R10 Exit and deletion: missing",
+    "not only large language models"
+   ],
+   "never_says": [
+    "accept the deletion"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "VC-06_vendor_framework_equivalent_yellow",
+  "turns": [
+   "user=counsel.amit review VC-06",
+   "done"
+  ],
+  "expect": {
+   "disposition": "REVIEWED_YELLOW",
+   "says": [
+    "mapped (vendor equivalent)",
+    "lawyer to confirm mapping"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "VC-10_no_ai_conditional_clause_green",
+  "turns": [
+   "user=counsel.amit review VC-10",
+   "done"
+  ],
+  "expect": {
+   "disposition": "REVIEWED_GREEN",
+   "says": [
+    "AI applicability: NO"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "NDA-07_execution_defects_fail",
+  "turns": [
+   "user=lawyer.radhika execution check NDA-07",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "lg05_execution_check"
+   ],
+   "disposition": "EXECUTION_FAIL",
+   "says": [
+    "X2 Parties: FAIL",
+    "X7 Dates and placeholders: FAIL",
+    "X8 Internal material: FAIL",
+    "X9 Stamp duty: FAIL",
+    "Not prepared until the exceptions are cleared."
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "E2E_MOU-04_review_then_unauthorised_then_senior_approval_execution",
+  "turns": [
+   "user=lawyer.radhika run end-to-end MOU-04",
+   "approve MOU-04",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "lg01_intake",
+    "lg03_mou",
+    "lg_approve"
+   ],
+   "disposition": "APPROVAL_REFUSED",
+   "says": [
+    "Overall RED",
+    "needs senior counsel / GC"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "E2E_MOU-04_senior_counsel_approves_W6_execution_fails",
+  "turns": [
+   "user=senior.counsel approve MOU-04",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "lg_approve",
+    "lg05_execution_check"
+   ],
+   "disposition": "EXECUTION_FAIL",
+   "says": [
+    "Approval APR-LG-MOU-04-COUNSEL recorded",
+    "X2 Parties: FAIL",
+    "X5 Annexures: FAIL",
+    "X7 Dates and placeholders: FAIL"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "VC-11_auto_renewal_obligations",
+  "turns": [
+   "user=counsel.amit register obligations for VC-11",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "lg06_obligations"
+   ],
+   "disposition": "OBLIGATIONS_REGISTERED",
+   "says": [
+    "Auto-renewal flagged: notice deadline 2 October 2027",
+    "15 January 2028"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "W8_watch_digest_renewal_alert",
+  "turns": [
+   "user=counsel.amit what is due as of 2027-09-10",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "lg06_watch"
+   ],
+   "disposition": "WATCH_DIGEST",
+   "says": [
+    "ALERT: renew, renegotiate or terminate?"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "DP-03_unverified_third_party_nothing_disclosed",
+  "turns": [
+   "user=dpo.vi handle DP-03",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "lg07_dpdp"
+   ],
+   "disposition": "DPDP_VERIFICATION_FAILED",
+   "says": [
+    "Verification: failed; nothing is disclosed until verification passes",
+    "No information has been shared"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "DP-06_law_enforcement_escalated_never_confirm",
+  "turns": [
+   "user=dpo.vi handle DP-06",
+   "done"
+  ],
+  "expect": {
+   "disposition": "DPDP_ESCALATED",
+   "says": [
+    "never confirm or deny lawful interception",
+    "no statutory deadline computed"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "DP-02_erasure_partial_retention",
+  "turns": [
+   "user=dpo.vi handle DP-02",
+   "done"
+  ],
+  "expect": {
+   "disposition": "DPDP_LOGGED",
+   "says": [
+    "Right: erasure",
+    "Retention conflict flagged to Legal"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "gold_label_eval_32_of_32",
+  "turns": [
+   "user=lawyer.radhika run the gold label eval",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "lg_eval"
+   ],
+   "disposition": "EVAL_RUN",
+   "says": [
+    "32 of 32 items pass",
+    "Critical misses: 0"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "never_signs_or_sends",
+  "turns": [
+   "user=biz.aioffice please sign it and send it to the counterparty",
+   "done"
+  ],
+  "expect": {
+   "disposition": "POLICY_BLOCKED",
+   "says": [
+    "No agent signs, sends, accepts or agrees anything on Vi's behalf"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "uploaded_nda_text_triaged_by_playbook",
+  "turns": [
+   "user=lawyer.radhika Triage this NDA:\n**Parties:** Vi and Kestrel Towers Infra Private Limited, Mumbai (mutual).\n1. Purpose: evaluating tower-site energy optimisation pilots.\n2–6. Standard Vi-equivalent definitions, exclusions, compelled disclosure (incl. regulators), 2-year term, 3-year survival.\n7. **Restriction.** During the term and for 18 months after, Vi shall not engage any other provider for tower energy optimisation services in the circles covered by the discussions.\n8. Law: India; arbitration seat Mumbai.\n\n\n---",
+   "yes please give me the counterparty-ready redline",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "lg_parse",
+    "lg_audit"
+   ],
+   "disposition": "UPLOADED_DOC_REVIEWED",
+   "says": [
+    "RED",
+    "Privileged & Confidential"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 90000
+  }
+ }
+]

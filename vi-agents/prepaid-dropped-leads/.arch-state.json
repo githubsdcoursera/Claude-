@@ -1,0 +1,38 @@
+{
+  "workflows": {
+    "a03_get_journey_context": "01a17d19-4f06-7bec-8c36-4ba79bce0bf3",
+    "a06_compliance_gate": "01a17d19-56af-7e96-9b1e-0ede7dd94af8",
+    "a07_get_lead": "01a17d1a-39f0-7623-94f8-7e6bbd3fe0c4",
+    "a07_schedule_callback": "01a17d1a-41b5-702b-9666-6a86b46f90ab",
+    "a10_check_coverage": "01a17d1a-487b-72ca-848a-7e1ed3c273df",
+    "pdl01_send_resume_link": "01a17d1b-3097-7d07-ad34-21195768ea77",
+    "pdl02_get_resolution": "01a17d1b-379c-7f52-9829-c37510424802",
+    "a06_record_opt_out": "01a17d1c-1ee1-7126-9b3e-ccc6c74f9b20",
+    "a09_create_handoff": "01a17d1c-265e-7090-ad29-4ea781bfe71c",
+    "a11_write_post_call": "01a17d1c-2de7-702b-a6ac-8e6a7f16a3c8"
+  },
+  "workflow_versions": {
+    "a03_get_journey_context": "v1.0.0",
+    "a06_compliance_gate": "v1.0.0",
+    "a07_get_lead": "v1.0.0",
+    "a07_schedule_callback": "v1.0.0",
+    "a10_check_coverage": "v1.0.0",
+    "pdl01_send_resume_link": "v1.0.0",
+    "pdl02_get_resolution": "v1.0.0",
+    "a06_record_opt_out": "v1.0.0",
+    "a09_create_handoff": "v1.0.0",
+    "a11_write_post_call": "v1.0.0"
+  },
+  "projectId": "01a17d19-4516-7449-8d6e-bcc8b17de31c",
+  "deployment": {
+    "env": "dev",
+    "id": "01a18cc9-b8bd-7285-8875-cc94cd1fd5aa",
+    "endpointSlug": "01a17d19-dev-mvuy9dx1-ade8e5",
+    "agents": {
+      "Prepaid_Dropped_Leads_Supervisor": {
+        "version": "1.0.2"
+      }
+    },
+    "preflight": "ready"
+  }
+}

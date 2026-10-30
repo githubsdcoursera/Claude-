@@ -1,0 +1,44 @@
+{
+  "workflows": {
+    "a03_get_billing_status": "01a17d4d-46dc-72a8-89b6-6f97acffdaae",
+    "a04_verify_billing_contact": "01a17d4d-4e8b-73b1-8bc5-6763c2a97fc2",
+    "a06_compliance_gate": "01a17d4d-ece9-7821-b7b4-f7876d1c5797",
+    "a22_schedule_reminders": "01a17d4e-3979-7724-8208-25490c7c2c73",
+    "a23_record_ptp": "01a17d4e-4213-7ac9-a511-122141652a07",
+    "a23_schedule_callback": "01a17d4f-1e46-745e-9530-cd1c857a5aab",
+    "a23_send_message": "01a17d4f-26ce-7b68-a09d-7b1b1d37e6ce",
+    "a23_send_payment_link": "01a17d4f-343a-7908-895c-fc597b391ffa",
+    "a24_create_dispute_sr": "01a17d50-1145-7311-81c4-40f34e0a9480",
+    "a24_pause_dunning": "01a17d50-22a7-76e1-a381-33900af80cd1",
+    "a06_record_opt_out": "01a17d51-0390-747d-98ea-53443b911264",
+    "a09_create_handoff": "01a17d51-0bb6-7a50-9379-da1040002bfb",
+    "a11_write_post_call": "01a17d51-f1bb-7f88-95b6-83d3e1ebaeaa"
+  },
+  "workflow_versions": {
+    "a03_get_billing_status": "v1.0.0",
+    "a04_verify_billing_contact": "v1.0.0",
+    "a06_compliance_gate": "v1.0.0",
+    "a22_schedule_reminders": "v1.0.0",
+    "a23_record_ptp": "v1.0.0",
+    "a23_schedule_callback": "v1.0.0",
+    "a23_send_message": "v1.0.0",
+    "a23_send_payment_link": "v1.0.0",
+    "a24_create_dispute_sr": "v1.0.1",
+    "a24_pause_dunning": "v1.0.0",
+    "a06_record_opt_out": "v1.0.0",
+    "a09_create_handoff": "v1.0.0",
+    "a11_write_post_call": "v1.0.0"
+  },
+  "projectId": "01a17d46-22e7-7101-836a-adf54110a430",
+  "deployment": {
+    "env": "dev",
+    "id": "01a18ccc-c8fb-76fe-b6c9-586fd346380d",
+    "endpointSlug": "01a17d46-dev-mvuydotw-1a48c1",
+    "agents": {
+      "UC3_Collections_Supervisor": {
+        "version": "1.0.4"
+      }
+    },
+    "preflight": "warnings"
+  }
+}

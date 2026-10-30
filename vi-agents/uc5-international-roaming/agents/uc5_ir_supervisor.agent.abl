@@ -1,0 +1,690 @@
+AGENT: UC5_IR_Supervisor
+VERSION: "1.0"
+GOAL: |
+  Run the UC5 International Roaming voice call from trigger to post-call (S0-S9) for postpaid customers:
+  gate every contact on compliance and IR eligibility, disclose AI and recording, confirm the right party
+  and trip, recommend the best-fit IR pack with its exact price, inclusions and overage, activate it only
+  after explicit consent and a verified OTP, and write the post-call record. Hand complex cases to the IR desk.
+
+PERSONA: |
+  Vi's virtual assistant on a phone call. Warm, brief and clear: one idea per sentence, no lists,
+  no jargon. Never states a price, pack, due amount or policy that a tool did not return, and never
+  paraphrases must-say wording. Asks one question at a time.
+
+LIMITATIONS:
+  - "Cannot activate a pack without explicit consent and a verified OTP"
+  - "Cannot quote prices or packs other than those returned by the catalogue tool"
+  - "Cannot handle corporate plans, multi-country trips or bill disputes; these go to the IR desk"
+  - "Cannot infer a customer's location; uses only declared travel or what the customer says"
+
+EXECUTION:
+  session_idle_timeout: 120000
+  voice_latency_target: 800
+  tool_timeout: 8000
+
+TOOLS:
+  #include-tools: a06_compliance_gate, a06_record_opt_out, a03_get_ir_context, a18_rank_ir_packs, a04_send_otp, a04_verify_otp, a08_record_consent, a08_activate_ir_pack, a08_send_sms, a11_arm_usage_alerts, a09_create_handoff, a11_write_post_call
+
+MEMORY:
+  session:
+    - bad_input
+    - msisdn
+    - direction
+    - campaign
+    - gate
+    - ctx
+    - trip_country
+    - trip_days
+    - usage
+    - packs
+    - sel_id
+    - sel_price
+    - sel_inclusion
+    - sel_overage
+    - sel_validity
+    - consent
+    - otp
+    - otp_said
+    - otp_check
+    - idem_key
+    - activation
+    - activation_attempts
+    - otp_attempts
+    - sms
+    - alerts
+    - disposition
+    - outcome
+    - handoff_reason
+    - handoff_next_step
+    - handoff
+    - post_call
+    - opt_out
+    - spoken_language
+
+INTENTS:
+  human_escalation: "Caller asks to speak to a person, an agent, an advisor or customer care."
+
+ESCALATE:
+  triggers:
+    - WHEN: user.sentiment == "very_negative" OR user.sentiment == "frustrated"
+      REASON: "Negative sentiment persisted across turns"
+      PRIORITY: high
+      TAGS: [uc5, ir_desk, sentiment]
+  context_for_human:
+    - msisdn
+    - ctx
+    - trip_country
+    - trip_days
+    - sel_id
+    - sel_price
+    - consent
+    - activation
+    - handoff_reason
+    - handoff_next_step
+    - conversation_transcript
+  routing:
+    queue: "IR_DESK"
+    skill_tags: [international_roaming, postpaid]
+
+FLOW:
+  global_digressions:
+    - INTENT: opt_out_request
+      KEYWORDS: ["stop calling", "don't call", "do not call", "opt out", "unsubscribe", "remove my number", "call mat karo"]
+      GOTO: x4_opt_out
+    - INTENT: human_request
+      KEYWORDS: ["speak to a person", "talk to a person", "talk to someone", "real person", "human agent", "speak to an agent", "talk to an agent", "speak to an advisor", "talk to an advisor", "connect me to an advisor", "agent se baat"]
+      GOTO: x1_customer_request
+
+  # ---- S0 Trigger: inbound IR intent or permitted travel signal ----
+  s0_trigger:
+    REASONING: false
+    SET:
+      msisdn = FIRST_NON_EMPTY(session.messageMetadata.msisdn, REGEX_EXTRACT(input, "msisdn=(\\d{10})", 1), customer_id, "none")
+      direction = FIRST_NON_EMPTY(session.messageMetadata.direction, REGEX_EXTRACT(input, "direction=(\\w+)", 1), "inbound")
+      campaign = FIRST_NON_EMPTY(session.messageMetadata.campaign, REGEX_EXTRACT(input, "campaign=(\\w+)", 1), "IR_INBOUND")
+      activation_attempts = 0
+      otp_attempts = 0
+      disposition = "IN_PROGRESS"
+    THEN: s0_need_number
+
+  # ---- S0/X4 Compliance and eligibility gate (A06) ----
+
+  # ---- No caller ID (for example a Studio test chat): ask for the number before the call starts ----
+  s0_need_number:
+    REASONING: false
+    WHEN: msisdn == "none"
+    RESPOND: "Test chat: no caller number was passed to this session. Please type the 10-digit mobile number of the test customer (for example 9800000001) to start the call."
+    ON_INPUT:
+      - IF: input matches "(^|[^0-9])[0-9]{10}([^0-9]|$)"
+        SET: msisdn = REGEX_EXTRACT(input, "(?:^|[^0-9])([0-9]{10})(?:[^0-9]|$)", 1)
+        THEN: s0_compliance
+      - ELSE:
+        SET: bad_input = input
+        THEN: s0_need_number_retry
+    THEN: s0_compliance
+
+  s0_need_number_retry:
+    REASONING: false
+    RESPOND: "I received: {{bad_input}}. That is not a 10-digit mobile number. Please type exactly 10 digits, with no spaces or country code (for example 9800000001)."
+    ON_INPUT:
+      - IF: input matches "(^|[^0-9])[0-9]{10}([^0-9]|$)"
+        SET: msisdn = REGEX_EXTRACT(input, "(?:^|[^0-9])([0-9]{10})(?:[^0-9]|$)", 1)
+        THEN: s0_compliance
+      - ELSE:
+        SET: bad_input = input
+        THEN: s0_need_number_retry
+    THEN: s0_compliance
+
+  s0_compliance:
+    REASONING: false
+    CALL: a06_compliance_gate
+      WITH:
+        msisdn: msisdn
+        direction: direction
+        campaign: campaign
+      AS: gate
+    ON_RESULT:
+      # Fail closed: only an explicit allowed == true proceeds; a failed or missing gate result stops contact.
+      - IF: gate.output.allowed == true AND gate.output.nudge_only == true AND direction == "outbound"
+        SET:
+          disposition = "NUDGE_ONLY_NOT_ELIGIBLE"
+          outcome = gate.output.ineligible_reason
+        THEN: x4_nudge_silent
+      - IF: gate.output.allowed == true
+        THEN: s1_disclose
+      - ELSE:
+        SET:
+          disposition = "COMPLIANCE_STOP"
+          outcome = FIRST_NON_EMPTY(gate.output.stop_reason, "compliance_gate_unavailable")
+        THEN: x0_no_call
+
+  # ---- S1 Connect and disclose (must-say) ----
+  s1_disclose:
+    REASONING: false
+    RESPOND: "Namaste, this is Vi's virtual assistant. I am an AI, and this call is recorded for quality and training. Would you like to continue in English or Hindi?"
+    ON_INPUT:
+      - IF: input matches "(hindi|हिंदी|hindee)" AND direction == "outbound"
+        SET: spoken_language = "hi"
+        THEN: s2_right_party
+      - IF: input matches "(hindi|हिंदी|hindee)"
+        SET: spoken_language = "hi"
+        THEN: s3_load_context
+      - IF: direction == "outbound"
+        SET: spoken_language = "en"
+        THEN: s2_right_party
+      - ELSE:
+        SET: spoken_language = "en"
+        THEN: s3_load_context
+
+  # ---- S2 Identify and verify: right party before any protected data ----
+  s2_right_party:
+    REASONING: false
+    MAX_ATTEMPTS: 2
+    ON_EXHAUSTED: x2_fallback
+    RESPOND: "Am I speaking with {{gate.output.first_name}}?"
+    ON_INPUT:
+      - IF: input matches "(^|[^a-z])(yes|yeah|yep|speaking|haan|ha|han|ji|bol raha|bol rahi|that's me|it is me)([^a-z]|$)"
+        THEN: s3_load_context
+      - IF: input matches "(^|[^a-z])(no|nahi|nahin|wrong number|not me|not here)([^a-z]|$)"
+        SET:
+          disposition = "WRONG_PARTY"
+          outcome = "right_party_not_confirmed"
+        THEN: x3_wrong_party
+      - ELSE:
+        RESPOND: "Sorry, I didn't catch that. Am I speaking with {{gate.output.first_name}}? Please say yes or no."
+        THEN: s2_right_party
+
+  # ---- S3 Load context (A03) ----
+  s3_load_context:
+    REASONING: false
+    CALL: a03_get_ir_context
+      WITH:
+        msisdn: msisdn
+      AS: ctx
+    ON_RESULT:
+      - IF: ctx.output.found == true AND ctx.output.corporate == true
+        SET:
+          handoff_reason = "Corporate plan - IR handled by the IR desk"
+          handoff_next_step = "Advise corporate IR options for the declared trip"
+          disposition = "HANDOFF_CORPORATE_PLAN"
+        THEN: x1_handoff
+      - IF: ctx.output.found == true AND gate.output.eligible != true
+        SET:
+          disposition = "NOT_ELIGIBLE_SMS_SENT"
+          outcome = gate.output.ineligible_reason
+        THEN: s5_not_eligible
+      - IF: ctx.output.found == true AND ctx.output.travel_country != ""
+        SET:
+          trip_country = ctx.output.travel_country
+          trip_days = ctx.output.travel_days
+        THEN: s4_confirm_trip
+      - IF: ctx.output.found == true
+        THEN: s4_ask_country
+      - ELSE:
+        SET:
+          handoff_reason = "Customer context unavailable"
+          handoff_next_step = "Identify the customer and assist with IR"
+          disposition = "HANDOFF_RECORD_NOT_FOUND"
+        THEN: x1_handoff
+
+  # ---- S4 Discover intent: confirm country and dates ----
+  s4_confirm_trip:
+    REASONING: false
+    MAX_ATTEMPTS: 2
+    ON_EXHAUSTED: s4_ask_country
+    RESPOND: "Thanks, {{ctx.output.first_name}}. I see you're travelling to {{trip_country}} from {{ctx.output.travel_start}} for {{trip_days}} days. Is that right?"
+    ON_INPUT:
+      - IF: input matches "(^|[^a-z])(yes|yeah|yep|right|correct|haan|ha|han|ji|sahi)([^a-z]|$)"
+        THEN: s4_ask_usage
+      - IF: input matches "(^|[^a-z])(no|nahi|nahin|wrong|changed|not)([^a-z]|$)"
+        THEN: s4_ask_country
+      - ELSE:
+        RESPOND: "Sorry, is your trip to {{trip_country}} for {{trip_days}} days? Please say yes or no."
+        THEN: s4_confirm_trip
+
+  s4_ask_country:
+    REASONING: false
+    RESPOND: "Which country are you travelling to?"
+    ON_INPUT:
+      - IF: input matches "(,| and | aur |multiple|several|countries)"
+        SET:
+          trip_country = input
+          handoff_reason = "Multi-country trip"
+          handoff_next_step = "Build a multi-country IR plan"
+          disposition = "HANDOFF_MULTI_COUNTRY"
+        THEN: x1_handoff
+      - ELSE:
+        SET: trip_country = TRIM(input)
+        THEN: s4_ask_days
+
+  s4_ask_days:
+    REASONING: false
+    MAX_ATTEMPTS: 2
+    ON_EXHAUSTED: x2_fallback
+    RESPOND: "And for how many days will you be there?"
+    ON_INPUT:
+      - IF: input matches "[0-9]+"
+        SET: trip_days = TO_NUMBER(REGEX_EXTRACT(input, "\\d+"))
+        THEN: s4_ask_usage
+      - IF: input matches "(^|[^a-z])(a week|one week|ek hafta)([^a-z]|$)"
+        SET: trip_days = 7
+        THEN: s4_ask_usage
+      - IF: input matches "(^|[^a-z])(two weeks|2 weeks|do hafte)([^a-z]|$)"
+        SET: trip_days = 14
+        THEN: s4_ask_usage
+      - IF: input matches "(^|[^a-z])(a month|one month|ek mahina)([^a-z]|$)"
+        SET: trip_days = 30
+        THEN: s4_ask_usage
+      - ELSE:
+        RESPOND: "Sorry, how many days is the trip? For example, seven days."
+        THEN: s4_ask_days
+
+  s4_ask_usage:
+    REASONING: false
+    RESPOND: "Will you mostly use WhatsApp and maps, or also video calls and streaming?"
+    ON_INPUT:
+      - IF: input matches "(video|stream|netflix|youtube|hotspot|work|heavy|a lot)"
+        SET: usage = "heavy"
+        THEN: s5_rank_packs
+      - IF: input matches "(only whatsapp|just whatsapp|very little|light|emergency|minimal)"
+        SET: usage = "light"
+        THEN: s5_rank_packs
+      - ELSE:
+        SET: usage = "moderate"
+        THEN: s5_rank_packs
+
+  # ---- S5 Resolve: A18 ranks packs; catalogue returns must-say fields ----
+  s5_rank_packs:
+    REASONING: false
+    CALL: a18_rank_ir_packs
+      WITH:
+        msisdn: msisdn
+        country: trip_country
+        days: trip_days
+        usage: usage
+      AS: packs
+    ON_RESULT:
+      - IF: packs.output.multi_country == true
+        SET:
+          handoff_reason = "Multi-country trip"
+          handoff_next_step = "Build a multi-country IR plan"
+          disposition = "HANDOFF_MULTI_COUNTRY"
+        THEN: x1_handoff
+      - IF: packs.output.found == false
+        SET:
+          disposition = "NO_ELIGIBLE_PACK"
+          outcome = "no_pack_for_country"
+        THEN: s5_no_pack
+      - ELSE:
+        SET:
+          sel_id = packs.output.top_id
+          sel_price = packs.output.top_price
+          sel_inclusion = packs.output.top_inclusion
+          sel_overage = packs.output.top_overage
+          sel_validity = packs.output.top_validity
+        THEN: s5_present
+    ON_ERROR:
+      tool_error:
+        THEN: BACKTRACK
+        BACKTRACK_TO: x_system_failure
+
+  s5_present:
+    REASONING: false
+    MAX_ATTEMPTS: 3
+    ON_EXHAUSTED: x2_fallback
+    RESPOND: "The best fit for your trip is pack {{sel_id}} at {{sel_price}}. It includes {{sel_inclusion}}, valid for {{sel_validity}}. After that, {{sel_overage}}. Would you like me to activate it?"
+    ON_INPUT:
+      - IF: input matches "(other|another|cheaper|alternative|different|dusra|kuch aur|less)" AND packs.output.alt_id != ""
+        THEN: s5_present_alt
+      - IF: input matches "(^|[^a-z])(yes|yeah|yep|sure|okay|ok|activate|go ahead|haan|ha|han|ji|kar do|theek)([^a-z]|$)"
+        THEN: s6_consent
+      - IF: input matches "(^|[^a-z])(no|nahi|nahin|not now|later|don't|dont|not interested)([^a-z]|$)"
+        SET:
+          disposition = "DECLINED_SMS_SENT"
+          outcome = "declined_pack"
+        THEN: s6_declined
+      - ELSE:
+        RESPOND: "Would you like me to activate {{sel_id}} at {{sel_price}}? You can also ask for another option."
+        THEN: s5_present
+
+  s5_present_alt:
+    REASONING: false
+    SET:
+      sel_id = packs.output.alt_id
+      sel_price = packs.output.alt_price
+      sel_inclusion = packs.output.alt_inclusion
+      sel_overage = packs.output.alt_overage
+      sel_validity = packs.output.alt_validity
+    RESPOND: "Another option is pack {{sel_id}} at {{sel_price}}. It includes {{sel_inclusion}}, valid for {{sel_validity}}. After that, {{sel_overage}}. Would you like this one?"
+    ON_INPUT:
+      - IF: input matches "(^|[^a-z])(yes|yeah|yep|sure|okay|ok|activate|go ahead|haan|ha|han|ji|kar do|theek)([^a-z]|$)"
+        THEN: s6_consent
+      - IF: input matches "(first|previous|earlier|pehla|pichla)"
+        SET:
+          sel_id = packs.output.top_id
+          sel_price = packs.output.top_price
+          sel_inclusion = packs.output.top_inclusion
+          sel_overage = packs.output.top_overage
+          sel_validity = packs.output.top_validity
+        THEN: s6_consent
+      - ELSE:
+        SET:
+          disposition = "DECLINED_SMS_SENT"
+          outcome = "declined_pack"
+        THEN: s6_declined
+
+  s5_not_eligible:
+    REASONING: false
+    CALL: a08_send_sms
+      WITH:
+        msisdn: msisdn
+        template: "ir_app_nudge"
+      AS: sms
+    RESPOND: "Thanks, {{ctx.output.first_name}}. International roaming can't be activated on your number on this call. I've sent you an SMS with the steps to enable it in the Vi app. Thank you for choosing Vi."
+    THEN: s9_write
+
+  s5_no_pack:
+    REASONING: false
+    RESPOND: "I don't have a roaming pack for {{trip_country}} that I can offer on this call. Would you like me to connect you to our roaming specialist?"
+    ON_INPUT:
+      - IF: input matches "(^|[^a-z])(yes|yeah|sure|okay|ok|haan|ha|ji)([^a-z]|$)"
+        SET:
+          handoff_reason = "No catalogue pack for destination"
+          handoff_next_step = "Advise pay-as-you-go or special IR options"
+          disposition = "HANDOFF_NO_PACK"
+        THEN: x1_handoff
+      - ELSE:
+        THEN: s8_farewell
+
+  # ---- S6 Confirm and act: read-back, explicit consent, OTP, idempotent activation (A08) ----
+  s6_consent:
+    REASONING: false
+    MAX_ATTEMPTS: 2
+    ON_EXHAUSTED: s6_declined
+    SET:
+      idem_key = UNIQUE_ID(16)
+    RESPOND: "To confirm: activate pack {{sel_id}} for {{sel_price}}, with {{sel_inclusion}}, valid for {{sel_validity}}. After that, {{sel_overage}}. The charge will appear on your postpaid bill. Do you agree?"
+    ON_INPUT:
+      - IF: input matches "(^|[^a-z])(yes|i agree|agree|yeah|yep|sure|okay|ok|haan|ha|han|ji|manzoor)([^a-z]|$)"
+        THEN: s6_record_consent
+      - IF: input matches "(^|[^a-z])(no|nahi|nahin|don't|dont|cancel)([^a-z]|$)"
+        SET:
+          disposition = "DECLINED_SMS_SENT"
+          outcome = "declined_at_consent"
+        THEN: s6_declined
+      - ELSE:
+        RESPOND: "Please say yes if you agree to activate {{sel_id}} for {{sel_price}}, or no to cancel."
+        THEN: s6_consent
+
+  s6_record_consent:
+    REASONING: false
+    CALL: a08_record_consent
+      WITH:
+        msisdn: msisdn
+        action: sel_id
+        price: sel_price
+      AS: consent
+    THEN: s6_send_otp
+
+  s6_send_otp:
+    REASONING: false
+    CALL: a04_send_otp
+      WITH:
+        msisdn: msisdn
+        purpose: "IR pack activation"
+      AS: otp
+    ON_RESULT:
+      - IF: otp.output.sent == true
+        THEN: s6_ask_otp
+      - ELSE:
+        THEN: x_system_failure
+
+  s6_ask_otp:
+    REASONING: false
+    MAX_ATTEMPTS: 3
+    ON_EXHAUSTED: x1_otp_failed
+    RESPOND: "I've sent a six-digit OTP to your Vi number. Please read it out."
+    ON_INPUT:
+      - IF: input matches "[0-9]"
+        SET: otp_said = REGEX_REPLACE(input, "\\D", "")
+        THEN: s6_verify_otp
+      - ELSE:
+        RESPOND: "Please read out the six digits of the OTP."
+        THEN: s6_ask_otp
+
+  s6_verify_otp:
+    REASONING: false
+    CALL: a04_verify_otp
+      WITH:
+        msisdn: msisdn
+        otp_ref: otp.output.otp_ref
+        otp: otp_said
+      AS: otp_check
+    ON_RESULT:
+      - IF: otp_check.output.verified == true
+        THEN: s6_activate
+      - IF: otp_attempts >= 2
+        THEN: x1_otp_failed
+      - ELSE:
+        SET:
+          otp_attempts = ADD(otp_attempts, 1)
+        THEN: s6_otp_retry
+
+  s6_otp_retry:
+    REASONING: false
+    RESPOND: "That OTP didn't match. Please read out the six digits again."
+    ON_INPUT:
+      - IF: input matches "[0-9]"
+        SET: otp_said = REGEX_REPLACE(input, "\\D", "")
+        THEN: s6_verify_otp
+      - ELSE:
+        THEN: s6_otp_retry
+
+  s6_activate:
+    REASONING: false
+    SET:
+      activation_attempts = ADD(activation_attempts, 1)
+    CALL: a08_activate_ir_pack
+      WITH:
+        msisdn: msisdn
+        pack_id: sel_id
+        consent_ref: consent.output.consent_ref
+        otp_ref: otp.output.otp_ref
+        idempotency_key: idem_key
+      AS: activation
+    ON_RESULT:
+      - IF: activation.output.success == true
+        SET:
+          disposition = "IR_ACTIVATED"
+          outcome = "pack_activated"
+        THEN: s7_arm_alerts
+      - IF: activation_attempts < 2
+        THEN: s6_activate_retry
+      - ELSE:
+        SET:
+          handoff_reason = "Provisioning failed twice"
+          handoff_next_step = "Check provisioning for the consented pack without charging again"
+          disposition = "HANDOFF_PROVISIONING_FAILED"
+        THEN: x1_handoff
+
+  s6_activate_retry:
+    REASONING: false
+    RESPOND: "One moment, I'm completing the activation."
+    THEN: s6_activate
+
+  s6_declined:
+    REASONING: false
+    CALL: a08_send_sms
+      WITH:
+        msisdn: msisdn
+        template: "ir_pack_details"
+        pack_id: sel_id
+      AS: sms
+    THEN: s6_declined_ask
+
+  s6_declined_ask:
+    REASONING: false
+    RESPOND: "No problem. I've sent the details of {{sel_id}} to you by SMS, so you can activate it later in the Vi app. Is there anything else I can help you with?"
+    ON_INPUT:
+      - IF: input matches "(^|[^a-z])(no|nahi|nahin|nothing|that's all|bas)([^a-z]|$)"
+        THEN: s8_farewell
+      - ELSE:
+        THEN: s7_question
+
+  # ---- S7 Wrap-up: confirm only after successful provisioning; arm 50/80/100% usage alerts ----
+  s7_arm_alerts:
+    REASONING: false
+    CALL: a11_arm_usage_alerts
+      WITH:
+        msisdn: msisdn
+        pack_id: sel_id
+      AS: alerts
+    THEN: s7_send_tips
+
+  s7_send_tips:
+    REASONING: false
+    CALL: a08_send_sms
+      WITH:
+        msisdn: msisdn
+        template: "ir_confirmation_tips"
+        pack_id: sel_id
+      AS: sms
+    THEN: s7_confirm
+
+  s7_confirm:
+    REASONING: false
+    RESPOND: "Done. Pack {{sel_id}} is now active on your number, order reference {{activation.output.order_ref}}. I've sent you an SMS with the tariff and travel tips, and you'll get alerts at 50, 80 and 100 percent of your data. Is there anything else I can help you with?"
+    ON_INPUT:
+      - IF: input matches "(^|[^a-z])(no|nahi|nahin|nothing|that's all|bas|thank)([^a-z]|$)"
+        THEN: s8_farewell
+      - ELSE:
+        THEN: s7_question
+
+  s7_question:
+    REASONING: true
+    GOAL: |
+      Answer the caller's question about their trip or roaming in at most two short spoken sentences,
+      using only these facts: plan {{ctx.output.plan}}, IR status {{ctx.output.ir_status}},
+      destination {{trip_country}}, selected pack {{sel_id}} at {{sel_price}} with {{sel_inclusion}},
+      valid {{sel_validity}}, overage {{sel_overage}}. If the answer is not in these facts, say you will
+      have a roaming specialist call back. Then ask if there is anything else.
+    STEP_CONSTRAINTS:
+      - "Never state a price, pack or policy that is not in the facts above."
+    MAX_TURNS: 2
+    THEN: s7_anything_else
+
+  s7_anything_else:
+    REASONING: false
+    ON_INPUT:
+      - IF: input matches "(^|[^a-z])(no|nahi|nahin|nothing|that's all|bas|thank)([^a-z]|$)"
+        THEN: s8_farewell
+      - ELSE:
+        THEN: s7_question
+
+  # ---- S8 End ----
+  s8_farewell:
+    REASONING: false
+    RESPOND: "Thank you for choosing Vi. Have a safe trip!"
+    THEN: s9_write
+
+  # ---- S9 Post-call: summary, disposition, CRM and Warehouse (A11) ----
+  # ---- Pre-call check stopped the contact: in a live campaign nobody is dialled; in a chat, say why ----
+  x0_no_call:
+    REASONING: false
+    RESPOND: "No call placed. The pre-call check stopped this contact (outcome {{disposition}}). In a live campaign the customer is not dialled and hears nothing; the outcome is recorded. In this test chat, 9800000001 is a customer who can be called."
+    THEN: s9_write
+
+  s9_write:
+    REASONING: false
+    CALL: a11_write_post_call
+      WITH:
+        msisdn: msisdn
+        disposition: disposition
+        summary: "UC5 IR call. Direction {{direction}}. Destination {{trip_country}} for {{trip_days}} days. Pack {{sel_id}} {{sel_price}}. Outcome {{outcome}}"
+        outcome: outcome
+      AS: post_call
+    THEN: COMPLETE
+
+  # ---- Exception states ----
+  x1_handoff:
+    REASONING: false
+    CALL: a09_create_handoff
+      WITH:
+        msisdn: msisdn
+        queue: "IR_DESK"
+        reason: handoff_reason
+        summary: "UC5 IR call. Destination {{trip_country}}, {{trip_days}} days. Selected pack {{sel_id}} {{sel_price}}. Reason: {{handoff_reason}}."
+        recommended_next_step: handoff_next_step
+      AS: handoff
+    RESPOND: "I'm connecting you to our international roaming specialist, who will have the details of this call. Please stay on the line."
+    THEN: x1_post_call
+
+  x1_post_call:
+    REASONING: false
+    CALL: a11_write_post_call
+      WITH:
+        msisdn: msisdn
+        disposition: disposition
+        summary: "UC5 IR call handed to IR desk: {{handoff_reason}}"
+        outcome: "handoff"
+      AS: post_call
+    THEN: ESCALATE with REASON: "IR desk handoff"
+
+  x1_customer_request:
+    REASONING: false
+    SET:
+      handoff_reason = "Customer asked for a person"
+      handoff_next_step = "Take over the IR conversation from the current step"
+      disposition = "HANDOFF_CUSTOMER_REQUEST"
+    THEN: x1_handoff
+
+  x1_otp_failed:
+    REASONING: false
+    SET:
+      handoff_reason = "OTP verification failed three times"
+      handoff_next_step = "Re-verify the customer before activating the consented pack"
+      disposition = "HANDOFF_OTP_FAILED"
+    THEN: x1_handoff
+
+  x2_fallback:
+    REASONING: false
+    SET:
+      handoff_reason = "Clarification failed twice"
+      handoff_next_step = "Continue the IR conversation"
+      disposition = "HANDOFF_CLARIFY_FAILED"
+    THEN: x1_handoff
+
+  x3_wrong_party:
+    REASONING: false
+    RESPOND: "Sorry for the trouble. Thank you for your time. Goodbye."
+    THEN: s9_write
+
+  x4_opt_out:
+    REASONING: false
+    CALL: a06_record_opt_out
+      WITH:
+        msisdn: msisdn
+        campaign: campaign
+      AS: opt_out
+    SET:
+      disposition = "OPT_OUT"
+      outcome = "opted_out"
+    RESPOND: "Understood. I've recorded that you don't want these calls, and we won't call you about this again. Goodbye."
+    THEN: s9_write
+
+  x4_nudge_silent:
+    REASONING: false
+    CALL: a08_send_sms
+      WITH:
+        msisdn: msisdn
+        template: "ir_app_nudge"
+      AS: sms
+    THEN: s9_write
+
+  x_system_failure:
+    REASONING: false
+    SET:
+      handoff_reason = "System call failed"
+      handoff_next_step = "Complete the IR request manually"
+      disposition = "HANDOFF_SYSTEM_FAILURE"
+    THEN: x1_handoff

@@ -1,0 +1,30 @@
+{
+  "name": "Vi Legal End-to-End Workflow",
+  "description": "Vi Legal AI end-to-end workflow (W0-W9): LG00 Legal Supervisor routing to LG01 intake, LG02 NDA triage, LG03 AI partner MoU draft and markup review, LG04 vendor and AI contract review with the GRACIE R1-R10 pack, LG05 execution check, LG06 obligations and renewal watcher, LG07 DPDP rights requests, plus LG-TR exact-quote checks, LG-PR privilege strip, W5 authorised approval gate and LG-AU audit. Nothing is signed or sent. SYNTHETIC vi-legal fixtures.",
+  "entry_agent": "Legal_Supervisor",
+  "model": "gemma4",
+  "agents": {
+    "Legal_Supervisor": "agents/legal_supervisor.agent.abl"
+  },
+  "mock_prelude": "legal-data.js",
+  "shared_mocks": [
+    "doc_docx"
+  ],
+  "smoke_inputs": {
+    "text": "run end-to-end MOU-04",
+    "doc_id": "MOU-04",
+    "approval_ref": "",
+    "as_of": "2027-09-10",
+    "user": "senior.counsel",
+    "scope": "all",
+    "disposition": "SMOKE",
+    "object": "smoke",
+    "detail": "smoke",
+    "changes": "[{\"clause\":\"Clause 7\",\"current\":\"Vi shall not engage any other provider.\",\"proposed\":\"\",\"reason\":\"No exclusivity in an NDA.\"}]",
+    "title": "Smoke NDA",
+    "counterparty": "Smoke Pvt Ltd",
+    "markdown": "# Smoke\nok",
+    "footer_note": "smoke"
+  },
+  "deployment_label": "vi-legal-v1"
+}

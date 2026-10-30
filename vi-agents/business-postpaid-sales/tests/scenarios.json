@@ -1,0 +1,160 @@
+[
+ {
+  "name": "qualified_document_link_sent",
+  "turns": [
+   "CALL_START msisdn=9880000001",
+   "yes, go ahead",
+   "yes I'm the director",
+   "yes 25 is right",
+   "all new numbers",
+   "private limited",
+   "yes let's go ahead",
+   "send the link"
+  ],
+  "expect": {
+   "tools": [
+    "bps01_get_lead",
+    "bps01_compliance_gate",
+    "bps03_get_plan_options",
+    "bps04_send_document_link",
+    "a11_write_post_call"
+   ],
+   "disposition": "DOCUMENT_LINK_SENT",
+   "exit": "complete",
+   "says": [
+    "I am an AI",
+    "Is this a good time",
+    "Vi Business Plan C at ₹649 per connection per month",
+    "Another option is Vi Business Plan B",
+    "certificate of incorporation",
+    "Please don't share these documents on a call"
+   ],
+   "never_says": [
+    "₹349",
+    "₹449",
+    "24 hours"
+   ]
+  }
+ },
+ {
+  "name": "objection_answered_from_approved_knowledge_then_visit",
+  "turns": [
+   "CALL_START msisdn=9880000002",
+   "yes",
+   "yes",
+   "4 connections",
+   "we'll port our existing numbers",
+   "it's a proprietorship",
+   "but Airtel is cheaper for us",
+   "okay yes",
+   "a field visit please",
+   "morning"
+  ],
+  "expect": {
+   "tools": [
+    "a10_kb_answer",
+    "bps05_book_appointment"
+   ],
+   "disposition": "APPOINTMENT_BOOKED",
+   "exit": "complete",
+   "says": [
+    "only compare against approved, current information",
+    "Thursday 30 October between 10 am and 12 noon"
+   ]
+  }
+ },
+ {
+  "name": "not_a_good_time_callback",
+  "turns": [
+   "CALL_START msisdn=9880000001",
+   "no I'm in a meeting",
+   "tomorrow morning"
+  ],
+  "expect": {
+   "tools": [
+    "bps01_schedule_callback"
+   ],
+   "no_tools": [
+    "bps03_get_plan_options"
+   ],
+   "disposition": "CALLBACK",
+   "exit": "complete",
+   "says": [
+    "tomorrow between 10 and 11 am"
+   ]
+  }
+ },
+ {
+  "name": "dnd_lead_not_called",
+  "turns": [
+   "CALL_START msisdn=9880000003"
+  ],
+  "expect": {
+   "tools": [
+    "bps01_compliance_gate"
+   ],
+   "no_tools": [
+    "bps03_get_plan_options"
+   ],
+   "disposition": "OPT_OUT",
+   "exit": "complete",
+   "never_says": [
+    "virtual assistant"
+   ]
+  }
+ },
+ {
+  "name": "individual_not_eligible",
+  "turns": [
+   "CALL_START msisdn=9880000002",
+   "yes",
+   "yes",
+   "yes",
+   "new",
+   "actually I'm an individual freelancer, not registered"
+  ],
+  "expect": {
+   "no_tools": [
+    "bps03_get_plan_options"
+   ],
+   "disposition": "NOT_ELIGIBLE",
+   "exit": "complete"
+  }
+ },
+ {
+  "name": "not_interested",
+  "turns": [
+   "CALL_START msisdn=9880000001",
+   "yes",
+   "yes",
+   "yes",
+   "new",
+   "pvt ltd",
+   "no, not interested"
+  ],
+  "expect": {
+   "disposition": "NOT_INTERESTED",
+   "exit": "complete"
+  }
+ },
+ {
+  "name": "discount_request_goes_to_sales_advisor",
+  "turns": [
+   "CALL_START msisdn=9880000001",
+   "yes",
+   "yes",
+   "yes",
+   "new",
+   "pvt ltd",
+   "can you give us a discount?"
+  ],
+  "expect": {
+   "tools": [
+    "bps06_create_sales_handoff"
+   ],
+   "disposition": "HOT_TRANSFERRED",
+   "exit": "escalate",
+   "max_turn_ms": 2000
+  }
+ }
+]

@@ -1,0 +1,46 @@
+{
+  "workflows": {
+    "rp01_propose_obligation": "01a17e09-c194-7cb0-b607-61d7939b6896",
+    "rp01_source_poll": "01a17e09-c928-75db-af64-fa5842aca7fd",
+    "rp02_summarise": "01a17e09-d17b-79a6-a687-1cab37190886",
+    "rp03_precedents": "01a17e0a-b51c-7bba-b196-8c796ae7237f",
+    "rp04_competitor_map": "01a17e0a-bd62-7e9c-b539-d98d7d226b29",
+    "rp05_brief": "01a17e0b-9c21-7667-9b24-7261fbb53815",
+    "rp_followup": "01a17e0b-a471-78d8-a929-f15ce5863274",
+    "rp_parse": "01a17e0b-ac9e-762c-ae70-e9e844a2279f",
+    "r_audit_log": "01a17e0c-8ea2-7729-a748-3f2d3f597816",
+    "r_cite_verify": "01a17e0c-9801-7d95-ae58-fcec243fed0d",
+    "r_doc_extract": "01a17e0d-77f4-71fb-98f6-f9c628dcf793",
+    "r_kb_search": "01a17e0d-8058-72d7-a94b-76cd38d70b81",
+    "r_notify": "01a17e0d-888e-7b3b-be09-e0757cd8527e",
+    "doc_docx": "01a180bf-fe28-70fb-bccf-31a7b0e002d5"
+  },
+  "workflow_versions": {
+    "rp01_propose_obligation": "v1.0.3",
+    "rp01_source_poll": "v1.0.3",
+    "rp02_summarise": "v1.0.3",
+    "rp03_precedents": "v1.0.3",
+    "rp04_competitor_map": "v1.0.3",
+    "rp05_brief": "v1.0.3",
+    "rp_followup": "v1.0.5",
+    "rp_parse": "v1.0.4",
+    "r_audit_log": "v1.0.3",
+    "r_cite_verify": "v1.0.3",
+    "r_doc_extract": "v1.0.3",
+    "r_kb_search": "v1.0.3",
+    "r_notify": "v1.0.3",
+    "doc_docx": "v1.0.2"
+  },
+  "projectId": "01a17e09-b402-7854-8a91-715fd9c6e63c",
+  "deployment": {
+    "env": "dev",
+    "id": "01a18138-7e33-70ce-b0db-eb79139d0736",
+    "endpointSlug": "01a17e09-dev-mvrqpust-3ded85",
+    "agents": {
+      "RA_UC1_Research_Supervisor": {
+        "version": "1.0.3"
+      }
+    },
+    "preflight": "ready"
+  }
+}

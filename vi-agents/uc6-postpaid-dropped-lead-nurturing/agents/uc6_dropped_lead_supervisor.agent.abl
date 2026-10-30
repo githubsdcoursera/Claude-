@@ -1,0 +1,810 @@
+AGENT: UC6_Dropped_Lead_Supervisor
+VERSION: "1.0"
+GOAL: |
+  UC6 Postpaid Dropped-Lead Nurturing. Convert people who started but did not finish a Vi postpaid journey
+  (J1 new connection, J2 port-in, J3 family add-on, J4 assisted lead, J5 missed doorstep KYC visit) into an
+  activated connection: pass the pre-dial gate, disclose AI, confirm the right party before any journey
+  detail, load context, find the real drop reason (DL01), answer plan fit from the catalogue only (DL02),
+  remove the blocker (DL03), then send a pre-filled resume link, rebook a visit, book a callback or
+  hot-transfer to sales. Write the disposition with the UC6 attribution tag.
+
+PERSONA: |
+  Vi's postpaid onboarding assistant, an AI voice agent calling on behalf of Vodafone Idea. Warm, brief and
+  never pushy: under two sentences a turn unless reading must-say content, one question at a time. Reads
+  prices, deposits and benefits exactly as the catalogue returns them. Never discusses other operators
+  negatively.
+
+LIMITATIONS:
+  - "Never asks for or repeats Aadhaar, PAN, passport, bank, card or OTP digits; KYC and payment happen only in the secure Vi link"
+  - "Cannot offer discounts, waivers, delivery times or coverage that the systems did not return"
+  - "Does not call back after a clear no"
+
+EXECUTION:
+  session_idle_timeout: 120000
+  voice_latency_target: 800
+  tool_timeout: 8000
+
+TOOLS:
+  #include-tools: a06_u6_gate, a03_u6_lead_context, dl01_classify_drop, dl02_plan_search, dl02_plan_faq, dl03_coverage_check, dl03_mnp_steps, dl03_slot_options, dl03_slot_rebook, dl03_resume_link, a07_u6_book_callback, a06_u6_suppress_lead, a06_record_opt_out, a02_sentiment_event, a09_create_handoff, a11_write_post_call
+
+MEMORY:
+  session:
+    - bad_input
+    - msisdn
+    - campaign
+    - gate
+    - ctx
+    - diag
+    - drop_verbatim
+    - clarify_count
+    - lang_hi
+    - needs
+    - plans
+    - plan_fail
+    - chosen_plan_id
+    - chosen_plan_name
+    - faq
+    - faq_question
+    - coverage
+    - mnp
+    - slots
+    - chosen_slot
+    - visit
+    - resume_step
+    - link
+    - callback
+    - callback_preference
+    - callback_reason
+    - suppress
+    - opt_out
+    - sentiment
+    - neg_count
+    - disposition
+    - outcome
+    - handoff_reason
+    - handoff_next_step
+    - handoff
+    - post_call
+
+INTENTS:
+  human_escalation: "Customer asks to speak to a person, a colleague, a sales agent or customer care."
+
+ESCALATE:
+  triggers:
+    - WHEN: user.sentiment == "very_negative"
+      REASON: "Negative sentiment persisted"
+      PRIORITY: high
+      TAGS: [uc6, sentiment]
+  context_for_human:
+    - msisdn
+    - ctx
+    - diag
+    - drop_verbatim
+    - plans
+    - link
+    - handoff_reason
+    - handoff_next_step
+    - conversation_transcript
+  routing:
+    queue: "POSTPAID_SALES_DESK"
+    skill_tags: [postpaid, sales, uc6]
+
+FLOW:
+  global_digressions:
+    - INTENT: opt_out_request
+      KEYWORDS: ["stop calling", "don't call", "dont call", "do not call", "opt out", "unsubscribe", "remove my number", "call mat karo", "phone mat karo"]
+      GOTO: x4_opt_out
+    - INTENT: busy_or_driving
+      KEYWORDS: ["i'm driving", "i am driving", "im driving", "while driving", "i'm busy", "i am busy", "im busy", "busy right now", "not a good time", "in a meeting", "i'm unwell", "i am unwell", "not feeling well", "gaadi chala", "abhi busy"]
+      GOTO: x3_busy_callback
+    - INTENT: human_request
+      KEYWORDS: ["speak to a person", "talk to a person", "talk to someone", "real person", "human agent", "speak to an agent", "talk to an agent", "speak to a colleague", "connect me to sales", "sales person", "customer care", "agent se baat"]
+      GOTO: x1_customer_asked
+    - INTENT: id_on_call
+      KEYWORDS: ["take my aadhaar", "take my aadhar", "my aadhaar number", "my aadhar number", "aadhaar number is", "aadhar number is", "give you my aadhaar", "tell you my aadhaar", "my pan number", "pan number is", "take my pan", "take my card", "card number is", "do the kyc on the phone", "do kyc on call"]
+      GOTO: s5_no_id_on_call
+    - INTENT: discount_request
+      KEYWORDS: ["discount", "% off", "percent off", "waive", "waiver", "free for a month", "lower price", "reduce the price", "cashback"]
+      GOTO: s5_not_available
+    - INTENT: abusive
+      KEYWORDS: ["idiot", "stupid", "shut up", "useless", "nonsense", "bloody", "rubbish", "bakwas", "pagal", "go to hell", "screw you"]
+      GOTO: x2_negative
+
+  # ---- S0 Trigger: lead from the journey event stream, deduped on MSISDN + journey ----
+  s0_trigger:
+    REASONING: false
+    SET:
+      msisdn = FIRST_NON_EMPTY(session.messageMetadata.msisdn, REGEX_EXTRACT(input, "msisdn=(\\d{10})", 1), customer_id, "none")
+      campaign = FIRST_NON_EMPTY(session.messageMetadata.campaign, REGEX_EXTRACT(input, "campaign=(\\w+)", 1), "UC6_PILOT")
+      disposition = "IN_PROGRESS"
+      clarify_count = 0
+      plan_fail = 0
+      neg_count = 0
+      lang_hi = false
+      callback_reason = "busy"
+      chosen_plan_id = "none"
+      resume_step = "journey"
+    THEN: s0_need_number
+
+  # ---- A06 pre-dial gate: fail closed ----
+
+  # ---- No caller ID (for example a Studio test chat): ask for the number before the call starts ----
+  s0_need_number:
+    REASONING: false
+    WHEN: msisdn == "none"
+    RESPOND: "Test chat: no caller number was passed to this session. Please type the 10-digit mobile number of the test customer (for example 9890000001) to start the call."
+    ON_INPUT:
+      - IF: input matches "(^|[^0-9])[0-9]{10}([^0-9]|$)"
+        SET: msisdn = REGEX_EXTRACT(input, "(?:^|[^0-9])([0-9]{10})(?:[^0-9]|$)", 1)
+        THEN: s0_gate
+      - ELSE:
+        SET: bad_input = input
+        THEN: s0_need_number_retry
+    THEN: s0_gate
+
+  s0_need_number_retry:
+    REASONING: false
+    RESPOND: "I received: {{bad_input}}. That is not a 10-digit mobile number. Please type exactly 10 digits, with no spaces or country code (for example 9890000001)."
+    ON_INPUT:
+      - IF: input matches "(^|[^0-9])[0-9]{10}([^0-9]|$)"
+        SET: msisdn = REGEX_EXTRACT(input, "(?:^|[^0-9])([0-9]{10})(?:[^0-9]|$)", 1)
+        THEN: s0_gate
+      - ELSE:
+        SET: bad_input = input
+        THEN: s0_need_number_retry
+    THEN: s0_gate
+
+  s0_gate:
+    REASONING: false
+    CALL: a06_u6_gate
+      WITH:
+        msisdn: msisdn
+        campaign: campaign
+      AS: gate
+    ON_RESULT:
+      - IF: gate.output.allowed == true
+        THEN: s1_disclose
+      - IF: gate.output.stop_reason == "attempt_cap"
+        SET:
+          disposition = "NO_CONTACT_EXHAUSTED"
+          outcome = "attempt_cap"
+        THEN: x0_no_call
+      - IF: gate.output.stop_reason == "ncpr_dnd"
+        SET:
+          disposition = "COMPLIANCE_STOP"
+          outcome = "ncpr_dnd"
+        THEN: x0_no_call
+      - ELSE:
+        SET:
+          disposition = "COMPLIANCE_STOP"
+          outcome = FIRST_NON_EMPTY(gate.output.stop_reason, "gate_unavailable")
+        THEN: x0_no_call
+
+  # ---- S1 Connect and disclose (MS-01) + S2 right-party check (MS-02): no journey detail yet ----
+  s1_disclose:
+    REASONING: false
+    MAX_ATTEMPTS: 2
+    ON_EXHAUSTED: x2_fallback
+    RESPOND: "Hello, this is Vi's AI assistant, calling about your Vi postpaid request. This call may be recorded for quality. Am I speaking with {{gate.output.first_name}}?"
+    ON_INPUT:
+      - IF: input matches "(^|[^a-z])(haan|haanji|ji haan|ji|han|bol raha|bol rahi|main hi|boliye)([^a-z]|$)"
+        SET: lang_hi = true
+        THEN: s3_context
+      - IF: input matches "(^|[^a-z])(yes|yeah|yep|speaking|that's me|thats me|it is me|this is)([^a-z]|$)"
+        SET: lang_hi = false
+        THEN: s3_context
+      - IF: input matches "(^|[^a-z])(no|nahi|nahin|wrong number|not me|not here|nobody|no one)([^a-z]|$)"
+        THEN: x5_wrong_party
+      - ELSE:
+        RESPOND: "Sorry, I didn't catch that. Am I speaking with {{gate.output.first_name}}?"
+        THEN: s1_disclose
+
+  # ---- S3 Load context (A03), only after right party ----
+  s3_context:
+    REASONING: false
+    CALL: a03_u6_lead_context
+      WITH:
+        msisdn: msisdn
+      AS: ctx
+    ON_RESULT:
+      - IF: ctx.output.found == true
+        THEN: s4_open
+      - ELSE:
+        SET:
+          handoff_reason = "SYSTEM_FAIL: lead context unavailable"
+          handoff_next_step = "Find the customer's postpaid journey and help them finish it"
+          disposition = "TECH_FAIL"
+          outcome = "context_unavailable"
+        THEN: x1_handoff
+
+  # ---- S4 Discover (DL01): open with the drop step, never the price; one open question ----
+  s4_open:
+    REASONING: false
+    RESPOND: "{{#if lang_hi}}Dhanyavaad, {{gate.output.first_name}} ji. Aapka {{ctx.output.journey_label}} {{ctx.output.drop_label}} par ruk gaya tha. Agar aap yeh calls nahi chahte, toh bas bata dijiye. Aapko aage badhne se kya roka?{{else}}Thanks, {{gate.output.first_name}}. You'd reached {{ctx.output.drop_label}} of your {{ctx.output.journey_label}}. If you'd prefer not to get these calls, just tell me and we'll stop. What stopped you from finishing?{{/if}}"
+    ON_INPUT:
+      - IF: input matches "(english|in english|speak english)"
+        SET:
+          lang_hi = false
+          drop_verbatim = input
+        THEN: s4_classify
+      - IF: input matches "(^|[^a-z])(hai|tha|thi|nahi|mujhe|samajh|kya|kaun|hoon|mein|chahiye|karna)([^a-z]|$)"
+        SET:
+          lang_hi = true
+          drop_verbatim = input
+        THEN: s4_classify
+      - ELSE:
+        SET:
+          lang_hi = false
+          drop_verbatim = input
+        THEN: s4_classify
+
+  s4_classify:
+    REASONING: false
+    CALL: dl01_classify_drop
+      WITH:
+        text: drop_verbatim
+        journey: ctx.output.journey
+      AS: diag
+    ON_RESULT:
+      - IF: diag.output.confidence < 0.7 AND clarify_count >= 1
+        THEN: x2_fallback
+      - IF: diag.output.confidence < 0.7
+        SET: clarify_count = ADD(clarify_count, 1)
+        THEN: s4_clarify
+      - IF: diag.output.reason_code == "PRICE" OR diag.output.reason_code == "PLAN_CONFUSION"
+        THEN: s5_needs
+      - IF: diag.output.reason_code == "KYC_ISSUE"
+        THEN: s5_kyc
+      - IF: diag.output.reason_code == "ADDRESS_COVERAGE"
+        THEN: s5_coverage
+      - IF: diag.output.reason_code == "UPC_MNP"
+        THEN: s5_mnp
+      - IF: diag.output.reason_code == "PAYMENT_FAIL"
+        THEN: s5_payment
+      - IF: diag.output.reason_code == "DELIVERY_SLOT"
+        THEN: s5_slot
+      - IF: diag.output.reason_code == "NEEDS_FAMILY_APPROVAL"
+        SET: callback_reason = "family_approval"
+        THEN: s5_family
+      - IF: diag.output.reason_code == "READY_TO_BUY"
+        SET:
+          handoff_reason = "J4 assisted lead wants to buy now"
+          handoff_next_step = "Close the sale: customer is ready to buy a postpaid connection now"
+          disposition = "TRANSFERRED_SALES"
+          outcome = "hot_transfer_ready_to_buy"
+        THEN: x1_handoff
+      - IF: diag.output.reason_code == "COMPETITOR"
+        THEN: s5_competitor
+      - ELSE:
+        THEN: s5_changed_mind
+
+  s4_clarify:
+    REASONING: false
+    RESPOND: "{{#if lang_hi}}Maaf kijiye, thoda aur bata sakte hain? Kya plan, price, KYC, payment, delivery ya kuch aur tha?{{else}}Sorry, could you tell me a little more? Was it the plan, the price, KYC, payment, the delivery, or something else?{{/if}}"
+    ON_INPUT:
+      - ELSE:
+        SET: drop_verbatim = input
+        THEN: s4_classify
+
+  # ---- S5 Resolve: DL02 Plan & Eligibility (catalogue only, up to 2 plans, MS-04 verbatim) ----
+  s5_needs:
+    REASONING: false
+    RESPOND: "{{#if lang_hi}}Main sahi plan chunne mein madad karti hoon. Aapko kitni lines chahiye, aur mahine mein lagbhag kitna data use karte hain?{{else}}I can help you pick the right one. How many lines do you need, and roughly how much data do you use in a month?{{/if}}"
+    ON_INPUT:
+      - ELSE:
+        SET: needs = input
+        THEN: s5_plan_search
+
+  s5_plan_search:
+    REASONING: false
+    CALL: dl02_plan_search
+      WITH:
+        msisdn: msisdn
+        needs: needs
+      AS: plans
+    ON_RESULT:
+      - IF: plans.output.found == true
+        SET:
+          chosen_plan_id = plans.output.plan_1_id
+          chosen_plan_name = plans.output.plan_1_name
+        THEN: s5_plan_read
+      - IF: plan_fail >= 1
+        SET:
+          handoff_reason = "SYSTEM_FAIL: plan catalogue failed twice"
+          handoff_next_step = "Quote plans from the catalogue and help the customer finish the journey"
+          disposition = "TECH_FAIL"
+          outcome = "catalogue_failed_twice"
+        THEN: x1_handoff
+      - ELSE:
+        SET: plan_fail = ADD(plan_fail, 1)
+        THEN: s5_plan_search
+
+  s5_plan_read:
+    REASONING: false
+    RESPOND: "{{plans.output.plan_1_name}} is ₹{{plans.output.plan_1_rental}} a month plus taxes, with {{plans.output.plan_1_benefits}}. {{plans.output.plan_1_deposit_line}} {{#if plans.output.plan_2_name}}Or {{plans.output.plan_2_name}} is ₹{{plans.output.plan_2_rental}} a month plus taxes, with {{plans.output.plan_2_benefits}}. {{plans.output.plan_2_deposit_line}} {{/if}}{{plans.output.family_note}} Which would you like?"
+    ON_INPUT:
+      - IF: input matches "([?]|what about|does it|does that|is there|wait|hold on|what is the|what's the|how much is the deposit|deposit)"
+        SET: faq_question = input
+        THEN: s5_plan_barge_in
+      - IF: input matches "(second|other one|2nd|cheaper one|the latter)"
+        SET:
+          chosen_plan_id = plans.output.plan_2_id
+          chosen_plan_name = plans.output.plan_2_name
+          resume_step = "plan_selection"
+        THEN: s6_send_link
+      - IF: input matches "(think|later|not sure|decide|ask my|discuss)"
+        SET: callback_reason = "think_it_over"
+        THEN: s5_family
+      - IF: input matches "(^|[^a-z])(no|nahi|nahin|too expensive|not interested|neither|none)([^a-z]|$)"
+        THEN: s5_declined
+      - ELSE:
+        SET: resume_step = "plan_selection"
+        THEN: s6_send_link
+
+  # ---- E11 barge-in: stop, answer from the catalogue, then resume the must-say in full ----
+  s5_plan_barge_in:
+    REASONING: false
+    CALL: dl02_plan_faq
+      WITH:
+        plan_id: chosen_plan_id
+        question: faq_question
+      AS: faq
+    THEN: s5_plan_reread
+
+  s5_plan_reread:
+    REASONING: false
+    RESPOND: "{{faq.output.answer}} To give you the full details again: {{plans.output.plan_1_name}} is ₹{{plans.output.plan_1_rental}} a month plus taxes, with {{plans.output.plan_1_benefits}}. {{plans.output.plan_1_deposit_line}} {{#if plans.output.plan_2_name}}Or {{plans.output.plan_2_name}} is ₹{{plans.output.plan_2_rental}} a month plus taxes, with {{plans.output.plan_2_benefits}}. {{plans.output.plan_2_deposit_line}} {{/if}}Which would you like?"
+    ON_INPUT:
+      - IF: input matches "(second|other one|2nd|cheaper one|the latter)"
+        SET:
+          chosen_plan_id = plans.output.plan_2_id
+          chosen_plan_name = plans.output.plan_2_name
+          resume_step = "plan_selection"
+        THEN: s6_send_link
+      - IF: input matches "(think|later|not sure|decide|ask my|discuss)"
+        SET: callback_reason = "think_it_over"
+        THEN: s5_family
+      - IF: input matches "(^|[^a-z])(no|nahi|nahin|too expensive|not interested|neither|none)([^a-z]|$)"
+        THEN: s5_declined
+      - ELSE:
+        SET: resume_step = "plan_selection"
+        THEN: s6_send_link
+
+  # ---- MS-05: outside the catalogue (discounts) -> offer a colleague, never promise ----
+  s5_not_available:
+    REASONING: false
+    RESPOND: "That isn't something I can offer on this call. I can connect you to a colleague. Would you like that?"
+    ON_INPUT:
+      - IF: input matches "(^|[^a-z])(yes|yeah|yep|sure|ok|okay|please|connect|haan|ji)([^a-z]|$)"
+        SET:
+          handoff_reason = "OUTSIDE_AUTHORITY: customer asked for a discount not in the catalogue"
+          handoff_next_step = "Customer wants a discount on a postpaid plan; check sales authority before quoting"
+          disposition = "TRANSFERRED_SALES"
+          outcome = "transfer_outside_authority"
+        THEN: x1_handoff
+      - ELSE:
+        THEN: s5_declined
+
+  # ---- E3: never take ID by voice; offer the secure link ----
+  s5_no_id_on_call:
+    REASONING: false
+    RESPOND: "Please don't share any ID numbers on this call; I can't take Aadhaar, PAN or card details by voice. KYC happens only in the secure Vi link. Shall I send you the link?"
+    ON_INPUT:
+      - IF: input matches "(^|[^a-z])(no|nahi|nahin|not now)([^a-z]|$)"
+        THEN: s5_declined
+      - ELSE:
+        SET: resume_step = "kyc"
+        THEN: s6_send_link
+
+  # ---- DL03 Blocker Resolver playbook ----
+  s5_kyc:
+    REASONING: false
+    RESPOND: "eKYC is done only in the secure Vi link: you confirm with an Aadhaar OTP on your own phone, and I won't ask for any ID numbers. Shall I send you a link that opens the KYC step with your details filled in?"
+    ON_INPUT:
+      - IF: input matches "(^|[^a-z])(no|nahi|nahin|not now)([^a-z]|$)"
+        THEN: s5_declined
+      - ELSE:
+        SET: resume_step = "kyc"
+        THEN: s6_send_link
+
+  s5_payment:
+    REASONING: false
+    RESPOND: "Sorry the payment didn't go through. I can't take card details on the call, but I can send a link that opens the payment step directly. Shall I send it?"
+    ON_INPUT:
+      - IF: input matches "(^|[^a-z])(no|nahi|nahin|not now)([^a-z]|$)"
+        THEN: s5_declined
+      - ELSE:
+        SET: resume_step = "payment"
+        THEN: s6_send_link
+
+  s5_coverage:
+    REASONING: false
+    CALL: dl03_coverage_check
+      WITH:
+        msisdn: msisdn
+      AS: coverage
+    ON_RESULT:
+      - IF: coverage.output.serviceable == true
+        THEN: s5_coverage_ok
+      - IF: coverage.output.checked == true
+        SET:
+          disposition = "NOT_SERVICEABLE"
+          outcome = "address_not_serviceable"
+        THEN: s5_not_serviceable
+      - ELSE:
+        SET:
+          handoff_reason = "SYSTEM_FAIL: coverage check unavailable"
+          handoff_next_step = "Check serviceability at the customer's address"
+          disposition = "TECH_FAIL"
+          outcome = "coverage_unavailable"
+        THEN: x1_handoff
+
+  s5_coverage_ok:
+    REASONING: false
+    RESPOND: "Good news: Vi postpaid is available at your address, with {{coverage.output.network}}. Shall I send you a link to finish from the address step?"
+    ON_INPUT:
+      - IF: input matches "(^|[^a-z])(no|nahi|nahin|not now)([^a-z]|$)"
+        THEN: s5_declined
+      - ELSE:
+        SET: resume_step = "address"
+        THEN: s6_send_link
+
+  s5_not_serviceable:
+    REASONING: false
+    CALL: a06_u6_suppress_lead
+      WITH:
+        msisdn: msisdn
+        reason: "not_serviceable"
+      AS: suppress
+    THEN: s5_not_serviceable_say
+
+  s5_not_serviceable_say:
+    REASONING: false
+    RESPOND: "I'm sorry, Vi postpaid isn't available at your address yet, so I can't take this forward today. Thanks for your time, {{gate.output.first_name}}."
+    THEN: s9_write
+
+  s5_mnp:
+    REASONING: false
+    CALL: dl03_mnp_steps
+      WITH:
+        msisdn: msisdn
+      AS: mnp
+    ON_RESULT:
+      - IF: mnp.output.upc_status == "expired"
+        SET: callback_reason = "upc_pending"
+        THEN: s5_mnp_expired
+      - ELSE:
+        THEN: s5_mnp_new
+
+  s5_mnp_expired:
+    REASONING: false
+    RESPOND: "Your earlier porting code has expired, so you'll need a new one. {{mnp.output.porting_steps}} When would be a good time for me to call you back once you have the new code?"
+    ON_INPUT:
+      - ELSE:
+        SET: callback_preference = input
+        THEN: s6_book_callback
+
+  s5_mnp_new:
+    REASONING: false
+    RESPOND: "{{mnp.output.porting_steps}} Shall I send you the link now, so it's ready when your code arrives?"
+    ON_INPUT:
+      - IF: input matches "(later|call me|callback|call back)"
+        SET: callback_preference = input
+        THEN: s6_book_callback
+      - IF: input matches "(^|[^a-z])(no|nahi|nahin|not now)([^a-z]|$)"
+        THEN: s5_declined
+      - ELSE:
+        SET: resume_step = "upc"
+        THEN: s6_send_link
+
+  s5_slot:
+    REASONING: false
+    CALL: dl03_slot_options
+      WITH:
+        msisdn: msisdn
+      AS: slots
+    ON_RESULT:
+      - IF: slots.output.found == true
+        THEN: s5_slot_offer
+      - ELSE:
+        SET:
+          handoff_reason = "SYSTEM_FAIL: visit slots unavailable"
+          handoff_next_step = "Rebook the customer's missed doorstep KYC visit"
+          disposition = "TECH_FAIL"
+          outcome = "slots_unavailable"
+        THEN: x1_handoff
+
+  s5_slot_offer:
+    REASONING: false
+    RESPOND: "I'm sorry the visit was missed. I can book {{slots.output.slot_1}}, or {{slots.output.slot_2}}. Which suits you?"
+    ON_INPUT:
+      - IF: input matches "(second|thursday|2nd|evening|later one|the other)"
+        SET: chosen_slot = slots.output.slot_2
+        THEN: s6_rebook
+      - IF: input matches "(^|[^a-z])(no|neither|none|nahi)([^a-z]|$)"
+        SET: callback_reason = "slot_not_suitable"
+        THEN: s5_family
+      - ELSE:
+        SET: chosen_slot = slots.output.slot_1
+        THEN: s6_rebook
+
+  s5_family:
+    REASONING: false
+    RESPOND: "{{#if lang_hi}}Bilkul. Main aapko kab call karoon?{{else}}Of course. When would be a good time for me to call you back?{{/if}}"
+    ON_INPUT:
+      - ELSE:
+        SET: callback_preference = input
+        THEN: s6_book_callback
+
+  s5_competitor:
+    REASONING: false
+    CALL: a06_u6_suppress_lead
+      WITH:
+        msisdn: msisdn
+        reason: "competitor"
+      AS: suppress
+    SET:
+      disposition = "DECLINED_OTHER"
+      outcome = "chose_another_operator"
+    THEN: s5_decline_say
+
+  s5_changed_mind:
+    REASONING: false
+    CALL: a06_u6_suppress_lead
+      WITH:
+        msisdn: msisdn
+        reason: "changed_mind"
+      AS: suppress
+    SET:
+      disposition = "CHANGED_MIND"
+      outcome = "changed_mind"
+    THEN: s5_decline_say
+
+  s5_declined:
+    REASONING: false
+    CALL: a06_u6_suppress_lead
+      WITH:
+        msisdn: msisdn
+        reason: "declined"
+      AS: suppress
+    ON_RESULT:
+      - IF: diag.output.reason_code == "PRICE"
+        SET:
+          disposition = "DECLINED_PRICE"
+          outcome = "declined_price"
+        THEN: s5_decline_say
+      - ELSE:
+        SET:
+          disposition = "DECLINED_OTHER"
+          outcome = "declined"
+        THEN: s5_decline_say
+
+  s5_decline_say:
+    REASONING: false
+    RESPOND: "{{#if lang_hi}}Koi baat nahi, batane ke liye shukriya. Hum is baare mein dobara call nahi karenge. Dhanyavaad, {{gate.output.first_name}} ji.{{else}}No problem, thank you for letting me know. We won't call you about this again. Thanks for your time, {{gate.output.first_name}}.{{/if}}"
+    THEN: s9_write
+
+  # ---- S6 Confirm and act (MS-07): only after the system confirms ----
+  s6_send_link:
+    REASONING: false
+    CALL: dl03_resume_link
+      WITH:
+        msisdn: msisdn
+        lead_id: ctx.output.lead_id
+        step: resume_step
+        plan_id: chosen_plan_id
+        campaign: campaign
+      AS: link
+    ON_RESULT:
+      - IF: link.output.sent == true
+        SET:
+          disposition = "CONVERTED_LINK_SENT"
+          outcome = "resume_link_sent"
+        THEN: s7_link_sent
+      - ELSE:
+        SET:
+          handoff_reason = "SYSTEM_FAIL: resume link could not be created"
+          handoff_next_step = "Help the customer finish the journey"
+          disposition = "TECH_FAIL"
+          outcome = "link_failed"
+        THEN: x1_handoff
+
+  s6_rebook:
+    REASONING: false
+    CALL: dl03_slot_rebook
+      WITH:
+        lead_id: ctx.output.lead_id
+        slot: chosen_slot
+      AS: visit
+    ON_RESULT:
+      - IF: visit.output.booked == true
+        SET:
+          disposition = "SLOT_REBOOKED"
+          outcome = "visit_rebooked"
+        THEN: s7_visit_booked
+      - ELSE:
+        SET:
+          handoff_reason = "SYSTEM_FAIL: visit could not be rebooked"
+          handoff_next_step = "Rebook the doorstep KYC visit"
+          disposition = "TECH_FAIL"
+          outcome = "rebook_failed"
+        THEN: x1_handoff
+
+  s6_book_callback:
+    REASONING: false
+    CALL: a07_u6_book_callback
+      WITH:
+        msisdn: msisdn
+        lead_id: ctx.output.lead_id
+        preference: callback_preference
+        reason: callback_reason
+      AS: callback
+    SET:
+      disposition = "CALLBACK_BOOKED"
+      outcome = "callback_booked"
+    THEN: s7_callback_confirm
+
+  # ---- S7 Wrap-up (MS-11) ----
+  s7_link_sent:
+    REASONING: false
+    RESPOND: "I've sent a link to {{link.output.masked_msisdn}}. It's valid for {{link.output.expiry}}, and it opens your {{ctx.output.journey_label}} with your details already filled in. Is there anything else I can help with?"
+    ON_INPUT:
+      - ELSE:
+        THEN: s7_close
+
+  s7_close:
+    REASONING: false
+    RESPOND: "{{#if lang_hi}}Aapke samay ke liye dhanyavaad, {{gate.output.first_name}} ji.{{else}}Thanks for your time, {{gate.output.first_name}}.{{/if}}"
+    THEN: s9_write
+
+  s7_visit_booked:
+    REASONING: false
+    RESPOND: "Your visit is booked for {{visit.output.slot}}. You'll get an SMS confirmation with the reference {{visit.output.booking_ref}}. Thanks for your time, {{gate.output.first_name}}."
+    THEN: s9_write
+
+  s7_callback_confirm:
+    REASONING: false
+    RESPOND: "Done. I'll call you back {{callback.output.slot}}. Thanks for your time, {{gate.output.first_name}}."
+    THEN: s9_write
+
+  # ---- S9 Post-call (A11): disposition, summary, drop reason, attribution ----
+  # ---- Pre-call check stopped the contact: in a live campaign nobody is dialled; in a chat, say why ----
+  x0_no_call:
+    REASONING: false
+    RESPOND: "No call placed. The pre-call check stopped this contact (outcome {{disposition}}). In a live campaign the customer is not dialled and hears nothing; the outcome is recorded. In this test chat, 9890000001 is a customer who can be called."
+    THEN: s9_write
+
+  s9_write:
+    REASONING: false
+    CALL: a11_write_post_call
+      WITH:
+        msisdn: msisdn
+        disposition: disposition
+        summary: "UC6 lead {{ctx.output.lead_id}} {{ctx.output.journey}} dropped at {{ctx.output.drop_step}}. Reason {{diag.output.reason_code}}: {{drop_verbatim}}. Plan {{chosen_plan_id}} ({{plans.output.catalogue_version}}). Link {{link.output.link_ref}} tag {{link.output.attribution_tag}}. Gate {{gate.output.rule_version}} {{gate.output.stop_reason}}. Outcome {{outcome}}."
+        outcome: outcome
+      AS: post_call
+    THEN: COMPLETE
+
+  # ---- X1 Human handoff (hot transfer to sales, payload before connect) ----
+  x1_customer_asked:
+    REASONING: false
+    SET:
+      handoff_reason = "Customer asked for a person"
+      handoff_next_step = "Help the customer finish their postpaid journey"
+      disposition = "TRANSFERRED_SALES"
+      outcome = "hot_transfer_requested"
+    THEN: x1_handoff
+
+  x1_handoff:
+    REASONING: false
+    CALL: a09_create_handoff
+      WITH:
+        msisdn: msisdn
+        queue: "POSTPAID_SALES_DESK"
+        reason: handoff_reason
+        summary: "UC6 lead {{ctx.output.lead_id}}, customer {{gate.output.first_name}}, language {{#if lang_hi}}hi{{else}}en{{/if}}. Journey {{ctx.output.journey}} ({{ctx.output.journey_label}}) dropped at {{ctx.output.drop_step}}. Drop reason {{diag.output.reason_code}}, customer said: {{drop_verbatim}}. Plans discussed: {{plans.output.plan_1_name}} {{plans.output.plan_2_name}} ({{plans.output.catalogue_version}}). Links sent: {{link.output.link_ref}}. Negative turns {{neg_count}}."
+        recommended_next_step: handoff_next_step
+      AS: handoff
+    RESPOND: "I'm connecting you to a Vi colleague now, who will have the details of your request. Please stay on the line."
+    THEN: x1_post_call
+
+  x1_post_call:
+    REASONING: false
+    CALL: a11_write_post_call
+      WITH:
+        msisdn: msisdn
+        disposition: disposition
+        summary: "UC6 lead {{ctx.output.lead_id}} transferred to sales: {{handoff_reason}}. Reason {{diag.output.reason_code}}."
+        outcome: outcome
+      AS: post_call
+    THEN: ESCALATE with REASON: "UC6 postpaid sales hot transfer"
+
+  # ---- X2 Clarify failed twice / negative sentiment two turns ----
+  x2_fallback:
+    REASONING: false
+    SET:
+      handoff_reason = "Clarification failed twice"
+      handoff_next_step = "Find out why the customer stopped and help them finish"
+      disposition = "TRANSFERRED_SALES"
+      outcome = "clarify_failed"
+    THEN: x1_handoff
+
+  x2_negative:
+    REASONING: false
+    CALL: a02_sentiment_event
+      WITH:
+        msisdn: msisdn
+        count: "{{neg_count}}"
+        phrase: input
+      AS: sentiment
+    ON_RESULT:
+      - IF: sentiment.output.escalate == true
+        SET:
+          neg_count = sentiment.output.count
+          handoff_reason = "Negative sentiment for two turns"
+          handoff_next_step = "Customer is upset; listen first, then help with the postpaid request"
+          disposition = "TRANSFERRED_SALES"
+          outcome = "negative_sentiment"
+        THEN: x1_handoff
+      - ELSE:
+        SET: neg_count = sentiment.output.count
+        THEN: x2_negative_say
+
+  x2_negative_say:
+    REASONING: false
+    RESPOND: "I'm sorry, I can hear this has been frustrating. Would you like me to help finish your request, or would you prefer a colleague?"
+    ON_INPUT:
+      - IF: input matches "(colleague|person|human|someone)"
+        THEN: x1_customer_asked
+      - IF: input matches "(^|[^a-z])(no|nahi|nothing|leave it)([^a-z]|$)"
+        THEN: s5_declined
+      - ELSE:
+        THEN: s3_context
+
+  # ---- X3 Busy, driving or unwell: offer a callback and end ----
+  x3_busy_callback:
+    REASONING: false
+    CALL: a07_u6_book_callback
+      WITH:
+        msisdn: msisdn
+        lead_id: "not_loaded"
+        preference: "next_band"
+        reason: "busy"
+      AS: callback
+    SET:
+      disposition = "CALLBACK_BOOKED"
+      outcome = "callback_busy"
+    THEN: x3_busy_say
+
+  x3_busy_say:
+    REASONING: false
+    RESPOND: "No problem, I'll call you back {{callback.output.slot}}. Take care. Goodbye."
+    THEN: s9_write
+
+  # ---- X4 Compliance stop: opt-out honoured, DND flag written ----
+  x4_opt_out:
+    REASONING: false
+    CALL: a06_record_opt_out
+      WITH:
+        msisdn: msisdn
+        campaign: "UC6"
+      AS: opt_out
+    SET:
+      disposition = "DND_OPT_OUT"
+      outcome = "opted_out"
+    RESPOND: "Understood. We'll stop these calls, and I've recorded your preference. Goodbye."
+    THEN: s9_write
+
+  # ---- Wrong party (MS-08): no journey detail, suppress ----
+  x5_wrong_party:
+    REASONING: false
+    CALL: a06_u6_suppress_lead
+      WITH:
+        msisdn: msisdn
+        reason: "wrong_party"
+      AS: suppress
+    SET:
+      disposition = "WRONG_PARTY"
+      outcome = "wrong_party_suppressed"
+    RESPOND: "Sorry for the trouble. We won't call this number about this again."
+    THEN: s9_write

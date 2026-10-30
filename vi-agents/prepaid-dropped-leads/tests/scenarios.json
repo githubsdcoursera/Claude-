@@ -1,0 +1,212 @@
+[
+ {
+  "name": "kyc_drop_resume_link_sent",
+  "turns": [
+   "CALL_START msisdn=9820000001 direction=outbound campaign=PREPAID_DROPPED_LEAD",
+   "English",
+   "yes speaking",
+   "yes please send it",
+   "no thanks"
+  ],
+  "expect": {
+   "tools": [
+    "a07_get_lead",
+    "a06_compliance_gate",
+    "a03_get_journey_context",
+    "pdl02_get_resolution",
+    "pdl01_send_resume_link",
+    "a11_write_post_call"
+   ],
+   "disposition": "RESUME_LINK_SENT",
+   "exit": "complete",
+   "says": [
+    "I am an AI, and this call is recorded",
+    "stopped at the Aadhaar verification step",
+    "OTP step wasn't finished",
+    "details already filled in"
+   ]
+  }
+ },
+ {
+  "name": "busy_callback_scheduled",
+  "turns": [
+   "CALL_START msisdn=9820000001 direction=outbound campaign=PREPAID_DROPPED_LEAD",
+   "English",
+   "yes",
+   "I'm busy right now, call back later",
+   "tomorrow morning"
+  ],
+  "expect": {
+   "tools": [
+    "a07_schedule_callback",
+    "a11_write_post_call"
+   ],
+   "disposition": "CALLBACK_SCHEDULED",
+   "exit": "complete",
+   "says": [
+    "tomorrow between 10 and 11 am"
+   ]
+  }
+ },
+ {
+  "name": "coverage_question_then_link",
+  "turns": [
+   "CALL_START msisdn=9820000005 direction=outbound campaign=PREPAID_DROPPED_LEAD",
+   "English",
+   "yes",
+   "is the network coverage good in my area?",
+   "yes send the link",
+   "no"
+  ],
+  "expect": {
+   "tools": [
+    "a10_check_coverage",
+    "pdl01_send_resume_link"
+   ],
+   "disposition": "RESUME_LINK_SENT",
+   "exit": "complete",
+   "says": [
+    "4G coverage at your registered address"
+   ],
+   "never_says": [
+    "{{#if"
+   ]
+  }
+ },
+ {
+  "name": "attempt_cap_no_call",
+  "turns": [
+   "CALL_START msisdn=9820000003 direction=outbound campaign=PREPAID_DROPPED_LEAD"
+  ],
+  "expect": {
+   "tools": [
+    "a07_get_lead",
+    "a11_write_post_call"
+   ],
+   "no_tools": [
+    "a06_compliance_gate"
+   ],
+   "disposition": "MAX_ATTEMPTS_REACHED",
+   "exit": "complete",
+   "never_says": [
+    "virtual assistant"
+   ]
+  }
+ },
+ {
+  "name": "already_converted_duplicate_no_call",
+  "turns": [
+   "CALL_START msisdn=9820000004 direction=outbound campaign=PREPAID_DROPPED_LEAD"
+  ],
+  "expect": {
+   "tools": [
+    "a07_get_lead"
+   ],
+   "no_tools": [
+    "a06_compliance_gate"
+   ],
+   "disposition": "LEAD_ALREADY_CONVERTED",
+   "exit": "complete",
+   "never_says": [
+    "virtual assistant"
+   ]
+  }
+ },
+ {
+  "name": "not_interested",
+  "turns": [
+   "CALL_START msisdn=9820000001 direction=outbound campaign=PREPAID_DROPPED_LEAD",
+   "English",
+   "yes",
+   "no, I changed my mind"
+  ],
+  "expect": {
+   "no_tools": [
+    "pdl01_send_resume_link"
+   ],
+   "disposition": "NOT_INTERESTED",
+   "exit": "complete",
+   "says": [
+    "pick up where you left off"
+   ]
+  }
+ },
+ {
+  "name": "question_answered_by_llm_then_link",
+  "turns": [
+   "CALL_START msisdn=9820000001 direction=outbound campaign=PREPAID_DROPPED_LEAD",
+   "English",
+   "yes",
+   "what plan was I buying?",
+   "ok send me the link",
+   "no"
+  ],
+  "expect": {
+   "tools": [
+    "pdl01_send_resume_link"
+   ],
+   "disposition": "RESUME_LINK_SENT",
+   "exit": "complete",
+   "max_turn_ms": 4000
+  }
+ },
+ {
+  "name": "wrong_party",
+  "turns": [
+   "CALL_START msisdn=9820000001 direction=outbound campaign=PREPAID_DROPPED_LEAD",
+   "English",
+   "no, wrong number"
+  ],
+  "expect": {
+   "no_tools": [
+    "a03_get_journey_context"
+   ],
+   "disposition": "WRONG_PARTY",
+   "exit": "complete",
+   "never_says": [
+    "Aadhaar"
+   ]
+  }
+ },
+ {
+  "name": "opt_out",
+  "turns": [
+   "CALL_START msisdn=9820000001 direction=outbound campaign=PREPAID_DROPPED_LEAD",
+   "English",
+   "yes",
+   "stop calling me"
+  ],
+  "expect": {
+   "tools": [
+    "a06_record_opt_out"
+   ],
+   "disposition": "OPT_OUT",
+   "exit": "complete"
+  }
+ },
+ {
+  "name": "payment_failed_hot_transfer",
+  "turns": [
+   "CALL_START msisdn=9820000002 direction=outbound campaign=PREPAID_DROPPED_LEAD",
+   "English",
+   "yes",
+   "can I talk to an advisor to do it now"
+  ],
+  "expect": {
+   "tools": [
+    "pdl02_get_resolution",
+    "a09_create_handoff"
+   ],
+   "no_tools": [
+    "pdl01_send_resume_link"
+   ],
+   "disposition": "HOT_TRANSFERRED",
+   "exit": "escalate",
+   "says": [
+    "payment of ₹349 didn't go through, and no money was deducted",
+    "connecting you to a Vi advisor"
+   ],
+   "max_turn_ms": 2000
+  }
+ }
+]

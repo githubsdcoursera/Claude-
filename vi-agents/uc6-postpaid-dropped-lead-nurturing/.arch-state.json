@@ -1,0 +1,50 @@
+{
+  "workflows": {
+    "a03_u6_lead_context": "01a17dcf-e7c5-7d21-826f-12792a1224bc",
+    "a06_u6_gate": "01a17dcf-f036-733f-b7c5-030e768a0153",
+    "a06_u6_suppress_lead": "01a17dcf-f7ea-7918-bdd9-422c8945386a",
+    "a07_u6_book_callback": "01a17dd0-dc14-7c50-bdf3-f69d918d9454",
+    "dl01_classify_drop": "01a17dd0-e424-749d-890f-8bcc7a947e5e",
+    "dl02_plan_faq": "01a17dd1-c01a-735e-ac5a-46c0f84697ac",
+    "dl02_plan_search": "01a17dd1-cec2-70d8-ba5b-ac448450d0d4",
+    "dl03_coverage_check": "01a17dd1-d6ca-7831-9c4e-b3de1618135f",
+    "dl03_mnp_steps": "01a17dd2-b183-755e-97c0-60bea89b25f6",
+    "dl03_resume_link": "01a17dda-fbb7-7261-9057-fdf2cfbbe5c6",
+    "dl03_slot_options": "01a17ddb-de81-76d4-901e-b57dead0f502",
+    "dl03_slot_rebook": "01a17ddb-e7f3-7922-b861-33aade4b9e18",
+    "a06_record_opt_out": "01a17ddc-c765-7e7d-82a4-9ccb3f0854ee",
+    "a02_sentiment_event": "01a17ddc-d0e3-79fa-bf62-247ba65aff98",
+    "a09_create_handoff": "01a17ddc-d912-7e51-9b85-f49a41737de1",
+    "a11_write_post_call": "01a17ddd-be5b-7fd7-a981-8f749f38de41"
+  },
+  "workflow_versions": {
+    "a03_u6_lead_context": "v1.0.2",
+    "a06_u6_gate": "v1.0.2",
+    "a06_u6_suppress_lead": "v1.0.2",
+    "a07_u6_book_callback": "v1.0.4",
+    "dl01_classify_drop": "v1.0.2",
+    "dl02_plan_faq": "v1.0.2",
+    "dl02_plan_search": "v1.0.2",
+    "dl03_coverage_check": "v1.0.2",
+    "dl03_mnp_steps": "v1.0.3",
+    "dl03_resume_link": "v1.0.3",
+    "dl03_slot_options": "v1.0.0",
+    "dl03_slot_rebook": "v1.0.0",
+    "a06_record_opt_out": "v1.0.0",
+    "a02_sentiment_event": "v1.0.0",
+    "a09_create_handoff": "v1.0.0",
+    "a11_write_post_call": "v1.0.0"
+  },
+  "projectId": "01a17dcf-db32-7271-aca2-6893eb4d8025",
+  "deployment": {
+    "env": "dev",
+    "id": "01a18cbf-b770-77e6-af67-316a82dafe9f",
+    "endpointSlug": "01a17dcf-dev-mvuxvbyy-c9acd8",
+    "agents": {
+      "UC6_Dropped_Lead_Supervisor": {
+        "version": "1.0.2"
+      }
+    },
+    "preflight": "ready"
+  }
+}

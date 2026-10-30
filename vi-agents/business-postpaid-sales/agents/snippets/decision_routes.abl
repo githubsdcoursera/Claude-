@@ -1,0 +1,44 @@
+ON_INPUT:
+  - IF: input matches "(airtel|jio|bsnl|competitor|other operator|cheaper elsewhere)"
+    SET:
+      kb_topic = "competitor"
+      objections = input
+    THEN: s5_objection_answer
+  - IF: input matches "(rollover|roll over|carry forward|pooling|pool)"
+    SET:
+      kb_topic = "rollover"
+      objections = input
+    THEN: s5_objection_answer
+  - IF: input matches "(easy plus|easy\\+|easyplus|personal use|personal charges)"
+    SET:
+      kb_topic = "easy_plus"
+      objections = input
+    THEN: s5_objection_answer
+  - IF: input matches "(security|spam|fraud|antivirus)"
+    SET:
+      kb_topic = "mobile_protection"
+      objections = input
+    THEN: s5_objection_answer
+  - IF: input matches "(workspace|gmail|google|email ids|meet)"
+    SET:
+      kb_topic = "workspace"
+      objections = input
+    THEN: s5_objection_answer
+  - IF: input matches "(cloud|storage|drive)"
+    SET:
+      kb_topic = "cloud_storage"
+      objections = input
+    THEN: s5_objection_answer
+  - IF: input matches "(discount|best price|lower price|too expensive|reduce|negotiate)"
+    SET:
+      objections = input
+      handoff_reason = "Pricing request beyond the catalogue"
+    THEN: x1_handoff
+  - IF: input matches "(think about|later|not now|discuss with|get back)"
+    THEN: s5_callback_ask
+  - IF: input matches "(^|[^a-z])(yes|yeah|yep|sure|okay|ok|go ahead|proceed|haan|ji|confirm)([^a-z]|$)"
+    THEN: s6_next_step
+  - IF: input matches "(^|[^a-z])(no|nahi|not interested|don't need|dont need)([^a-z]|$)"
+    THEN: s5_not_interested
+  - ELSE:
+    THEN: x1_hot_transfer

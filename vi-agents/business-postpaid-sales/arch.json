@@ -1,0 +1,10 @@
+{
+  "name": "Vi Business Postpaid Sales Outcall",
+  "description": "Vi Business Postpaid sales outcall (BPS01-BPS06; needs a UC ID, owner, CLI decision and G0 scorecard): lead and compliance, qualification, catalogue-grounded plan and value, approved objection answers, entity-specific secure document link, scheduler-confirmed visit or hot transfer. Backend systems are MOCK workflows.",
+  "entry_agent": "Business_Sales_Supervisor",
+  "model": "gemma4",
+  "agents": { "Business_Sales_Supervisor": "agents/business_sales_supervisor.agent.abl" },
+  "shared_mocks": ["a06_record_opt_out", "a10_kb_answer", "a11_write_post_call"],
+  "smoke_inputs": { "msisdn": "9880000001", "lines": "25", "lead_id": "BL-3001", "entity": "pvt_ltd", "preference": "morning", "reason": "smoke", "requirement": "smoke", "plan_discussed": "smoke", "objections": "smoke", "topic": "rollover", "campaign": "VI_BUSINESS_POSTPAID_SALES", "disposition": "SMOKE", "summary": "smoke", "outcome": "smoke" },
+  "deployment_label": "business-sales-v1"
+}

@@ -1,0 +1,42 @@
+{
+  "workflows": {
+    "a03_get_ir_context": "01a17ce4-d35c-79fd-a39d-a34f0c77528c",
+    "a04_send_otp": "01a17ce4-dc00-7d14-80ed-53fac1397daf",
+    "a04_verify_otp": "01a17ce7-30df-755b-8f6e-3128c898c17f",
+    "a06_compliance_gate": "01a17ce7-6c58-7eea-bc15-2fc446a9e2a6",
+    "a06_record_opt_out": "01a17ce8-1d71-783a-a439-abe3023ee276",
+    "a08_activate_ir_pack": "01a17ce8-557a-7ef4-a557-9083d3e792d4",
+    "a08_record_consent": "01a17ce9-0bde-77b9-b0e8-7a20717ad0a2",
+    "a08_send_sms": "01a17ce9-11fe-7d69-b064-f4fd9b573176",
+    "a09_create_handoff": "01a17ce9-49c4-733f-b054-fa5719354fd7",
+    "a11_arm_usage_alerts": "01a17cea-004a-7a0b-be35-1fb27f74329c",
+    "a11_write_post_call": "01a17cea-34dd-7a3c-b8b2-7d2748d1f4eb",
+    "a18_rank_ir_packs": "01a17cea-3b29-751a-a9ce-dfdd3893ea64"
+  },
+  "workflow_versions": {
+    "a03_get_ir_context": "v1.0.2",
+    "a04_send_otp": "v1.0.1",
+    "a04_verify_otp": "v1.0.0",
+    "a06_compliance_gate": "v1.0.0",
+    "a06_record_opt_out": "v1.0.0",
+    "a08_activate_ir_pack": "v1.0.0",
+    "a08_record_consent": "v1.0.0",
+    "a08_send_sms": "v1.0.0",
+    "a09_create_handoff": "v1.0.0",
+    "a11_arm_usage_alerts": "v1.0.0",
+    "a11_write_post_call": "v1.0.0",
+    "a18_rank_ir_packs": "v1.0.0"
+  },
+  "projectId": "01a17ccb-0616-7830-a034-ed48dccfe0d2",
+  "deployment": {
+    "env": "dev",
+    "id": "01a18cc8-0c4a-7a97-a660-6650f814c5a3",
+    "endpointSlug": "01a17ccb-dev-mvuy71ad-8e6444",
+    "agents": {
+      "UC5_IR_Supervisor": {
+        "version": "1.0.0"
+      }
+    },
+    "preflight": "warnings"
+  }
+}

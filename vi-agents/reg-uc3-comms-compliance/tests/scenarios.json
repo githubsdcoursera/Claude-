@@ -1,0 +1,287 @@
+[
+ {
+  "name": "E2_within_15_days_deadline_and_buffer",
+  "turns": [
+   "user=officer.asha INBOUND mail=MAIL-SYN-001",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "rc01_classify",
+    "rc02_extract",
+    "rc03_route",
+    "rc05_prepare",
+    "r_notify",
+    "r_audit_log"
+   ],
+   "disposition": "CLASSIFIED_ASSIGNED",
+   "says": [
+    "statutory due 11 November 2026 (within 15 days of receipt, received 27 October 2026); internal due 5 November 2026",
+    "drafting request UC2REQ-"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "E3_dual_check_disagree_cx1_no_date",
+  "turns": [
+   "user=officer.asha INBOUND mail=MAIL-SYN-002",
+   "done"
+  ],
+  "expect": {
+   "disposition": "CX1_DEADLINE_CONFIRM",
+   "says": [
+    "deadline: officer to confirm (High priority); no date auto-set",
+    "CX1 Needs human triage: deadline passes disagree: body says 10 November 2026, attachment says 12 November 2026"
+   ],
+   "never_says": [
+    "statutory due 10 November",
+    "statutory due 12 November"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "E4_three_asks_three_obligations_E5_owner_on_leave",
+  "turns": [
+   "user=officer.asha INBOUND mail=MAIL-SYN-003",
+   "done"
+  ],
+  "expect": {
+   "disposition": "CLASSIFIED_ASSIGNED",
+   "says": [
+    "OBL-SYN-003-1",
+    "OBL-SYN-003-2",
+    "OBL-SYN-003-3",
+    "the matrix owner is on leave, so the deputy is assigned and manager.neel has been notified"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "E7_spoofed_regulator_sender_cx1",
+  "turns": [
+   "user=officer.asha INBOUND mail=MAIL-SYN-004",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "rc01_classify",
+    "r_notify"
+   ],
+   "no_tools": [
+    "rc02_extract",
+    "rc05_prepare"
+   ],
+   "disposition": "CX1_TRIAGE",
+   "says": [
+    "was not auto-processed",
+    "trai-gov.in.co is not in the sender register but claims to be TRAI"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "E8_thread_reply_linked_not_duplicated",
+  "turns": [
+   "user=officer.asha INBOUND mail=MAIL-SYN-005",
+   "done"
+  ],
+  "expect": {
+   "disposition": "LINKED_TO_MATTER",
+   "says": [
+    "linked to existing matter MAT-SYN-0042",
+    "linked to existing OBL-SYN-0042-1 on matter MAT-SYN-0042; no duplicate created"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "E9_routine_ack_template_not_sent_without_token",
+  "turns": [
+   "user=officer.asha INBOUND mail=MAIL-SYN-006",
+   "send DRF-1M1ZJP7 now",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "rc05_prepare",
+    "rc_approve"
+   ],
+   "disposition": "SEND_REFUSED",
+   "says": [
+    "confirms its participation in the Open House Discussion on 20 November 2026 at 11:00",
+    "It will not be sent without the approver's token",
+    "Not sent. Only the named approver (Neel Kapoor) holds the approver token"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "E9b_approver_approves_agent_still_does_not_send",
+  "turns": [
+   "user=manager.neel approve DRF-1M1ZJP7",
+   "done"
+  ],
+  "expect": {
+   "disposition": "APPROVED_NOT_SENT",
+   "says": [
+    "Approved by Neel Kapoor with token APTOK-",
+    "the agent does not send"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "E10_show_cause_critical_to_uc2_no_template",
+  "turns": [
+   "user=officer.asha INBOUND mail=MAIL-SYN-007",
+   "done"
+  ],
+  "expect": {
+   "disposition": "CLASSIFIED_ASSIGNED",
+   "says": [
+    "Classified show_cause, urgency Critical",
+    "statutory due 17 November 2026",
+    "Substantive item: drafting request UC2REQ-"
+   ],
+   "never_says": [
+    "Routine reply drafted"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "E11_restricted_matter_hidden_from_unauthorised",
+  "turns": [
+   "user=officer.asha INBOUND mail=MAIL-SYN-008",
+   "show the dashboard",
+   "done"
+  ],
+  "expect": {
+   "disposition": "DASHBOARD",
+   "says": [
+    "is a restricted matter",
+    "details are not shown to you"
+   ],
+   "never_says": [
+    "AGR reconciliation",
+    "licence-fee working papers",
+    "OBL-SYN-0103"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "E11b_restricted_visible_to_authorised_manager",
+  "turns": [
+   "user=manager.neel show the dashboard",
+   "done"
+  ],
+  "expect": {
+   "disposition": "DASHBOARD",
+   "says": [
+    "OBL-SYN-0103 | furnish licence-fee working papers for FY 2024-25"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "E6_escalation_to_manager_after_internal_due",
+  "turns": [
+   "user=manager.neel run escalations as of 2026-11-04",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "rc04_escalations"
+   ],
+   "disposition": "ESCALATIONS_RUN",
+   "says": [
+    "OBL-SYN-0100: internal due 3 November 2026 passed: escalated to reporting manager Neel Kapoor",
+    "CX3 Overdue"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "E12_manager_reassigns_audited",
+  "turns": [
+   "user=manager.neel reassign OBL-SYN-0100 to officer.asha because Meera is on a training course",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "rc_reassign",
+    "r_audit_log"
+   ],
+   "disposition": "REASSIGNED",
+   "says": [
+    "reassigned from Meera Pillai to Asha Rao by Neel Kapoor on 27 October 2026, reason: Meera is on a training course"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "E12b_officer_cannot_reassign",
+  "turns": [
+   "user=officer.asha reassign OBL-SYN-0100 to officer.asha because I have time",
+   "done"
+  ],
+  "expect": {
+   "disposition": "REASSIGN_REFUSED",
+   "says": [
+    "Only a reporting manager or the Head can reassign"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "dashboard_overdue_red",
+  "turns": [
+   "user=officer.asha show overdue items",
+   "done"
+  ],
+  "expect": {
+   "disposition": "DASHBOARD",
+   "says": [
+    "OBL-SYN-0101",
+    "1 days overdue | Red"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ },
+ {
+  "name": "E1_replay_200_historical",
+  "turns": [
+   "user=officer.asha replay the historical inbox",
+   "done"
+  ],
+  "expect": {
+   "tools": [
+    "rc_replay"
+   ],
+   "disposition": "REPLAY_E1",
+   "says": [
+    "Replay of 200 labelled synthetic inbound emails",
+    "100% caught"
+   ],
+   "exit": "complete",
+   "max_turn_ms": 3000
+  }
+ }
+]

@@ -1,0 +1,665 @@
+AGENT: TowerCo_Supervisor
+VERSION: "1.0"
+GOAL: |
+  A00 TowerCo Supervisor for Vi End-to-End Tower Co Management. Own each site-period case from the frozen
+  monthly input to a governed financial recommendation: validate mandatory context, then run the registered
+  domain agents in fixed stage order: order evidence (A01/A02), document completeness (A22), duplicate and
+  period integrity (A24), deterministic shadow billing (A25-A33), line-level reconciliation (A39), EB consumer
+  integrity (A31), dispute identification, evidence pack and DN recommendation (A40/A41/A44), payment readiness
+  (A47), audit (A51). Also answer period summaries (A49), provisions (A37), EB checks and the golden regression
+  (A53). Every number comes from a deterministic tool; every binding financial action goes to a human approver.
+
+PERSONA: |
+  A precise Tower Co finance and network analyst assistant for Vi's Network, Finance COE and SCM teams.
+  States amounts, dates and clause references exactly as the tools return them, shows the calculation, and
+  says clearly what is a recommendation and who must approve it.
+
+LIMITATIONS:
+  - "Never invents a rate, quantity, date, tax, penalty, approval, posting or payment; numbers come only from the deterministic tools"
+  - "Never releases payment, posts to SAP, approves a DN or CN, settles, sends a dispute to a vendor or amends a contract or rule; these are human decisions"
+  - "Uses synthetic data only in this build"
+
+EXECUTION:
+  session_idle_timeout: 600000
+  tool_timeout: 8000
+
+TOOLS:
+  list_attachments(limit?: number, offset?: number) -> object
+    description: "List the files the user shared in this conversation, oldest first."
+    effect: read_only
+    confirm: never
+    params:
+      limit:
+        description: "Maximum number of files to return"
+      offset:
+        description: "Number of files to skip"
+  get_attachment(attachment_id: string) -> object
+    description: "Read one shared file; returns its extracted text in content."
+    effect: read_only
+    confirm: never
+    params:
+      attachment_id:
+        description: "File id from list_attachments"
+  upload_attachment(filename: string, content_base64: string, mime_type: string) -> object
+    description: "Save a generated file to this conversation so the user can download it."
+    effect: side_effect
+    confirm: never
+    params:
+      filename:
+        description: "File name, e.g. report.docx"
+      content_base64:
+        description: "File content, base64-encoded"
+      mime_type:
+        description: "File type"
+  get_attachment_url(attachment_id: string, expires_in_seconds?: number) -> object
+    description: "Short-lived download link for one file in this conversation."
+    effect: read_only
+    confirm: never
+    params:
+      attachment_id:
+        description: "File id"
+      expires_in_seconds:
+        description: "Link lifetime in seconds, up to 86400"
+  #include-tools: tc_parse_request, tc_case_context, tc_order_evidence, tc_document_check, tc_duplicate_check, tc_shadow_bill, tc_reconcile, tc_eb_check, tc_dispute_prepare, tc_request_approval, tc_payment_readiness, tc_period_summary, tc_provision, tc_golden_regression, tc_record_case, tc_invoice_reconcile, tc_invoice_audit, doc_docx
+
+MEMORY:
+  session:
+    - lnk
+    - dl_id
+    - upf
+    - doc_name
+    - doc_text
+    - got
+    - att_id
+    - last_offset
+    - lastf
+    - files
+    - request
+    - req
+    - ctx
+    - order
+    - docs
+    - dup
+    - shadow
+    - recon
+    - ebc
+    - disp
+    - appr
+    - pay
+    - period_sum
+    - prov
+    - golden
+    - disposition
+    - audit
+    - inv_lines
+    - inv_docs
+    - rate_card
+    - msa_summary
+    - inv_no
+    - inv_vendor
+    - irec
+    - tdoc
+
+FLOW:
+  s0_start:
+    REASONING: false
+    SET:
+      doc_text = "none"
+      doc_name = "none"
+      request = input
+      disposition = "IN_PROGRESS"
+      inv_lines = "none"
+      inv_docs = "none"
+      rate_card = "none"
+      msa_summary = ""
+      inv_no = "none"
+      inv_vendor = "none"
+    THEN: s1_parse
+
+  # ---- A00: validate mandatory context and pick the domain path ----
+  s1_parse:
+    REASONING: false
+    CALL: tc_parse_request
+      WITH:
+        text: request
+      AS: req
+    ON_RESULT:
+      - IF: req.output.intent == "case"
+        THEN: c1_context
+      - IF: req.output.intent == "period_summary"
+        THEN: p1_summary
+      - IF: req.output.intent == "provision"
+        THEN: p2_provision
+      - IF: req.output.intent == "consumer_check"
+        THEN: e1_consumer
+      - IF: req.output.intent == "golden"
+        THEN: g1_regression
+      - IF: req.output.intent == "policy_block"
+        THEN: h1_policy_approval
+      - IF: req.output.intent == "done"
+        THEN: s9_end
+      - IF: req.output.intent == "need_period"
+        THEN: s2_need_period
+      - IF: req.output.intent == "uploaded"
+        THEN: tf1_list
+      - ELSE:
+        THEN: s2_help
+
+  # ---- Uploaded or pasted vendor invoice: the model only reads the lines; every number is checked deterministically ----
+  tf1_list:
+    REASONING: false
+    CALL: list_attachments
+      AS: files
+    ON_RESULT:
+      - IF: files.total > 0
+        SET: last_offset = ADD(files.total, -1)
+        THEN: tf2_last
+      - ELSE:
+        THEN: u1_read_invoice
+
+  tf2_last:
+    REASONING: false
+    CALL: list_attachments
+      WITH:
+        limit: 1
+        offset: last_offset
+      AS: lastf
+    THEN: tf3_pick
+
+  tf3_pick:
+    REASONING: false
+    SET:
+      att_id = lastf.attachments[0].id
+      doc_name = lastf.attachments[0].filename
+    THEN: tf4_get
+
+  tf4_get:
+    REASONING: false
+    CALL: get_attachment
+      WITH:
+        attachment_id: att_id
+      AS: got
+    ON_RESULT:
+      - IF: got.processingStatus == "completed"
+        SET: doc_text = got.content
+        THEN: u1_read_invoice
+      - ELSE:
+        SET: doc_text = "UNREADABLE"
+        THEN: u1_read_invoice
+
+  u1_read_invoice:
+    REASONING: true
+    GOAL: |
+      The user uploaded or pasted tower-company documents ("{{request}}"): vendor invoices, and possibly the MSA or rate
+      card they are billed under. Read them and set these session fields in a single update:
+      inv_docs: a JSON array with one object per invoice: {"invoice_no", "period" (YYYY-MM when it is a single month,
+      otherwise as printed), "lines": [{"site_id", "description", "qty", "rate", "amount"}], "taxable", "tax_pct" (total
+      tax rate, for example 18 for CGST 9% + SGST 9%), "tax_amount" (total tax), "total"}. One line per charge row, credits
+      negative, numbers without currency symbols or commas.
+      rate_card: a JSON array of {"item", "rate"} for every rate the MSA or rate card states, or "none" if it states none.
+      inv_vendor: the vendor name.
+      msa_summary: if an MSA or rate card is included, at most 5 short lines on its commercial terms (rental basis, escalation,
+      loading, energy regime, disputes and payment), quoting clause numbers; otherwise an empty string.
+      Copy values exactly as printed; do not calculate, correct or estimate anything. If no invoice is visible, set inv_docs
+      to "none".
+      Text extracted from the most recently uploaded file ({{doc_name}}):
+      <<<
+      {{doc_text}}
+      >>>
+      If that text is "none", the user did not upload a file in this conversation: use any document text pasted in
+      their message instead. If it is "UNREADABLE", the platform could not extract the file's text: say so and ask the
+      user to paste the text or upload a text-based PDF or Word file. If there is no document text at all, say so in
+      one sentence. Never describe, summarise or review a document you cannot see.
+      Then reply with one short sentence: "Reading the documents and checking every invoice line."
+    AVAILABLE_TOOLS: [tc_record_case]
+    CONTEXT_UPDATES: [inv_docs, rate_card, inv_vendor, msa_summary]
+    STEP_CONSTRAINTS:
+      - "Never invent, round or compute an amount; copy only what the documents show"
+    EXIT_WHEN: always
+    MAX_TURNS: 4
+    THEN: u2_reconcile
+
+  u2_reconcile:
+    REASONING: false
+    CALL: tc_invoice_audit
+      WITH:
+        invoices: inv_docs
+        rate_card: rate_card
+        vendor: inv_vendor
+      AS: irec
+    ON_RESULT:
+      - IF: irec.output.found == true
+        SET: disposition = "UPLOADED_INVOICES_AUDITED"
+        THEN: u3_record
+      - ELSE:
+        THEN: u9_no_invoice
+
+  u3_record:
+    REASONING: false
+    CALL: tc_record_case
+      WITH:
+        case_ref: "UPLOAD-{{inv_vendor}}"
+        disposition: disposition
+        summary: "Uploaded invoices: {{irec.output.invoices_count}} invoices, {{irec.output.lines}} lines, {{irec.output.exceptions}} exceptions, hold {{irec.output.hold_total}}"
+      AS: audit
+    THEN: u4_say
+
+  u4_say:
+    REASONING: false
+    RESPOND: |
+      {{#if msa_summary}}Contract terms read: {{msa_summary}}
+
+      {{/if}}{{irec.output.invoices_count}} invoice(s){{#if inv_vendor}} from {{inv_vendor}}{{/if}}, {{irec.output.lines}} lines checked, {{irec.output.exceptions}} need attention. Claimed {{irec.output.claimed_total}}; recommended hold / DN {{irec.output.hold_total}} including tax; payable after holds {{irec.output.payable_total}}.
+
+      Totals and tax: {{irec.output.totals_check}}
+
+      Findings: {{irec.output.findings}}
+
+      {{#if irec.output.dispute_needed}}I recommend holding these amounts and preparing a dispute evidence pack; nothing goes to the vendor until a Vi approver confirms it. {{/if}}Say Word report to download the full line-by-line audit as a .docx, give a site and period to run a full case for a site in Vi's register, or say done.
+    THEN: u5_route
+
+  u5_route:
+    REASONING: false
+    ON_INPUT:
+      - IF: input matches "(word|docx|report|download|document|file)"
+        THEN: u6_build_doc
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  u6_build_doc:
+    REASONING: false
+    CALL: doc_docx
+      WITH:
+        title: "Tower Co invoice audit {{inv_vendor}}"
+        markdown: irec.output.report_md
+        footer_note: "AI-assisted reconciliation for Vi Finance COE review. Payment release, debit notes and disputes are human decisions; nothing has been sent to the vendor."
+      AS: tdoc
+    ON_RESULT:
+      - IF: tdoc.output.ok == true
+        THEN: td1_upload
+      - ELSE:
+        THEN: u8_doc_failed
+
+  td1_upload:
+    REASONING: false
+    CALL: upload_attachment
+      WITH:
+        filename: tdoc.output.filename
+        content_base64: tdoc.output.b64
+        mime_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      AS: upf
+    ON_RESULT:
+      - IF: upf.success == true
+        SET: dl_id = upf.data.attachmentId
+        THEN: td2_link
+      - ELSE:
+        THEN: u8_doc_failed
+
+  td2_link:
+    REASONING: false
+    CALL: get_attachment_url
+      WITH:
+        attachment_id: dl_id
+        expires_in_seconds: 3600
+      AS: lnk
+    ON_RESULT:
+      - IF: lnk.success == true
+        THEN: td3_ready
+      - ELSE:
+        THEN: u8_doc_failed
+
+  td3_ready:
+    REASONING: false
+    RESPOND: "{{tdoc.output.message}} [Download {{tdoc.output.filename}}]({{lnk.data.url}}) (the link works for about an hour; the file also stays in this conversation's files). It has the summary, every line with billed and expected amounts, the calculation and clause for each exception, and next steps. Anything else?"
+    THEN: u5_route
+
+  u8_doc_failed:
+    REASONING: false
+    RESPOND: "I couldn't build the Word report this time. The results above are complete; ask for the Word report again if you need the file."
+    THEN: u5_route
+
+  u9_no_invoice:
+    REASONING: false
+    RESPOND: "I couldn't read any invoice lines. Please upload the invoice again with your request in the same message (for example: reconcile this invoice), or paste the lines with site id, billing month, charge type and amount."
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  s2_help:
+    REASONING: false
+    RESPOND: "I can reconcile a site and billing period (for example: reconcile MHGOA-SYN-0003 for 2026-06), summarise a period, give the month-end provision, check an EB consumer number, run the golden regression, or reconcile a vendor invoice you upload or paste (upload it with your request in the same message, for example: reconcile this invoice). What would you like?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  s2_need_period:
+    REASONING: false
+    RESPOND: "Which billing period for {{req.output.site_id}}? Please give the site and period together, for example: reconcile {{req.output.site_id}} for 2026-06."
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- Site-period case: fixed stage order ----
+  c1_context:
+    REASONING: false
+    CALL: tc_case_context
+      WITH:
+        site_id: req.output.site_id
+        period: req.output.period
+      AS: ctx
+    ON_RESULT:
+      - IF: ctx.output.found == true
+        THEN: c2_order
+      - ELSE:
+        THEN: c1_not_found
+
+  c1_not_found:
+    REASONING: false
+    RESPOND: "I can't find {{req.output.site_id}} for {{req.output.period}} in the frozen monthly input. The synthetic package covers MHGOA-SYN-0001 to MHGOA-SYN-0030 for 2026-04 to 2026-09. What would you like to check?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  c2_order:
+    REASONING: false
+    CALL: tc_order_evidence
+      WITH:
+        site_id: req.output.site_id
+        period: req.output.period
+      AS: order
+    THEN: c3_docs
+
+  c3_docs:
+    REASONING: false
+    CALL: tc_document_check
+      WITH:
+        site_id: req.output.site_id
+        period: req.output.period
+      AS: docs
+    THEN: c4_duplicates
+
+  c4_duplicates:
+    REASONING: false
+    CALL: tc_duplicate_check
+      WITH:
+        site_id: req.output.site_id
+        period: req.output.period
+      AS: dup
+    THEN: c5_shadow
+
+  c5_shadow:
+    REASONING: false
+    CALL: tc_shadow_bill
+      WITH:
+        site_id: req.output.site_id
+        period: req.output.period
+      AS: shadow
+    THEN: c6_reconcile
+
+  c6_reconcile:
+    REASONING: false
+    CALL: tc_reconcile
+      WITH:
+        site_id: req.output.site_id
+        period: req.output.period
+      AS: recon
+    THEN: c7_eb
+
+  c7_eb:
+    REASONING: false
+    CALL: tc_eb_check
+      WITH:
+        site_id: req.output.site_id
+      AS: ebc
+    ON_RESULT:
+      - IF: recon.output.dispute_needed == true AND docs.output.complete == true
+        THEN: c8_dispute
+      - ELSE:
+        THEN: c10_payment
+
+  # ---- A40/A41/A44: draft dispute, evidence pack, DN recommendation; human confirms ----
+  c8_dispute:
+    REASONING: false
+    CALL: tc_dispute_prepare
+      WITH:
+        site_id: req.output.site_id
+        period: req.output.period
+      AS: disp
+    ON_RESULT:
+      - IF: disp.output.created == true
+        THEN: c9_dispute_approval
+      - ELSE:
+        THEN: c10_payment
+
+  c9_dispute_approval:
+    REASONING: false
+    CALL: tc_request_approval
+      WITH:
+        gate: "dispute_confirmation"
+        subject: disp.output.dispute_id
+        summary: "{{ctx.output.case_ref}}: {{recon.output.findings}} DN recommendation {{disp.output.dn_amount}} pre-tax. Evidence {{disp.output.evidence_pack}}."
+      AS: appr
+    THEN: c10_payment
+
+  # ---- A47: payment readiness (recommendation only) ----
+  c10_payment:
+    REASONING: false
+    CALL: tc_payment_readiness
+      WITH:
+        site_id: req.output.site_id
+        period: req.output.period
+      AS: pay
+    ON_RESULT:
+      - IF: docs.output.complete != true
+        SET: disposition = "DOCS_INCOMPLETE_HOLD"
+        THEN: c11_record
+      - IF: pay.output.recommendation == "HOLD"
+        SET: disposition = "HOLD_RECOMMENDED"
+        THEN: c11_record
+      - IF: pay.output.recommendation == "PARTIAL_PAY"
+        SET: disposition = "PARTIAL_PAY_RECOMMENDED"
+        THEN: c11_record
+      - ELSE:
+        SET: disposition = "PAY_RECOMMENDED"
+        THEN: c11_record
+
+  c11_record:
+    REASONING: false
+    CALL: tc_record_case
+      WITH:
+        case_ref: ctx.output.case_ref
+        disposition: disposition
+        summary: "{{recon.output.classification}}: {{recon.output.findings}} Payment {{pay.output.recommendation}} payable {{pay.output.payable}} held {{pay.output.held}}. Dispute {{disp.output.dispute_id}}. Rule {{shadow.output.rule_version}} calc {{shadow.output.calc_version}}."
+      AS: audit
+    THEN: c12_say
+
+  c12_say:
+    REASONING: false
+    RESPOND: |
+      Case {{ctx.output.case_ref}} under {{ctx.output.agreement}}, rule book {{shadow.output.rule_version}}, frozen input {{ctx.output.freeze_version}}. Site status: {{ctx.output.status_label}}; billable from {{order.output.billable_from}}.
+
+      Shadow bill: rent {{shadow.output.rent_math}}; loading {{shadow.output.loading_math}}; energy {{shadow.output.energy_math}}. Expected {{shadow.output.total_expected}} against billed {{recon.output.billed_total}} on {{ctx.output.invoices}}.
+
+      Reconciliation: {{recon.output.findings}} {{#if dup.output.duplicates}}{{dup.output.finding}} {{/if}}{{#if ebc.output.reused}}{{ebc.output.finding}} {{/if}}{{#if docs.output.missing}}Supporting documents incomplete: {{docs.output.missing}} missing. Vendor request {{docs.output.vendor_request_ref}} opened; the invoice is not marked complete and no dispute is raised until the documents arrive. {{/if}}{{#if disp.output.existing}}Already under dispute {{disp.output.dispute_id}} (control {{disp.output.control_no}}, {{disp.output.status}}); no duplicate dispute raised. {{/if}}{{#if disp.output.created}}Draft dispute {{disp.output.dispute_id}} prepared with evidence pack {{disp.output.evidence_pack}}; DN recommendation {{disp.output.dn_amount}} pre-tax. Pending {{appr.output.approver}} approval {{appr.output.approval_id}}; nothing has been sent to the vendor. {{/if}}
+
+      Payment readiness: {{pay.output.recommendation}}, payable {{pay.output.payable}}, held {{pay.output.held}} ({{pay.output.reason}}). {{pay.output.upside_note}} Payment release stays with authorised Finance. Audit {{audit.output.audit_id}}.
+
+      Citations: {{shadow.output.citations}}. {{order.output.evidence_note}}
+
+      Anything else?
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- A19/A49: period summary ----
+  p1_summary:
+    REASONING: false
+    CALL: tc_period_summary
+      WITH:
+        period: req.output.period
+      AS: period_sum
+    ON_RESULT:
+      - IF: period_sum.output.found == true
+        SET: disposition = "PERIOD_SUMMARY"
+        THEN: p1_record
+      - ELSE:
+        THEN: c1_not_found
+
+  p1_record:
+    REASONING: false
+    CALL: tc_record_case
+      WITH:
+        case_ref: "PERIOD-{{req.output.period}}"
+        disposition: disposition
+        summary: "{{period_sum.output.exception_count}} exceptions, overbilled {{period_sum.output.overbilled_total}}, underbilled {{period_sum.output.underbilled_total}}."
+      AS: audit
+    THEN: p1_say
+
+  p1_say:
+    REASONING: false
+    RESPOND: "Period {{req.output.period}} ({{period_sum.output.freeze_version}}): {{period_sum.output.sites}} sites, {{period_sum.output.lines}} invoice lines. Billed {{period_sum.output.billed_total}} against expected {{period_sum.output.expected_total}}. Overbilled {{period_sum.output.overbilled_total}}; underbilled {{period_sum.output.underbilled_total}}. {{period_sum.output.exception_count}} exceptions: {{period_sum.output.exceptions}}. Supporting documents incomplete: {{period_sum.output.docs_incomplete}}. Ask me to reconcile any of these sites for the case detail. Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- A37: provision recommendation ----
+  p2_provision:
+    REASONING: false
+    CALL: tc_provision
+      WITH:
+        period: req.output.period
+      AS: prov
+    ON_RESULT:
+      - IF: prov.output.found == true
+        SET: disposition = "PROVISION_RECOMMENDED"
+        THEN: p2_record
+      - ELSE:
+        THEN: c1_not_found
+
+  p2_record:
+    REASONING: false
+    CALL: tc_record_case
+      WITH:
+        case_ref: "PROVISION-{{req.output.period}}"
+        disposition: disposition
+        summary: "Provision {{prov.output.provision}} ({{prov.output.basis}})."
+      AS: audit
+    THEN: p2_say
+
+  p2_say:
+    REASONING: false
+    RESPOND: "Recommended provision for {{req.output.period}}: {{prov.output.provision}}, from {{prov.output.basis}}. Confidence {{prov.output.confidence}}. Underbilled exposure of {{prov.output.underbilled_exposure}} is inside the expected cost. This is a recommendation for Finance approval at close; nothing is posted. Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- A31: EB consumer integrity ----
+  e1_consumer:
+    REASONING: false
+    CALL: tc_eb_check
+      WITH:
+        consumer_no: req.output.consumer
+        site_id: "none"
+      AS: ebc
+    ON_RESULT:
+      - IF: ebc.output.reused == true
+        SET: disposition = "EB_CONSUMER_REUSE_FLAGGED"
+        THEN: e1_record
+      - ELSE:
+        SET: disposition = "EB_CONSUMER_OK"
+        THEN: e1_record
+
+  e1_record:
+    REASONING: false
+    CALL: tc_record_case
+      WITH:
+        case_ref: ebc.output.consumer
+        disposition: disposition
+        summary: ebc.output.finding
+      AS: audit
+    THEN: e1_say
+
+  e1_say:
+    REASONING: false
+    RESPOND: "{{ebc.output.finding}} Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- A53: golden regression and release gate ----
+  g1_regression:
+    REASONING: false
+    CALL: tc_golden_regression
+      WITH:
+        scope: "all"
+      AS: golden
+    ON_RESULT:
+      - IF: golden.output.gate_passed == true
+        SET: disposition = "GOLDEN_GATE_PASSED"
+        THEN: g1_record
+      - ELSE:
+        SET: disposition = "GOLDEN_GATE_FAILED"
+        THEN: g1_record
+
+  g1_record:
+    REASONING: false
+    CALL: tc_record_case
+      WITH:
+        case_ref: "GOLDEN-REGRESSION"
+        disposition: disposition
+        summary: "{{golden.output.correct}}/{{golden.output.lines}} lines, {{golden.output.accuracy_pct}}%"
+      AS: audit
+    THEN: g1_say
+
+  g1_say:
+    REASONING: false
+    RESPOND: "Golden regression: {{golden.output.correct}} of {{golden.output.lines}} synthetic invoice lines match the labelled amount, classification and reason ({{golden.output.accuracy_pct}}%). Release gate 99.5%: {{#if golden.output.gate_passed}}passed{{else}}failed, promotion stopped{{/if}}. Mismatches: {{golden.output.mismatches}}. Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- A52 policy: human-only actions are blocked and routed to the approver ----
+  h1_policy_approval:
+    REASONING: false
+    CALL: tc_request_approval
+      WITH:
+        gate: req.output.gate
+        subject: request
+        summary: "Requested in the Tower Co agent session: {{request}}"
+      AS: appr
+    SET:
+      disposition = "POLICY_BLOCKED"
+    THEN: h1_record
+
+  h1_record:
+    REASONING: false
+    CALL: tc_record_case
+      WITH:
+        case_ref: appr.output.approval_id
+        disposition: disposition
+        summary: "Blocked human-only action: {{req.output.action}}"
+      AS: audit
+    THEN: h1_say
+
+  h1_say:
+    REASONING: false
+    RESPOND: "I can't {{req.output.action}}. Payment release, SAP posting, DN and CN approval, settlement, sending disputes to vendors and contract or rule changes are human decisions under the decision-rights model. I've created approval task {{appr.output.approval_id}} for {{appr.output.approver}}, who will see the reconciled evidence. Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  s9_end:
+    REASONING: false
+    RESPOND: "Closing the session. Every outcome is in the audit trail."
+    THEN: COMPLETE

@@ -1,0 +1,343 @@
+AGENT: UC4_VSD_Assist
+VERSION: "1.0"
+GOAL: |
+  Assist a human Vi Service Desk (VSD) agent on an outcall. Before the dial, show a grounded pre-call
+  brief (A25) and campaign script (A26) and keep dialling locked until both are visible. During the call,
+  turn each transcribed segment into an advisory sentiment reading (A27) and, on a meaningful shift, an
+  approved suggestion (A28); keep the live log. On escalation, bring in a supervisor with full context (A09).
+  After the call, draft the summary, outcome and QA flags (A11) for one-click approval and write the audit.
+
+PERSONA: |
+  A quiet copilot on the VSD agent's screen. Terse, factual, scannable. Labels sentiment as advisory,
+  never as fact. Suggests; never speaks to the customer. Uses only facts from the brief, the script and
+  the approved suggestion library.
+
+LIMITATIONS:
+  - "Never speaks to the customer; the VSD agent speaks"
+  - "Sentiment is advisory, not a fact about the customer"
+  - "Suggestions come only from the approved NBA library"
+  - "Only authorised agent and supervisor personas can open the live log"
+
+EXECUTION:
+  session_idle_timeout: 900000
+  tool_timeout: 3000
+
+TOOLS:
+  #include-tools: a25_get_precall_brief, a26_get_call_script, a26_enable_dial, a27_score_segment, a28_next_best_action, a27_append_live_log, a09_supervisor_join, a11_record_outcome
+
+MEMORY:
+  session:
+    - bad_input
+    - account_id
+    - campaign
+    - agent_name
+    - brief
+    - script
+    - dial
+    - seg_speaker
+    - seg_text
+    - sentiment
+    - nba
+    - logged
+    - escalation_reason
+    - supervisor
+    - outcome_guess
+    - last_cust_text
+    - last_cue
+    - final_summary
+    - edited
+    - audit
+
+FLOW:
+  # ---- Agent selects account and campaign ----
+  s0_start:
+    REASONING: false
+    SET:
+      account_id = UPPER(FIRST_NON_EMPTY(session.messageMetadata.account_id, REGEX_EXTRACT(input, "account=([A-Za-z0-9]+)", 1), "none"))
+      campaign = UPPER(FIRST_NON_EMPTY(session.messageMetadata.campaign, REGEX_EXTRACT(input, "campaign=([A-Za-z_]+)", 1), "SERVICE_CONNECT"))
+      agent_name = FIRST_NON_EMPTY(session.messageMetadata.agent_name, REGEX_EXTRACT(input, "agent=([A-Za-z]+)", 1), "Advisor")
+      edited = false
+      outcome_guess = "FOLLOW_UP"
+      last_cust_text = "none"
+      last_cue = "none"
+    THEN: s0_need_account
+
+  # ---- S3 Pre-call brief (A25) and grounded script (A26): no dial until both are visible ----
+
+  # ---- No call briefing (for example a Studio test chat): ask for the account before the brief ----
+  s0_need_account:
+    REASONING: false
+    WHEN: account_id == "NONE"
+    RESPOND: "Test chat: this agent assists a Vi advisor on an outbound call, so it needs the call briefing. Please type the account id (for example: ACC1001). After the brief, type DIAL, then each line of the call as SEG agent: ... or SEG customer: ..., and END when the call finishes."
+    ON_INPUT:
+      - IF: input matches "[A-Za-z]{3}[0-9]{3,}"
+        SET:
+          account_id = UPPER(REGEX_EXTRACT(input, "([A-Za-z]{3}[0-9]{3,})", 1))
+          campaign = UPPER(FIRST_NON_EMPTY(REGEX_EXTRACT(input, "campaign=([A-Za-z_]+)", 1), campaign))
+        THEN: s1_brief
+      - ELSE:
+        SET: bad_input = input
+        THEN: s0_need_account_retry
+    THEN: s1_brief
+
+  s0_need_account_retry:
+    REASONING: false
+    RESPOND: "I received: {{bad_input}}. That does not look like an account id. Please type the account id, three letters and digits (for example ACC1001)."
+    ON_INPUT:
+      - IF: input matches "[A-Za-z]{3}[0-9]{3,}"
+        SET:
+          account_id = UPPER(REGEX_EXTRACT(input, "([A-Za-z]{3}[0-9]{3,})", 1))
+          campaign = UPPER(FIRST_NON_EMPTY(REGEX_EXTRACT(input, "campaign=([A-Za-z_]+)", 1), campaign))
+        THEN: s1_brief
+      - ELSE:
+        SET: bad_input = input
+        THEN: s0_need_account_retry
+    THEN: s1_brief
+
+  s1_brief:
+    REASONING: false
+    CALL: a25_get_precall_brief
+      WITH:
+        account_id: account_id
+      AS: brief
+    ON_RESULT:
+      - IF: brief.output.found == true
+        THEN: s1_script
+      - ELSE:
+        THEN: s1_not_found
+
+  s1_script:
+    REASONING: false
+    CALL: a26_get_call_script
+      WITH:
+        account_id: account_id
+        campaign: campaign
+        agent_name: agent_name
+      AS: script
+    ON_RESULT:
+      - IF: script.output.found == true
+        THEN: s1_present
+      - ELSE:
+        THEN: s1_not_found
+
+  s1_present:
+    REASONING: false
+    RESPOND: |
+      PRE-CALL BRIEF - {{brief.output.customer}} ({{account_id}}), {{brief.output.plan}}, {{brief.output.tenure_months}} months, health {{brief.output.health}}, ARPU {{brief.output.arpu}}, network {{brief.output.network_score}}.
+      Open complaint: {{brief.output.complaint_ref}} - {{brief.output.complaint_issue}} ({{brief.output.complaint_age_days}} days). Recent: {{brief.output.prior_1}}; {{brief.output.prior_2}}. Pending: {{brief.output.pending}}.
+      SCRIPT ({{campaign}}) - Open: "{{script.output.opening}}" Must say: "{{script.output.must_say}}" Purpose: {{script.output.purpose}} Close: "{{script.output.close}}"
+      Dialling is locked until you confirm. Say DIAL when you have read the brief and script.
+    ON_INPUT:
+      - IF: input matches "^dial"
+        THEN: s2_enable_dial
+      - ELSE:
+        THEN: s1_locked
+
+  s1_locked:
+    REASONING: false
+    RESPOND: "Dialling is still locked. Read the brief and script above, then say DIAL."
+    ON_INPUT:
+      - IF: input matches "^dial"
+        THEN: s2_enable_dial
+      - ELSE:
+        THEN: s1_locked
+
+  s1_not_found:
+    REASONING: false
+    RESPOND: "No brief or script is available for account {{account_id}} and campaign {{campaign}}. Dialling stays locked. Check the account and campaign and start again."
+    THEN: COMPLETE
+
+  # ---- Human dials through Vi CLI; SBC forks both legs via SIPREC to Sarvam (listen-only) ----
+  s2_enable_dial:
+    REASONING: false
+    CALL: a26_enable_dial
+      WITH:
+        account_id: account_id
+        brief_shown: true
+        script_shown: true
+      AS: dial
+    ON_RESULT:
+      - IF: dial.output.dial_enabled == true
+        THEN: s2_live
+      - ELSE:
+        THEN: s1_locked
+
+  s2_live:
+    REASONING: false
+    RESPOND: "Dial enabled, call {{dial.output.call_ref}}. Listening in listen-only mode. Remember the must-say: {{script.output.must_say}}"
+    #include-snippet: listen_routes
+
+  # ---- Live: diarised segment -> advisory sentiment (A27) -> NBA on a meaningful shift (A28) -> live log ----
+  s3_score:
+    REASONING: false
+    CALL: a27_score_segment
+      WITH:
+        call_ref: dial.output.call_ref
+        speaker: seg_speaker
+        text: seg_text
+      AS: sentiment
+    ON_RESULT:
+      - IF: sentiment.output.shift == true
+        THEN: s3_nba
+      - ELSE:
+        THEN: s3_log_plain
+
+  s3_nba:
+    REASONING: false
+    CALL: a28_next_best_action
+      WITH:
+        call_ref: dial.output.call_ref
+        campaign: campaign
+        text: seg_text
+      AS: nba
+    ON_RESULT:
+      - IF: nba.output.cue_type == "positive_resolution"
+        SET:
+          outcome_guess = "SIGNED_OFF"
+          last_cue = nba.output.cue_type
+        THEN: s3_log_cue
+      - IF: nba.output.cue_type == "unresolved_issue" OR nba.output.cue_type == "negative_shift"
+        SET:
+          outcome_guess = "ISSUE_REOPENED"
+          last_cue = nba.output.cue_type
+        THEN: s3_log_cue
+      - IF: nba.output.has_suggestion == true
+        SET:
+          outcome_guess = "FOLLOW_UP"
+          last_cue = nba.output.cue_type
+        THEN: s3_log_cue
+      - ELSE:
+        THEN: s3_log_plain
+
+  s3_log_cue:
+    REASONING: false
+    CALL: a27_append_live_log
+      WITH:
+        call_ref: dial.output.call_ref
+        speaker: seg_speaker
+        text: seg_text
+        sentiment: sentiment.output.label
+        cue: nba.output.cue_type
+      AS: logged
+    THEN: s3_show_cue
+
+  s3_show_cue:
+    REASONING: false
+    RESPOND: "Sentiment {{sentiment.output.label}} (advisory, confidence {{sentiment.output.confidence}}). CUE {{nba.output.cue_type}}: {{nba.output.suggestion}}"
+    #include-snippet: listen_routes
+
+  s3_log_plain:
+    REASONING: false
+    CALL: a27_append_live_log
+      WITH:
+        call_ref: dial.output.call_ref
+        speaker: seg_speaker
+        text: seg_text
+        sentiment: sentiment.output.label
+        cue: ""
+      AS: logged
+    THEN: s3_show_plain
+
+  s3_show_plain:
+    REASONING: false
+    RESPOND: "Sentiment {{sentiment.output.label}} (advisory)."
+    #include-snippet: listen_routes
+
+  s3_log_agent:
+    REASONING: false
+    CALL: a27_append_live_log
+      WITH:
+        call_ref: dial.output.call_ref
+        speaker: seg_speaker
+        text: seg_text
+        sentiment: "n/a"
+        cue: ""
+      AS: logged
+    THEN: s3_show_agent
+
+  s3_show_agent:
+    REASONING: false
+    RESPOND: "Logged."
+    #include-snippet: listen_routes
+
+  s3_unknown:
+    REASONING: false
+    RESPOND: "Send SEG customer: or SEG agent: with transcript text, ESCALATE with a reason, or END when the call is over."
+    #include-snippet: listen_routes
+
+  # ---- Escalation: supervisor joins with full context and live log (A09) ----
+  s4_escalate:
+    REASONING: false
+    CALL: a09_supervisor_join
+      WITH:
+        call_ref: dial.output.call_ref
+        account_id: account_id
+        reason: escalation_reason
+        requester_role: "vsd_agent"
+      AS: supervisor
+    ON_RESULT:
+      - IF: supervisor.output.authorised == true
+        SET: outcome_guess = "ESCALATED"
+        THEN: s4_joined
+      - ELSE:
+        THEN: s4_denied
+
+  s4_joined:
+    REASONING: false
+    RESPOND: "Supervisor requested ({{supervisor.output.join_ref}}), joining {{supervisor.output.eta}} with the brief and the live log."
+    #include-snippet: listen_routes
+
+  s4_denied:
+    REASONING: false
+    RESPOND: "Supervisor join was not authorised for this persona."
+    #include-snippet: listen_routes
+
+  # ---- After the call: A11 drafts summary, outcome and QA for one-click approval ----
+  # A11 draft built from call facts and cues; the VSD agent approves or edits it.
+  s5_draft:
+    REASONING: false
+    THEN: s5_review
+
+  s5_review:
+    REASONING: false
+    RESPOND: "DRAFT SUMMARY: Outcall to {{brief.output.customer}} ({{campaign}}) about {{brief.output.complaint_ref}}, {{brief.output.complaint_issue}}. Last customer statement: {{last_cust_text}}. Last cue: {{last_cue}}. OUTCOME: {{outcome_guess}}. Say APPROVE to save, or EDIT followed by your corrected summary."
+    ON_INPUT:
+      - IF: input matches "^approve"
+        SET: edited = false
+        THEN: s5_write_draft
+      - IF: input matches "^edit"
+        SET:
+          final_summary = REGEX_REPLACE(input, "^[Ee][Dd][Ii][Tt]:? *", "")
+          edited = true
+        THEN: s5_write
+      - ELSE:
+        THEN: s5_review
+
+  s5_write_draft:
+    REASONING: false
+    CALL: a11_record_outcome
+      WITH:
+        call_ref: dial.output.call_ref
+        account_id: account_id
+        outcome: outcome_guess
+        summary: "Outcall to {{brief.output.customer}} ({{campaign}}) about {{brief.output.complaint_ref}}, {{brief.output.complaint_issue}}. Last customer statement: {{last_cust_text}}. Last cue: {{last_cue}}. Outcome {{outcome_guess}}."
+        edited: edited
+      AS: audit
+    THEN: s5_done
+
+  s5_write:
+    REASONING: false
+    CALL: a11_record_outcome
+      WITH:
+        call_ref: dial.output.call_ref
+        account_id: account_id
+        outcome: outcome_guess
+        summary: final_summary
+        edited: edited
+      AS: audit
+    THEN: s5_done
+
+  s5_done:
+    REASONING: false
+    RESPOND: "Saved. Outcome {{outcome_guess}} recorded with audit reference {{audit.output.audit_ref}} (kept online for 12 months)."
+    THEN: COMPLETE

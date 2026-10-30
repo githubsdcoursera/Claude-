@@ -1,0 +1,39 @@
+{
+  "name": "Vi RA-UC2 Drafting and Institutional Knowledge",
+  "description": "Regulatory AI RA-UC2: RD01 request scoper, RD02 position retriever, RD03 consistency checker (CONFLICT, DRIFT, GAP, STALE), RD04 drafter with inline citations, RD05 review package, RD06 knowledge curator (approved finals update the position register; edits captured), shared R-CV citation verifier, R-NT and R-GOV. Autonomy L1 for substantive drafts. SYNTHETIC corpus.",
+  "entry_agent": "RA_UC2_Drafting_Supervisor",
+  "model": "gemma4",
+  "agents": {
+    "RA_UC2_Drafting_Supervisor": "agents/ra_uc2_drafting_supervisor.agent.abl"
+  },
+  "mock_prelude": "../regulatory-common/reg-data.js",
+  "extra_mock_dirs": [
+    "../regulatory-common/mocks"
+  ],
+  "shared_mocks": [
+    "doc_docx"
+  ],
+  "smoke_inputs": {
+    "text": "draft our response to TRAI-SYN-CP-2026-11",
+    "user": "officer.asha",
+    "doc_id": "TRAI-SYN-CP-2026-11",
+    "topic": "satellite_spectrum",
+    "requested": "",
+    "year": "2023",
+    "draft_id": "VIDRAFT-155IMFC",
+    "depth": "45",
+    "reason": "position_changed",
+    "claims": "comments by 17 November 2026 [TRAI-SYN-CP-2026-11, p. deadline]",
+    "to": "head.reg",
+    "message": "smoke",
+    "disposition": "SMOKE",
+    "object": "smoke",
+    "detail": "smoke",
+    "query": "satellite",
+    "title": "Smoke",
+    "markdown": "# Smoke\nok",
+    "footer_note": "smoke",
+    "ref": "UC2REQ-1M1ZJP2"
+  },
+  "deployment_label": "ra-uc2-v1"
+}

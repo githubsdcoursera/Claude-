@@ -1,0 +1,19 @@
+ON_INPUT:
+  - IF: input matches "^seg customer"
+    SET:
+      seg_speaker = "cust"
+      seg_text = REGEX_REPLACE(input, "^[Ss][Ee][Gg] [Cc]ustomer:? *", "")
+      last_cust_text = REGEX_REPLACE(input, "^[Ss][Ee][Gg] [Cc]ustomer:? *", "")
+    THEN: s3_score
+  - IF: input matches "^seg agent"
+    SET:
+      seg_speaker = "vsd"
+      seg_text = REGEX_REPLACE(input, "^[Ss][Ee][Gg] [Aa]gent:? *", "")
+    THEN: s3_log_agent
+  - IF: input matches "^escalate"
+    SET: escalation_reason = REGEX_REPLACE(input, "^[Ee][Ss][Cc][Aa][Ll][Aa][Tt][Ee]:? *", "")
+    THEN: s4_escalate
+  - IF: input matches "^end"
+    THEN: s5_draft
+  - ELSE:
+    THEN: s3_unknown

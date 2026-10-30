@@ -1,0 +1,52 @@
+{
+  "workflows": {
+    "rd01_scope": "01a17e02-d51e-71bc-bf57-90858a9b116c",
+    "rd02_positions": "01a17e02-dd0c-76d9-b866-47b20fed7457",
+    "rd03_consistency": "01a17e02-e59b-7488-85d9-0ffb07029f34",
+    "rd04_draft": "01a17e03-c650-72df-963c-abc5500f3e3c",
+    "rd06_capture_edits": "01a17e03-ce89-7a2a-abb3-8e777868e017",
+    "rd06_file_final": "01a17e04-ad18-7871-9981-2d3b90916546",
+    "rd_lookup": "01a17e04-b56b-717d-a72a-d6761d0c2964",
+    "rd_memo": "01a17e04-bdc4-70be-b6aa-00d008f219b9",
+    "rd_parse": "01a17e05-9d03-7193-8e0f-273b279a79f2",
+    "r_audit_log": "01a17e05-a523-71ce-9000-0211ea19a2b3",
+    "r_cite_verify": "01a17e06-87ae-710e-9331-b71b68957408",
+    "r_doc_extract": "01a17e06-9036-7d27-a228-db2426f6fb84",
+    "r_kb_search": "01a17e06-98ae-7b5a-8ace-1ed216a623ce",
+    "r_notify": "01a17e07-7906-7af2-8a70-339653b6ec08",
+    "rd03_check_consistency": "01a17e74-ea14-76bc-a8df-ecfa3f659dae",
+    "doc_docx": "01a180c7-76f6-7f6e-a874-c3bc18d6b4b8",
+    "r_ref_lookup": "01a186b9-b901-7358-b48d-406dffcaaea0"
+  },
+  "workflow_versions": {
+    "rd01_scope": "v1.0.5",
+    "rd02_positions": "v1.0.5",
+    "rd03_consistency": "v1.0.1",
+    "rd04_draft": "v1.0.5",
+    "rd06_capture_edits": "v1.0.7",
+    "rd06_file_final": "v1.0.5",
+    "rd_lookup": "v1.0.7",
+    "rd_memo": "v1.0.5",
+    "rd_parse": "v1.0.5",
+    "r_audit_log": "v1.0.4",
+    "r_cite_verify": "v1.0.4",
+    "r_doc_extract": "v1.0.4",
+    "r_kb_search": "v1.0.4",
+    "r_notify": "v1.0.4",
+    "rd03_check_consistency": "v1.0.5",
+    "doc_docx": "v1.0.3",
+    "r_ref_lookup": "v1.0.0"
+  },
+  "projectId": "01a17e02-c98e-7aff-ada8-d0acd8cdfa34",
+  "deployment": {
+    "env": "dev",
+    "id": "01a186bd-d761-72be-8b1d-57c00d7802b7",
+    "endpointSlug": "01a17e02-dev-mvt9v4ut-0eb3c5",
+    "agents": {
+      "RA_UC2_Drafting_Supervisor": {
+        "version": "1.0.4"
+      }
+    },
+    "preflight": "ready"
+  }
+}

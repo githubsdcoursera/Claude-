@@ -1,0 +1,10 @@
+{
+  "name": "Vi UC7 Prepaid to Postpaid Upgrade",
+  "description": "UC7 Prepaid to Postpaid Upgrade Agent (outbound 140-series): eligible base and propensity, consent/DND/window/circle gate (pilot exclusions), exact plan-vs-spend comparison, consent + OTP, same-SIM order and e-KYC, activation and 30-day check-in. Backend systems are MOCK workflows.",
+  "entry_agent": "UC7_Upgrade_Supervisor",
+  "model": "gemma4",
+  "agents": { "UC7_Upgrade_Supervisor": "agents/uc7_upgrade_supervisor.agent.abl" },
+  "shared_mocks": ["a06_record_opt_out", "a08_record_consent", "a04_send_otp", "a04_verify_otp", "a09_create_handoff", "a11_write_post_call"],
+  "smoke_inputs": { "msisdn": "9840000001", "campaign": "UPGRADE_PREPAID_TO_POSTPAID", "plan_id": "PP-501", "consent_ref": "CNS-TEST", "otp_ref": "OTP-TEST", "idempotency_key": "smoke-1", "template": "upgrade_details", "order_ref": "MIG-TEST", "purpose": "smoke", "otp": "123456", "action": "smoke", "price": "₹501", "queue": "POSTPAID_TELESALES", "reason": "smoke", "summary": "smoke", "recommended_next_step": "smoke", "disposition": "SMOKE", "outcome": "smoke" },
+  "deployment_label": "uc7-v1"
+}

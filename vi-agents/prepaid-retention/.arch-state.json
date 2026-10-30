@@ -1,0 +1,50 @@
+{
+  "workflows": {
+    "a03_get_retention_context": "01a17d0d-6adc-7589-b0a2-09eef7d67048",
+    "a06_compliance_gate": "01a17d0d-716c-701b-9a3f-03454bd500bf",
+    "a08_apply_offer": "01a17d0d-77d0-7403-a836-09c6bb28a014",
+    "a08_raise_network_ticket": "01a17d0e-582b-7269-8880-71ce166e113d",
+    "a08_send_sms": "01a17d0e-5fcc-7c94-8c4a-88ca60d24be2",
+    "a11_schedule_outcome_tracking": "01a17d0f-4651-7e0b-89cc-6168ca591dd9",
+    "prt01_check_network": "01a17d0f-4cb3-7dcf-83a1-3bd4738b9e91",
+    "prt02_get_plan_fit": "01a17d0f-5366-7f73-8bd4-bccd1302a03c",
+    "prt03_get_offer_authority": "01a17d10-3c25-7b1f-b3a0-1ddc09ccd599",
+    "prt04_mnp_guidance": "01a17d10-42c6-774a-87d5-d49f86e99e2f",
+    "a04_send_otp": "01a17d11-2a3f-7575-9767-35e9d0489c15",
+    "a04_verify_otp": "01a17d11-318f-772f-bf32-82152a0de0e8",
+    "a08_record_consent": "01a17d11-38b1-798f-b9a8-12f5efc75762",
+    "a06_record_opt_out": "01a17d12-1e10-7b14-9f1f-c6f11f3d7ee8",
+    "a09_create_handoff": "01a17d12-24e8-779f-adca-e4dced9266a6",
+    "a11_write_post_call": "01a17d12-2b71-788b-9f65-ef08232da80d"
+  },
+  "workflow_versions": {
+    "a03_get_retention_context": "v1.0.0",
+    "a06_compliance_gate": "v1.0.0",
+    "a08_apply_offer": "v1.0.0",
+    "a08_raise_network_ticket": "v1.0.0",
+    "a08_send_sms": "v1.0.0",
+    "a11_schedule_outcome_tracking": "v1.0.0",
+    "prt01_check_network": "v1.0.0",
+    "prt02_get_plan_fit": "v1.0.0",
+    "prt03_get_offer_authority": "v1.0.0",
+    "prt04_mnp_guidance": "v1.0.0",
+    "a04_send_otp": "v1.0.0",
+    "a04_verify_otp": "v1.0.0",
+    "a08_record_consent": "v1.0.0",
+    "a06_record_opt_out": "v1.0.0",
+    "a09_create_handoff": "v1.0.0",
+    "a11_write_post_call": "v1.0.0"
+  },
+  "projectId": "01a17d0c-6d31-73b2-9fc9-145618e26edc",
+  "deployment": {
+    "env": "dev",
+    "id": "01a18cc7-a2e5-7605-90e1-04d2e19cf5ad",
+    "endpointSlug": "01a17d0c-dev-mvuy6ggv-8fcda3",
+    "agents": {
+      "Prepaid_Retention_Supervisor": {
+        "version": "1.0.2"
+      }
+    },
+    "preflight": "warnings"
+  }
+}

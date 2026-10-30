@@ -1,0 +1,10 @@
+{
+  "name": "Vi UC6 Postpaid Dropped-Lead Nurturing",
+  "description": "UC6 Postpaid Dropped-Lead Nurturing voice agent (outbound): A06 pre-dial gate (consent basis, NCPR/DND, window, attempt cap, suppression, lead age), AI disclosure and right-party check before any journey detail, DL01 drop-reason diagnosis, DL02 catalogue plan read-out, DL03 blocker resolution (KYC, coverage, UPC/MNP, payment, visit slot, family approval), resume link with UC6 attribution, callback or hot transfer to sales. Backend systems are MOCK workflows.",
+  "entry_agent": "UC6_Dropped_Lead_Supervisor",
+  "model": "gemma4",
+  "agents": { "UC6_Dropped_Lead_Supervisor": "agents/uc6_dropped_lead_supervisor.agent.abl" },
+  "shared_mocks": ["a06_record_opt_out", "a02_sentiment_event", "a09_create_handoff", "a11_write_post_call"],
+  "smoke_inputs": { "msisdn": "9890000001", "campaign": "UC6_PILOT", "text": "I was confused about which plan", "journey": "J1", "needs": "one line 40 GB", "plan_id": "PP-401", "question": "is there a deposit", "lead_id": "PL-61001", "slot": "Wednesday 29 October, 10 am to 12 pm", "step": "plan_selection", "preference": "tomorrow evening", "reason": "smoke", "count": "0", "phrase": "smoke", "queue": "POSTPAID_SALES_DESK", "summary": "smoke", "recommended_next_step": "smoke", "disposition": "SMOKE", "outcome": "smoke" },
+  "deployment_label": "uc6-v1"
+}

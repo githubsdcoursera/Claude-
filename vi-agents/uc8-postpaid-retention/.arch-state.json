@@ -1,0 +1,62 @@
+{
+  "workflows": {
+    "a03_u8_account_context": "01a17ddf-65e6-72f5-a5f7-5fb774e19891",
+    "a04_u8_verify_factor": "01a17ddf-6f38-72a8-8af3-479dc3b880d8",
+    "a06_u8_gate": "01a17ddf-773b-79f1-967c-08c6a7c242cd",
+    "a07_u8_book_callback": "01a17de0-596e-7e9f-bee0-472cd1ad4638",
+    "a08_u8_offer_apply": "01a17de0-6293-7ee2-b88d-20c29089eefa",
+    "a08_u8_plan_change": "01a17de1-3e1f-731f-813a-d99dc91c922f",
+    "rt01_classify_cause": "01a17de1-4de5-73f4-9f0e-b14c5958f776",
+    "rt01_ticket_create": "01a17de1-568a-7e85-bf7b-6ab4e27e510e",
+    "rt02_billing_explain": "01a17de2-3265-7829-b0b4-5fc6f5717920",
+    "rt02_plan_fit": "01a17de2-40fe-7da5-8dcf-4c12ec28b2aa",
+    "rt02_plan_quote": "01a17de3-1d06-7ef7-a85c-8dc5d8428300",
+    "rt03_offer_eligible": "01a17de3-262f-7ac4-ae32-e8dcdaed4fb0",
+    "rt03_offer_faq": "01a17de3-333b-7afd-b827-ebb72cb37404",
+    "rt03_record_response": "01a17de4-10b7-7714-b3ab-d7cf5c2b467f",
+    "rt04_mnp_script": "01a17de4-1997-7b9a-b5c4-f6a136c05a17",
+    "a04_send_otp": "01a17de4-27ea-7a1e-9dbd-efa19b19d2e3",
+    "a04_verify_otp": "01a17de5-03ca-7cc3-b7f4-b930e12f6c8c",
+    "a08_record_consent": "01a17de5-0cdb-7634-afbe-3723cbd25893",
+    "a06_record_opt_out": "01a17de5-ec70-7936-895a-0f987ed25a30",
+    "a02_sentiment_event": "01a17de5-f6bc-7564-ab9c-f90448b9ed1b",
+    "a09_create_handoff": "01a17de5-ff21-7889-9437-7264823e9a7e",
+    "a11_write_post_call": "01a17de6-ddee-7453-80dc-af67dcfef130"
+  },
+  "workflow_versions": {
+    "a03_u8_account_context": "v1.0.0",
+    "a04_u8_verify_factor": "v1.0.0",
+    "a06_u8_gate": "v1.0.2",
+    "a07_u8_book_callback": "v1.0.0",
+    "a08_u8_offer_apply": "v1.0.0",
+    "a08_u8_plan_change": "v1.0.0",
+    "rt01_classify_cause": "v1.0.1",
+    "rt01_ticket_create": "v1.0.0",
+    "rt02_billing_explain": "v1.0.0",
+    "rt02_plan_fit": "v1.0.0",
+    "rt02_plan_quote": "v1.0.0",
+    "rt03_offer_eligible": "v1.0.0",
+    "rt03_offer_faq": "v1.0.0",
+    "rt03_record_response": "v1.0.0",
+    "rt04_mnp_script": "v1.0.0",
+    "a04_send_otp": "v1.0.0",
+    "a04_verify_otp": "v1.0.0",
+    "a08_record_consent": "v1.0.0",
+    "a06_record_opt_out": "v1.0.0",
+    "a02_sentiment_event": "v1.0.0",
+    "a09_create_handoff": "v1.0.0",
+    "a11_write_post_call": "v1.0.0"
+  },
+  "projectId": "01a17ddf-5944-77f9-88cd-ab7d77e5edfc",
+  "deployment": {
+    "env": "dev",
+    "id": "01a18cc2-c9da-78f2-8f82-656100962084",
+    "endpointSlug": "01a17ddf-dev-mvuxznbm-4ddfe0",
+    "agents": {
+      "UC8_Retention_Supervisor": {
+        "version": "1.0.2"
+      }
+    },
+    "preflight": "warnings"
+  }
+}

@@ -1,0 +1,722 @@
+AGENT: RA_UC1_Research_Supervisor
+VERSION: "1.0"
+GOAL: |
+  RA-UC1 AI-Assisted Research & Regulatory Policy Intelligence (R00 Supervisor). Give policy officers a
+  cited, decision-ready research brief on any regulatory document or question: monitor approved sources
+  (RP01) and hand Vi-relevant deadlines to RA-UC3, summarise issue by issue in the regulator's numbering
+  (RP02), find precedents and international comparisons (RP03), map public competitor and industry positions
+  against Vi's (RP04), compose the brief (RP05), and verify every claim (R-CV) before release. Autonomy L0-L1:
+  every brief is an AI draft for officer review.
+
+PERSONA: |
+  A rigorous policy research assistant for Vi's Regulatory & Corporate Affairs officers. Formal Indian-English
+  register. Always separates what the source says, Vi's position and its own analysis, and cites document and
+  page or paragraph for every fact.
+
+LIMITATIONS:
+  - "Never invents citations, dates, deadlines or case names; low-confidence OCR fields are flagged, not guessed"
+  - "Never uses non-public competitor information or infers a stance; unclear stays unclear"
+  - "Never returns restricted content to an unauthorised user, not even as a summary"
+  - "Frames legal points as analysis for the officer, never as settled conclusions"
+  - "Uses a synthetic corpus in this build"
+
+EXECUTION:
+  session_idle_timeout: 600000
+  tool_timeout: 8000
+
+TOOLS:
+  list_attachments(limit?: number, offset?: number) -> object
+    description: "List the files the user shared in this conversation, oldest first."
+    effect: read_only
+    confirm: never
+    params:
+      limit:
+        description: "Maximum number of files to return"
+      offset:
+        description: "Number of files to skip"
+  get_attachment(attachment_id: string) -> object
+    description: "Read one shared file; returns its extracted text in content."
+    effect: read_only
+    confirm: never
+    params:
+      attachment_id:
+        description: "File id from list_attachments"
+  upload_attachment(filename: string, content_base64: string, mime_type: string) -> object
+    description: "Save a generated file to this conversation so the user can download it."
+    effect: side_effect
+    confirm: never
+    params:
+      filename:
+        description: "File name, e.g. report.docx"
+      content_base64:
+        description: "File content, base64-encoded"
+      mime_type:
+        description: "File type"
+  get_attachment_url(attachment_id: string, expires_in_seconds?: number) -> object
+    description: "Short-lived download link for one file in this conversation."
+    effect: read_only
+    confirm: never
+    params:
+      attachment_id:
+        description: "File id"
+      expires_in_seconds:
+        description: "Link lifetime in seconds, up to 86400"
+  #include-tools: rp_parse, rp01_source_poll, rp01_propose_obligation, rp02_summarise, rp03_precedents, rp04_competitor_map, rp05_brief, rp_followup, r_kb_search, r_cite_verify, r_notify, r_audit_log, doc_docx
+
+MEMORY:
+  session:
+    - lnk
+    - dl_id
+    - upf
+    - doc_name
+    - doc_text
+    - got
+    - att_id
+    - last_offset
+    - lastf
+    - files
+    - udoc
+    - doc_md
+    - doc_title
+    - followup
+    - user
+    - request
+    - req
+    - current_doc
+    - topic
+    - sum
+    - prec
+    - comp
+    - brief
+    - cv
+    - poll
+    - cand
+    - ntf
+    - fu
+    - kb
+    - disposition
+    - audit
+
+FLOW:
+  s0_start:
+    REASONING: false
+    SET:
+      doc_text = "none"
+      doc_name = "none"
+      doc_title = "none"
+      doc_md = "none"
+      user = FIRST_NON_EMPTY(session.messageMetadata.user, REGEX_EXTRACT(input, "user=([a-z]+\\.[a-z]+)", 1), "officer.asha")
+      request = input
+      current_doc = ""
+      disposition = "IN_PROGRESS"
+    THEN: s1_parse
+
+  s1_parse:
+    REASONING: false
+    CALL: rp_parse
+      WITH:
+        text: request
+      AS: req
+    ON_RESULT:
+      - IF: req.output.intent == "brief"
+        SET: current_doc = req.output.doc_id
+        THEN: b1_summarise
+      - IF: req.output.intent == "summary"
+        SET: current_doc = req.output.doc_id
+        THEN: u1_summarise
+      - IF: req.output.intent == "precedent"
+        SET: topic = FIRST_NON_EMPTY(req.output.topic, "satellite_spectrum")
+        THEN: p1_precedents
+      - IF: req.output.intent == "competitor_map"
+        SET: current_doc = FIRST_NON_EMPTY(req.output.doc_id, current_doc)
+        THEN: c1_map
+      - IF: req.output.intent == "monitor"
+        THEN: m1_poll
+      - IF: req.output.intent == "verify"
+        THEN: v1_verify
+      - IF: req.output.intent == "followup"
+        SET: current_doc = FIRST_NON_EMPTY(req.output.doc_id, current_doc)
+        THEN: f1_followup
+      - IF: req.output.intent == "search"
+        THEN: k1_search
+      - IF: req.output.intent == "done"
+        THEN: s9_end
+      - IF: req.output.intent == "uploaded"
+        THEN: u0_audit
+      - ELSE:
+        THEN: s2_help
+
+  # ---- BEGIN generated document path 'u' (build/add_upload_path.py) ----
+  u0_audit:
+    REASONING: false
+    CALL: r_audit_log
+      WITH:
+        user: user
+        disposition: "UPLOADED_DOC_RESEARCHED"
+        object: "uploaded document"
+        detail: "Model review of an uploaded or pasted document"
+      AS: audit
+    THEN: uf1_list
+
+  uf1_list:
+    REASONING: false
+    CALL: list_attachments
+      AS: files
+    ON_RESULT:
+      - IF: files.total > 0
+        SET: last_offset = ADD(files.total, -1)
+        THEN: uf2_last
+      - ELSE:
+        THEN: u1_review
+
+  uf2_last:
+    REASONING: false
+    CALL: list_attachments
+      WITH:
+        limit: 1
+        offset: last_offset
+      AS: lastf
+    THEN: uf3_pick
+
+  uf3_pick:
+    REASONING: false
+    SET:
+      att_id = lastf.attachments[0].id
+      doc_name = lastf.attachments[0].filename
+    THEN: uf4_get
+
+  uf4_get:
+    REASONING: false
+    CALL: get_attachment
+      WITH:
+        attachment_id: att_id
+      AS: got
+    ON_RESULT:
+      - IF: got.processingStatus == "completed"
+        SET: doc_text = got.content
+        THEN: u1_review
+      - ELSE:
+        SET: doc_text = "UNREADABLE"
+        THEN: u1_review
+
+  u1_review:
+    REASONING: true
+    GOAL: |
+      The officer asked: "{{request}}". Read the regulatory document they uploaded or pasted in this conversation (TRAI or DoT
+      consultation paper, direction, regulation, order, or licence amendment). If no document is visible, say so in one sentence
+      and ask them to upload it again with the request in the same message; do not guess.
+      Produce a research brief:
+      1. Document identity: issuer, title, reference number, date, type, and the comment and counter-comment deadlines exactly as stated.
+      2. Issue-by-issue summary in the document's own numbering: what it proposes, each question for stakeholders (keep the
+      question numbers), and the paragraph references.
+      3. Impact on Vi: which business areas, financial or operational exposure, and obligations or deadlines that would bind Vi.
+      4. Points for Vi's response and open questions for the officer.
+      5. A short executive summary of at most 5 lines.
+      Text extracted from the most recently uploaded file ({{doc_name}}):
+      <<<
+      {{doc_text}}
+      >>>
+      If that text is "none", the user did not upload a file in this conversation: use any document text pasted in
+      their message instead. If it is "UNREADABLE", the platform could not extract the file's text: say so and ask the
+      user to paste the text or upload a text-based PDF or Word file. If there is no document text at all, say so in
+      one sentence. Never describe, summarise or review a document you cannot see.
+      End by offering: follow-up questions on this document, or say Word to download it as a .docx.
+    STEP_CONSTRAINTS:
+      - "Quote only text that appears in the document, with its paragraph or page reference; never invent citations, dates or numbers"
+      - "Separate what the document says from Vi's position and from your own analysis; mark unsupported statements [unverified]"
+      - "Never send, file or submit anything to a regulator; a named Vi officer reviews and approves"
+    MAX_TURNS: 2
+    THEN: u2_route
+
+  # The zone hands over on the user's next message: follow-ups stay with the document, Word builds a
+  # .docx, a new command goes back to the parser
+  u2_route:
+    REASONING: false
+    ON_INPUT:
+      - IF: input matches "^[^a-z]*(done|exit|thanks|thank you|that's all|thats all)([^a-z]|$)"
+        THEN: s9_end
+      - IF: input matches "(word|docx|download|as a file|document file)"
+        SET: followup = input
+        THEN: u4_doc_prepare
+      - IF: input matches "([a-z]+-syn-[a-z]+|new document|another document|different document|start over|monitor|check (the )?sources|competitor|precedent)"
+        SET: request = input
+        THEN: s1_parse
+      - ELSE:
+        SET: followup = input
+        THEN: ugf1_list
+
+  ugf1_list:
+    REASONING: false
+    CALL: list_attachments
+      AS: files
+    ON_RESULT:
+      - IF: files.total > 0
+        SET: last_offset = ADD(files.total, -1)
+        THEN: ugf2_last
+      - ELSE:
+        THEN: u3_followup
+
+  ugf2_last:
+    REASONING: false
+    CALL: list_attachments
+      WITH:
+        limit: 1
+        offset: last_offset
+      AS: lastf
+    THEN: ugf3_pick
+
+  ugf3_pick:
+    REASONING: false
+    SET:
+      att_id = lastf.attachments[0].id
+      doc_name = lastf.attachments[0].filename
+    THEN: ugf4_get
+
+  ugf4_get:
+    REASONING: false
+    CALL: get_attachment
+      WITH:
+        attachment_id: att_id
+      AS: got
+    ON_RESULT:
+      - IF: got.processingStatus == "completed"
+        SET: doc_text = got.content
+        THEN: u3_followup
+      - ELSE:
+        SET: doc_text = "UNREADABLE"
+        THEN: u3_followup
+
+  u3_followup:
+    REASONING: true
+    GOAL: |
+      The user is following up on the document they uploaded or pasted earlier in this conversation and your
+      earlier answer. Their message: "{{followup}}".
+      Answer from the document and your earlier brief only, with paragraph references. If they ask for a comparison with other regulators or past Vi positions you cannot see, say what needs to be checked in the R-KB rather than guessing.
+      Text extracted from the most recently uploaded file ({{doc_name}}):
+      <<<
+      {{doc_text}}
+      >>>
+      If that text is "none", the user did not upload a file in this conversation: use any document text pasted in
+      their message instead. If it is "UNREADABLE", the platform could not extract the file's text: say so and ask the
+      user to paste the text or upload a text-based PDF or Word file. If there is no document text at all, say so in
+      one sentence. Never describe, summarise or review a document you cannot see.
+      End by asking whether anything else is needed on this document, or say Word to download it.
+    STEP_CONSTRAINTS:
+      - "Quote only text that appears in the document, with its paragraph or page reference; never invent citations, dates or numbers"
+      - "Separate what the document says from Vi's position and from your own analysis; mark unsupported statements [unverified]"
+      - "Never send, file or submit anything to a regulator; a named Vi officer reviews and approves"
+    MAX_TURNS: 2
+    THEN: u2_route
+
+  u4_doc_prepare:
+    REASONING: true
+    GOAL: |
+      The user wants a downloadable Word document ("{{followup}}"). Do not write it in your reply. Set these session
+      fields in a single update:
+      doc_title: a short title.
+      doc_md: the full document body in simple markdown: # and ## headings, plain paragraphs, - bullets, and tables
+      as | col | col | rows with a header row. Use real line breaks.
+      Write the full research brief: document identity and deadlines, executive summary, issue-by-issue summary with question numbers and paragraph references, impact on Vi, points for response, open questions.
+      Then reply with one short sentence: "Preparing the Word document."
+    AVAILABLE_TOOLS: [r_audit_log]
+    CONTEXT_UPDATES: [doc_title, doc_md]
+    STEP_CONSTRAINTS:
+      - "Quote only text that appears in the document, with its paragraph or page reference; never invent citations, dates or numbers"
+      - "Separate what the document says from Vi's position and from your own analysis; mark unsupported statements [unverified]"
+      - "Never send, file or submit anything to a regulator; a named Vi officer reviews and approves"
+    EXIT_WHEN: always
+    MAX_TURNS: 4
+    THEN: u5_doc_build
+
+  u5_doc_build:
+    REASONING: false
+    CALL: doc_docx
+      WITH:
+        title: doc_title
+        markdown: doc_md
+        footer_note: "AI research brief for Vi Regulatory officer review (autonomy L1). Citations must be checked before use; nothing has been filed or sent."
+      AS: udoc
+    ON_RESULT:
+      - IF: udoc.output.ok == true
+        THEN: ud1_upload
+      - ELSE:
+        THEN: u7_doc_failed
+
+  ud1_upload:
+    REASONING: false
+    CALL: upload_attachment
+      WITH:
+        filename: udoc.output.filename
+        content_base64: udoc.output.b64
+        mime_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      AS: upf
+    ON_RESULT:
+      - IF: upf.success == true
+        SET: dl_id = upf.data.attachmentId
+        THEN: ud2_link
+      - ELSE:
+        THEN: u7_doc_failed
+
+  ud2_link:
+    REASONING: false
+    CALL: get_attachment_url
+      WITH:
+        attachment_id: dl_id
+        expires_in_seconds: 3600
+      AS: lnk
+    ON_RESULT:
+      - IF: lnk.success == true
+        THEN: ud3_ready
+      - ELSE:
+        THEN: u7_doc_failed
+
+  ud3_ready:
+    REASONING: false
+    RESPOND: "{{udoc.output.message}} [Download {{udoc.output.filename}}]({{lnk.data.url}}) (the link works for about an hour; the file also stays in this conversation's files). It is an AI draft for review; nothing has been sent. Anything else on this document, or a new request?"
+    THEN: u2_route
+
+  u7_doc_failed:
+    REASONING: false
+    RESPOND: "I couldn't build the Word document this time. Ask for Word again, or I can answer in the chat."
+    THEN: u2_route
+
+  # ---- END generated document path 'u' ----
+
+  s2_help:
+    REASONING: false
+    RESPOND: "I can prepare a cited research brief on a document (for example: research brief on TRAI-SYN-CP-2026-11), summarise a document issue by issue, show precedents and international comparisons on a topic, map public stakeholder positions, check the monitored sources for new documents, verify a claim and its citation, or answer follow-up questions on the document we discussed. What would you like?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- Full research brief: RP02 -> RP03 -> RP04 -> RP05 -> R-CV ----
+  b1_summarise:
+    REASONING: false
+    CALL: rp02_summarise
+      WITH:
+        user: user
+        doc_id: current_doc
+      AS: sum
+    ON_RESULT:
+      - IF: sum.output.found == true AND sum.output.question_count > 0
+        SET: topic = sum.output.topic
+        THEN: b2_precedents
+      - IF: sum.output.found == true
+        THEN: u2_audit
+      - ELSE:
+        THEN: x_no_content
+
+  b2_precedents:
+    REASONING: false
+    CALL: rp03_precedents
+      WITH:
+        user: user
+        topic: topic
+      AS: prec
+    THEN: b3_map
+
+  b3_map:
+    REASONING: false
+    CALL: rp04_competitor_map
+      WITH:
+        doc_id: current_doc
+      AS: comp
+    THEN: b4_brief
+
+  b4_brief:
+    REASONING: false
+    CALL: rp05_brief
+      WITH:
+        user: user
+        doc_id: current_doc
+      AS: brief
+    THEN: b5_verify
+
+  b5_verify:
+    REASONING: false
+    CALL: r_cite_verify
+      WITH:
+        claims: brief.output.claims
+      AS: cv
+    SET:
+      disposition = "BRIEF_READY"
+    THEN: b6_audit
+
+  b6_audit:
+    REASONING: false
+    CALL: r_audit_log
+      WITH:
+        user: user
+        disposition: disposition
+        object: brief.output.brief_id
+        detail: "Brief on {{current_doc}}; R-CV {{cv.output.supported}} supported, {{cv.output.unsupported}} unsupported"
+      AS: audit
+    THEN: b7_say
+
+  b7_say:
+    REASONING: false
+    RESPOND: |
+      AI research brief {{brief.output.brief_id}}, for officer review.
+
+      1. Why it matters: {{brief.output.why}}
+      2. Key findings (source says): {{brief.output.findings}}
+      3. Issue-by-issue: {{sum.output.issues}} Deadlines: {{sum.output.deadlines}}. Definitions: {{sum.output.definitions}}. Cross-references: {{sum.output.cross_refs}}.
+      4. Precedents: {{prec.output.indian}} International comparison ({{prec.output.jurisdictions}} jurisdictions): {{prec.output.international}}. {{prec.output.analysis}}
+      5. Stakeholder positions (public sources only): {{comp.output.rows}}
+      6. Vi's past positions and gaps: {{brief.output.vi_positions}}
+      7. Open questions for the officer: {{brief.output.open_questions}}
+      8. Verification (R-CV): {{cv.output.supported}} supported, {{cv.output.partial}} partial, {{cv.output.unsupported}} unsupported. {{cv.output.table}}
+
+      Anything else?
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- RP02 summary only ----
+  u1_summarise:
+    REASONING: false
+    CALL: rp02_summarise
+      WITH:
+        user: user
+        doc_id: current_doc
+      AS: sum
+    ON_RESULT:
+      - IF: sum.output.found == true
+        THEN: u2_audit
+      - ELSE:
+        THEN: x_no_content
+
+  u2_audit:
+    REASONING: false
+    CALL: r_audit_log
+      WITH:
+        user: user
+        disposition: "SUMMARY_READY"
+        object: current_doc
+        detail: "{{sum.output.status_note}} {{sum.output.flags}}"
+      AS: audit
+    THEN: u3_say
+
+  u3_say:
+    REASONING: false
+    RESPOND: "AI summary, for officer review. {{#if sum.output.status_note}}{{sum.output.status_note}}. {{/if}}{{sum.output.executive}} {{#if sum.output.question_count}}Issues: {{sum.output.issues}} {{/if}}Deadlines: {{sum.output.deadlines}}. {{#if sum.output.flags}}{{sum.output.flags}}. These fields were not guessed. {{/if}}Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  x_no_content:
+    REASONING: false
+    CALL: r_audit_log
+      WITH:
+        user: user
+        disposition: "NO_CONTENT"
+        object: current_doc
+        detail: "Document not found or not visible to the user"
+      AS: audit
+    THEN: x_no_content_say
+
+  x_no_content_say:
+    REASONING: false
+    RESPOND: "I found no document {{current_doc}} that you are authorised to see. Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- RP03 precedents and international comparison ----
+  p1_precedents:
+    REASONING: false
+    CALL: rp03_precedents
+      WITH:
+        user: user
+        topic: topic
+      AS: prec
+    THEN: p2_audit
+
+  p2_audit:
+    REASONING: false
+    CALL: r_audit_log
+      WITH:
+        user: user
+        disposition: "PRECEDENTS_READY"
+        object: topic
+        detail: "{{prec.output.jurisdictions}} jurisdictions"
+      AS: audit
+    THEN: p3_say
+
+  p3_say:
+    REASONING: false
+    RESPOND: |
+      Precedents on {{topic}}: {{prec.output.indian}}
+
+      International comparison ({{prec.output.jurisdictions}} jurisdictions; jurisdiction | regulator | instrument | approach | date | status): {{prec.output.international}}
+
+      {{prec.output.analysis}} Anything else?
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- RP04 stakeholder position map ----
+  c1_map:
+    REASONING: false
+    CALL: rp04_competitor_map
+      WITH:
+        doc_id: current_doc
+      AS: comp
+    THEN: c2_audit
+
+  c2_audit:
+    REASONING: false
+    CALL: r_audit_log
+      WITH:
+        user: user
+        disposition: "POSITION_MAP_READY"
+        object: current_doc
+        detail: "{{comp.output.stakeholders}} stakeholders"
+      AS: audit
+    THEN: c3_say
+
+  c3_say:
+    REASONING: false
+    RESPOND: "{{#if comp.output.found}}Stakeholder position map for {{current_doc}} (published responses only; no stance is inferred): {{comp.output.rows}}{{else}}I have no published stakeholder responses for {{current_doc}}.{{/if}} Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- RP01 monitor and hand-off to RA-UC3 ----
+  m1_poll:
+    REASONING: false
+    CALL: rp01_source_poll
+      WITH:
+        user: user
+      AS: poll
+    THEN: m2_propose
+
+  m2_propose:
+    REASONING: false
+    CALL: rp01_propose_obligation
+      WITH:
+        doc_id: poll.output.doc_id
+        deadline: poll.output.deadline
+      AS: cand
+    THEN: m3_notify
+
+  m3_notify:
+    REASONING: false
+    CALL: r_notify
+      WITH:
+        to: user
+        message: "{{poll.output.title}}: {{poll.output.abstract}}"
+      AS: ntf
+    THEN: m4_audit
+
+  m4_audit:
+    REASONING: false
+    CALL: r_audit_log
+      WITH:
+        user: user
+        disposition: "NEW_DOCUMENT_ALERTED"
+        object: poll.output.doc_id
+        detail: "Relevance {{poll.output.relevance}}; candidate {{cand.output.candidate_id}}"
+      AS: audit
+    THEN: m5_say
+
+  m5_say:
+    REASONING: false
+    RESPOND: "New on an approved source ({{poll.output.source}}): {{poll.output.doc_id}}, {{poll.output.title}}, published by {{poll.output.issuer}} on {{poll.output.published}}. Relevance to Vi {{poll.output.relevance}}. {{poll.output.abstract}} The comment deadline of {{poll.output.deadline}} has been sent to RA-UC3 as candidate obligation {{cand.output.candidate_id}}. Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- R-CV on a claim the officer gives ----
+  v1_verify:
+    REASONING: false
+    CALL: r_cite_verify
+      WITH:
+        claims: req.output.claims
+      AS: cv
+    ON_RESULT:
+      - IF: cv.output.unsupported > 0
+        SET: disposition = "UNSUPPORTED_FLAGGED"
+        THEN: v2_audit
+      - ELSE:
+        SET: disposition = "CITATIONS_VERIFIED"
+        THEN: v2_audit
+
+  v2_audit:
+    REASONING: false
+    CALL: r_audit_log
+      WITH:
+        user: user
+        disposition: disposition
+        object: "R-CV"
+        detail: cv.output.table
+      AS: audit
+    THEN: v3_say
+
+  v3_say:
+    REASONING: false
+    RESPOND: "Verification: {{cv.output.supported}} supported, {{cv.output.partial}} partial, {{cv.output.unsupported}} unsupported. {{cv.output.table}}{{#if cv.output.unsupported}} Unsupported claims must be removed or shown as [unverified].{{/if}} Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- Follow-up questions grounded in the document ----
+  f1_followup:
+    REASONING: false
+    CALL: rp_followup
+      WITH:
+        user: user
+        doc_id: current_doc
+        question: req.output.question
+      AS: fu
+    THEN: f2_audit
+
+  f2_audit:
+    REASONING: false
+    CALL: r_audit_log
+      WITH:
+        user: user
+        disposition: "FOLLOWUP_ANSWERED"
+        object: current_doc
+        detail: fu.output.answer
+      AS: audit
+    THEN: f3_say
+
+  f3_say:
+    REASONING: false
+    RESPOND: "{{fu.output.answer}} Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- R-KB search ----
+  k1_search:
+    REASONING: false
+    CALL: r_kb_search
+      WITH:
+        user: user
+        query: request
+      AS: kb
+    THEN: k2_say
+
+  k2_say:
+    REASONING: false
+    RESPOND: "{{kb.output.count}} results: {{kb.output.results}} Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  s9_end:
+    REASONING: false
+    RESPOND: "Closing the session. Every brief and source is in the audit trail."
+    THEN: COMPLETE

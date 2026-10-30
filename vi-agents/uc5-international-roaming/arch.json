@@ -1,0 +1,26 @@
+{
+  "name": "Vi UC5 International Roaming",
+  "description": "UC5 International Roaming voice agent (postpaid): inbound IR queries and proactive outbound on explicit opt-in travel signals. Aligned to Vi Agentic Operations v0.9. Backend systems are MOCK workflows.",
+  "entry_agent": "UC5_IR_Supervisor",
+  "model": "gemma4",
+  "agents": {
+    "UC5_IR_Supervisor": "agents/uc5_ir_supervisor.agent.abl"
+  },
+  "smoke_inputs": {
+    "msisdn": "9800000001",
+    "direction": "outbound",
+    "campaign": "IR_TRAVEL_OPTIN",
+    "country": "United Arab Emirates",
+    "days": "7",
+    "usage": "moderate"
+  },
+  "deployment_label": "uc5-v1",
+  "shared_mocks": [
+    "a04_send_otp",
+    "a04_verify_otp",
+    "a08_record_consent",
+    "a06_record_opt_out",
+    "a09_create_handoff",
+    "a11_write_post_call"
+  ]
+}

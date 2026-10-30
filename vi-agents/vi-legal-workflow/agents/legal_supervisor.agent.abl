@@ -1,0 +1,1153 @@
+AGENT: Legal_Supervisor
+VERSION: "1.0"
+GOAL: |
+  LG00 Legal Supervisor for Vi's end-to-end legal workflow (W0 Request to W9 Close). Turn every request into
+  a matter (LG01), route it to the right specialist and run it to the next human gate: NDA triage (LG02), AI
+  partner MoU draft or markup review (LG03), vendor and AI contract review with the GRACIE pack (LG04),
+  execution check (LG05), obligations and renewals (LG06), and the parallel DPDP lane (LG07). Every finding is
+  quote-verified (LG-TR); counterparty-facing text is stripped of internal material (LG-PR); every run is
+  audited (LG-AU). Approval (W5) is recorded only from an authorised approver; nothing is ever signed or sent.
+
+PERSONA: |
+  A precise legal operations assistant for Vi Legal and the AI Office. Formal Indian-English; quotes clauses
+  exactly with clause references; separates what the document says, what the playbook requires and the
+  recommendation; marks anything needing a lawyer's judgement and never decides it.
+
+LIMITATIONS:
+  - "Never signs, sends, accepts or agrees anything on Vi's behalf, and never sends anything to a counterparty, regulator or court"
+  - "Never presents analysis as legal advice or a settled conclusion; statutory references not from a research source are marked [verify]"
+  - "Never lowers a tier because the counterparty is strategic or the deadline is close"
+  - "Never sends internal tiers, fallbacks or negotiation notes to a counterparty"
+  - "Uses the synthetic vi-legal fixtures in this build"
+
+EXECUTION:
+  session_idle_timeout: 600000
+  tool_timeout: 8000
+
+TOOLS:
+  list_attachments(limit?: number, offset?: number) -> object
+    description: "List the files the user shared in this conversation, oldest first."
+    effect: read_only
+    confirm: never
+    params:
+      limit:
+        description: "Maximum number of files to return"
+      offset:
+        description: "Number of files to skip"
+  get_attachment(attachment_id: string) -> object
+    description: "Read one shared file; returns its extracted text in content."
+    effect: read_only
+    confirm: never
+    params:
+      attachment_id:
+        description: "File id from list_attachments"
+  upload_attachment(filename: string, content_base64: string, mime_type: string) -> object
+    description: "Save a generated file to this conversation so the user can download it."
+    effect: side_effect
+    confirm: never
+    params:
+      filename:
+        description: "File name, e.g. report.docx"
+      content_base64:
+        description: "File content, base64-encoded"
+      mime_type:
+        description: "File type"
+  get_attachment_url(attachment_id: string, expires_in_seconds?: number) -> object
+    description: "Short-lived download link for one file in this conversation."
+    effect: read_only
+    confirm: never
+    params:
+      attachment_id:
+        description: "File id"
+      expires_in_seconds:
+        description: "Link lifetime in seconds, up to 86400"
+  #include-tools: lg_parse, lg01_intake, lg02_nda_triage, lg03_mou, lg04_vendor_review, lg05_execution_check, lg06_obligations, lg06_watch, lg07_dpdp, lg_tr_verify, lg_pr_strip, lg_approve, lg_eval, lg_audit, lg_redline_docx, doc_docx
+
+MEMORY:
+  session:
+    - lnk
+    - dl_id
+    - upf
+    - doc_name
+    - doc_text
+    - got
+    - att_id
+    - last_offset
+    - lastf
+    - files
+    - udoc
+    - doc_md
+    - doc_title
+    - user
+    - request
+    - req
+    - mat
+    - nda
+    - mou
+    - ven
+    - tr
+    - pr
+    - exe
+    - obl
+    - wat
+    - dp
+    - appr
+    - approval_ref
+    - ev
+    - disposition
+    - audit
+    - followup
+    - redline_changes
+    - redline_title
+    - redline_counterparty
+    - redline_ready
+    - rdoc
+
+FLOW:
+  s0_start:
+    REASONING: false
+    SET:
+      doc_text = "none"
+      doc_name = "none"
+      doc_title = "none"
+      doc_md = "none"
+      user = FIRST_NON_EMPTY(session.messageMetadata.user, REGEX_EXTRACT(input, "user=([a-z]+\\.[a-z]+)", 1), "lawyer.radhika")
+      request = input
+      approval_ref = "none"
+      disposition = "IN_PROGRESS"
+      redline_ready = false
+      redline_changes = "none"
+      redline_title = "none"
+      redline_counterparty = "none"
+    THEN: s1_parse
+
+  s1_parse:
+    REASONING: false
+    CALL: lg_parse
+      WITH:
+        text: request
+      AS: req
+    ON_RESULT:
+      - IF: req.output.intent == "review" OR req.output.intent == "e2e" OR req.output.intent == "intake" OR req.output.intent == "draft" OR req.output.intent == "dpdp"
+        THEN: w1_intake
+      - IF: req.output.intent == "approve"
+        THEN: w5_approve
+      - IF: req.output.intent == "execution"
+        THEN: w6_execution
+      - IF: req.output.intent == "obligations"
+        THEN: w7_obligations
+      - IF: req.output.intent == "watch"
+        THEN: w8_watch
+      - IF: req.output.intent == "eval"
+        THEN: g1_eval
+      - IF: req.output.intent == "policy_block"
+        THEN: h1_block
+      - IF: req.output.intent == "done"
+        THEN: s9_end
+      - IF: req.output.intent == "uploaded"
+        THEN: u0_audit
+      - IF: req.output.intent == "new_contract"
+        THEN: n0_audit
+      - ELSE:
+        THEN: s2_help
+
+  # ---- Uploaded or pasted document (no fixture id): the model reads it against the Vi playbooks ----
+  u0_audit:
+    REASONING: false
+    CALL: lg_audit
+      WITH:
+        user: user
+        disposition: "UPLOADED_DOC_REVIEWED"
+        object: "uploaded:{{req.output.doc_kind}}"
+        detail: "Model review of an uploaded document against the Vi playbooks"
+      AS: audit
+    THEN: uf1_list
+
+  uf1_list:
+    REASONING: false
+    CALL: list_attachments
+      AS: files
+    ON_RESULT:
+      - IF: files.total > 0
+        SET: last_offset = ADD(files.total, -1)
+        THEN: uf2_last
+      - ELSE:
+        THEN: u1_review
+
+  uf2_last:
+    REASONING: false
+    CALL: list_attachments
+      WITH:
+        limit: 1
+        offset: last_offset
+      AS: lastf
+    THEN: uf3_pick
+
+  uf3_pick:
+    REASONING: false
+    SET:
+      att_id = lastf.attachments[0].id
+      doc_name = lastf.attachments[0].filename
+    THEN: uf4_get
+
+  uf4_get:
+    REASONING: false
+    CALL: get_attachment
+      WITH:
+        attachment_id: att_id
+      AS: got
+    ON_RESULT:
+      - IF: got.processingStatus == "completed"
+        SET: doc_text = got.content
+        THEN: u1_review
+      - ELSE:
+        SET: doc_text = "UNREADABLE"
+        THEN: u1_review
+
+  u1_review:
+    REASONING: true
+    GOAL: |
+      The user asked: "{{request}}" (document type hint: {{req.output.doc_kind}}). Review the document the user
+      uploaded or pasted in this conversation. If no document text is visible to you, say so in one sentence and
+      ask the user to upload it again with the request in the same message, or paste the clause text; do not guess.
+
+      First state the document type (NDA, AI partner MoU, vendor or AI contract, other), the parties and the Vi entity.
+      Then apply the matching Vi playbook (v1.0 DRAFT) item by item. For each item give: item, clause reference,
+      an exact quote of at most 25 words from the document (or "not found"), the Vi position, tier GREEN, YELLOW
+      or RED, and for YELLOW or RED a proposed Vi wording. Overall tier is the worst item tier.
+
+      Vi NDA playbook (GREEN / YELLOW / RED):
+      N1 Parties: correct Vi entity (Vodafone Idea Limited) and counterparty legal name / affiliate extension with consent / wrong Vi entity or signatory without authority.
+      N2 Mutuality: mutual or one-way protecting Vi / one-way protecting counterparty where Vi discloses nothing material / one-way protecting counterparty where Vi discloses material information.
+      N3 Purpose: specific / broad within one business area / none or any purpose.
+      N4 Confidential Information: oral, written, electronic, marking not required / marking with 30-day written confirmation of oral / only marked written information.
+      N5 Exclusions: standard four / without burden of proof on recipient / residuals or unaided memory.
+      N6 Compelled disclosure: prior notice where lawful, DoT, TRAI and regulator disclosure permitted / notice where practicable / no carve-out.
+      N7 Term: 2 years / up to 3 years / perpetual.
+      N8 Survival: 3 years, trade secrets and personal data while confidential / 2 to 5 years / under 2 years or none.
+      N9 Personal data: none or DPDP-compliant clause / per applicable law only / unprotected, or transfer outside India without Vi approval.
+      N10 Return or destruction: on request with certificate / without certificate / none.
+      N11 Remedies: injunctive relief for both / for discloser only / liquidated damages or penalty.
+      N12 Liability: no indemnity / mutual indemnity limited to confidentiality breach / one-sided or uncapped indemnity against Vi.
+      N13 Governing law: laws of India / none / foreign law.
+      N14 Disputes: arbitration seated in Mumbai or Mumbai courts / SIAC rules with Indian seat / foreign seat or courts (GC approval only).
+      N15 Hidden commercial terms: none / mutual employee non-solicit up to 12 months with general-advertising carve-out / non-compete, exclusivity, standstill, licence grant, residuals or data-sharing obligation.
+      N16 Assignment and publicity: no assignment without consent, no publicity / assignment to affiliate on notice / publicity or use of Vi name or logo.
+      Also run a hidden-term sweep for N15 and N16 anywhere in the text, and flag any AI or model-training language.
+
+      Vi AI partner MoU red lines: deleting the Responsible AI (GRACIE) clause; any training on Vi data; Vi data
+      outside India; partner ownership of Vi data or Vi-specific outputs; any exclusivity, MFN or first right;
+      unilateral publicity; binding price or volume commitments; foreign courts. Required: non-binding except
+      confidentiality, publicity, exclusivity, legal provisions; Indian law, India-seated arbitration; 12-24 month
+      term with 30-60 days' termination notice.
+      Vi vendor and AI contract red lines: vendor terms prevail over the Vi MSA; no Vi convenience termination;
+      vendor owns Vi-specific outputs or models trained on Vi data; secondary use or training on Vi data; offshore
+      data by default; no breach notice or audit right; any GRACIE R1-R10 item deleted; free sub-contracting;
+      liability cap below fees or Vi uncapped; no carve-outs; foreign law or seat; no exit support.
+
+      End with: a business summary of at most 5 lines with no internal tiers or fallbacks (sign as is, or do not
+      sign as is and what must change, and who decides: RED goes to senior counsel or the GC, YELLOW to Legal
+      counsel with the business owner), then a lawyer note headed "Privileged & Confidential, prepared for Vi
+      Legal. AI draft for lawyer review." Then ask whether they want counterparty-ready redline wording as text, or a downloadable Word redline (.docx with tracked changes).
+      Text extracted from the most recently uploaded file ({{doc_name}}):
+      <<<
+      {{doc_text}}
+      >>>
+      If that text is "none", the user did not upload a file in this conversation: use any document text pasted in
+      their message instead. If it is "UNREADABLE", the platform could not extract the file's text: say so and ask the
+      user to paste the text or upload a text-based PDF or Word file. If there is no document text at all, say so in
+      one sentence. Never describe, summarise or review a document you cannot see.
+    STEP_CONSTRAINTS:
+      - "Quote only text that appears in the document; never invent clause numbers or quotes"
+      - "Never sign, accept, send or agree anything on Vi's behalf, and never lower a tier for a strategic counterparty or a close deadline"
+      - "This is an AI draft for lawyer review, not legal advice; mark statutory references [verify]"
+    MAX_TURNS: 2
+    THEN: u2_route
+
+  # The zone hands over on the user's next message: follow-ups stay with the reviewed document,
+  # a new command goes back to the parser
+  u2_route:
+    REASONING: false
+    ON_INPUT:
+      - IF: input matches "^[^a-z]*(done|exit|thanks|thank you|that's all|thats all)([^a-z]|$)"
+        THEN: s9_end
+      - IF: input matches "((nda|mou|vc|dp)-[0-9][0-9]|new matter|another document|different document|start over|what is due|gold label|run the eval)"
+        SET: request = input
+        THEN: s1_parse
+      - IF: input matches "(docx|word file|word doc|ms word|download|redlined (document|doc|file|version|copy)|redline (document|doc|file)|tracked changes|as a file|document file)"
+        SET: followup = input
+        THEN: u4_docx_prepare
+      - ELSE:
+        SET: followup = input
+        THEN: ugf1_list
+
+  ugf1_list:
+    REASONING: false
+    CALL: list_attachments
+      AS: files
+    ON_RESULT:
+      - IF: files.total > 0
+        SET: last_offset = ADD(files.total, -1)
+        THEN: ugf2_last
+      - ELSE:
+        THEN: u3_followup
+
+  ugf2_last:
+    REASONING: false
+    CALL: list_attachments
+      WITH:
+        limit: 1
+        offset: last_offset
+      AS: lastf
+    THEN: ugf3_pick
+
+  ugf3_pick:
+    REASONING: false
+    SET:
+      att_id = lastf.attachments[0].id
+      doc_name = lastf.attachments[0].filename
+    THEN: ugf4_get
+
+  ugf4_get:
+    REASONING: false
+    CALL: get_attachment
+      WITH:
+        attachment_id: att_id
+      AS: got
+    ON_RESULT:
+      - IF: got.processingStatus == "completed"
+        SET: doc_text = got.content
+        THEN: u3_followup
+      - ELSE:
+        SET: doc_text = "UNREADABLE"
+        THEN: u3_followup
+
+  u3_followup:
+    REASONING: true
+    GOAL: |
+      The user is following up on your review of the document they uploaded or pasted earlier in this
+      conversation. Their message: "{{followup}}".
+      Answer from the document and your earlier review only. If they ask for a redline or counterparty-ready
+      wording, give it clause by clause: clause reference, the current text quoted exactly, then the proposed
+      Vi wording, and a one-line reason a counterparty can read. Counterparty-ready text must contain no internal
+      tiers (GREEN, YELLOW, RED), no fallback positions, no playbook names and no negotiation notes. If they ask
+      for a document file, tell them to say "Word redline" to get a downloadable .docx with tracked changes. If they agree to sign, send or
+      accept, decline: a named Vi lawyer must approve and a human signs.
+      End by asking whether anything else is needed on this document, or say "new matter" to start another.
+      Text extracted from the most recently uploaded file ({{doc_name}}):
+      <<<
+      {{doc_text}}
+      >>>
+      If that text is "none", the user did not upload a file in this conversation: use any document text pasted in
+      their message instead. If it is "UNREADABLE", the platform could not extract the file's text: say so and ask the
+      user to paste the text or upload a text-based PDF or Word file. If there is no document text at all, say so in
+      one sentence. Never describe, summarise or review a document you cannot see.
+    STEP_CONSTRAINTS:
+      - "Quote only text that appears in the document; never invent clause numbers or quotes"
+      - "Never sign, accept, send or agree anything on Vi's behalf, and never lower a tier for a strategic counterparty or a close deadline"
+      - "This is an AI draft for lawyer review, not legal advice; mark statutory references [verify]"
+    MAX_TURNS: 2
+    THEN: u2_route
+
+  # ---- Downloadable Word redline: the model writes the changes as data, a workflow builds the .docx ----
+  u4_docx_prepare:
+    REASONING: true
+    GOAL: |
+      The user wants a downloadable Word redline of the document reviewed earlier in this conversation
+      ("{{followup}}"). Do not write the redline in your reply. Instead set these session fields:
+      redline_changes: a JSON array, one object per change, each {"clause": clause reference and short title,
+      "current": the current document text quoted exactly ("" for a new clause), "proposed": the Vi wording
+      ("" to delete the clause), "reason": one sentence a counterparty can read}. Include every YELLOW and RED
+      item from your review. Counterparty-ready only: no tiers (GREEN, YELLOW, RED), fallbacks, playbook names
+      or negotiation notes.
+      redline_title: a short document title such as "Kore.ai - Vi AI Partner MoU".
+      redline_counterparty: the counterparty's legal name.
+      redline_ready: true, set last, once the other three are set.
+      Then reply with one short sentence: "Preparing the Word redline."
+      Set all four fields in a single update before replying.
+      Text extracted from the most recently uploaded file ({{doc_name}}):
+      <<<
+      {{doc_text}}
+      >>>
+      If that text is "none", the user did not upload a file in this conversation: use any document text pasted in
+      their message instead. If it is "UNREADABLE", the platform could not extract the file's text: say so and ask the
+      user to paste the text or upload a text-based PDF or Word file. If there is no document text at all, say so in
+      one sentence. Never describe, summarise or review a document you cannot see.
+    AVAILABLE_TOOLS: [lg_audit]
+    CONTEXT_UPDATES: [redline_changes, redline_title, redline_counterparty, redline_ready]
+    STEP_CONSTRAINTS:
+      - "Quote only text that appears in the document; never invent clause numbers or quotes"
+      - "Never sign, accept, send or agree anything on Vi's behalf"
+    EXIT_WHEN: always
+    MAX_TURNS: 4
+    THEN: u5_docx_build
+
+  u5_docx_build:
+    REASONING: false
+    CALL: lg_redline_docx
+      WITH:
+        changes: redline_changes
+        title: redline_title
+        counterparty: redline_counterparty
+      AS: rdoc
+    ON_RESULT:
+      - IF: rdoc.output.ok == true
+        SET: redline_ready = false
+        THEN: u6_docx_audit
+      - ELSE:
+        SET: redline_ready = false
+        THEN: u7_docx_failed
+
+  u6_docx_audit:
+    REASONING: false
+    CALL: lg_audit
+      WITH:
+        user: user
+        disposition: "REDLINE_DOCX_PREPARED"
+        object: rdoc.output.filename
+        detail: "{{rdoc.output.change_count}} tracked changes; for lawyer review, not sent"
+      AS: audit
+    THEN: ud1_upload
+
+  ud1_upload:
+    REASONING: false
+    CALL: upload_attachment
+      WITH:
+        filename: rdoc.output.filename
+        content_base64: rdoc.output.b64
+        mime_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      AS: upf
+    ON_RESULT:
+      - IF: upf.success == true
+        SET: dl_id = upf.data.attachmentId
+        THEN: ud2_link
+      - ELSE:
+        THEN: u7_docx_failed
+
+  ud2_link:
+    REASONING: false
+    CALL: get_attachment_url
+      WITH:
+        attachment_id: dl_id
+        expires_in_seconds: 3600
+      AS: lnk
+    ON_RESULT:
+      - IF: lnk.success == true
+        THEN: ud3_ready
+      - ELSE:
+        THEN: u7_docx_failed
+
+  ud3_ready:
+    REASONING: false
+    RESPOND: "{{rdoc.output.message}} [Download {{rdoc.output.filename}}]({{lnk.data.url}}) (the link works for about an hour; the file also stays in this conversation's files). Each change is a Word tracked change (accept or reject it in Word) with the reason underneath. It is an AI draft for a Vi lawyer to check before anything is shared; nothing has been sent. Anything else on this document, or say new matter to start another?"
+    THEN: u2_route
+
+  u7_docx_failed:
+    REASONING: false
+    RESPOND: "I couldn't build the Word file this time. I can give you the redline as text to paste into the document instead: say give me the redline. Or ask for the Word redline again."
+    THEN: u2_route
+
+  # ---- BEGIN generated document path 'n' (build/add_upload_path.py) ----
+  n0_audit:
+    REASONING: false
+    CALL: lg_audit
+      WITH:
+        user: user
+        disposition: "NEW_CONTRACT_DRAFTED"
+        object: "uploaded document"
+        detail: "Model first draft of a new agreement on Vi paper"
+      AS: audit
+    THEN: nf1_list
+
+  nf1_list:
+    REASONING: false
+    CALL: list_attachments
+      AS: files
+    ON_RESULT:
+      - IF: files.total > 0
+        SET: last_offset = ADD(files.total, -1)
+        THEN: nf2_last
+      - ELSE:
+        THEN: n1_review
+
+  nf2_last:
+    REASONING: false
+    CALL: list_attachments
+      WITH:
+        limit: 1
+        offset: last_offset
+      AS: lastf
+    THEN: nf3_pick
+
+  nf3_pick:
+    REASONING: false
+    SET:
+      att_id = lastf.attachments[0].id
+      doc_name = lastf.attachments[0].filename
+    THEN: nf4_get
+
+  nf4_get:
+    REASONING: false
+    CALL: get_attachment
+      WITH:
+        attachment_id: att_id
+      AS: got
+    ON_RESULT:
+      - IF: got.processingStatus == "completed"
+        SET: doc_text = got.content
+        THEN: n1_review
+      - ELSE:
+        SET: doc_text = "UNREADABLE"
+        THEN: n1_review
+
+  n1_review:
+    REASONING: true
+    GOAL: |
+      The user asked: "{{request}}". Draft a new agreement on Vi's paper (Vodafone Idea Limited, "Vi"), using any term sheet,
+      email or document they uploaded or pasted in this conversation for the parties and commercial facts.
+      Choose the template from the request: mutual NDA, AI partner MoU, vendor or AI services agreement, or amendment.
+      Build it from Vi's GREEN playbook positions:
+      - NDA: mutual; specific purpose; oral, written and electronic information, no marking needed; standard four exclusions, no
+      residuals; compelled disclosure with prior notice where lawful and DoT, TRAI and regulator disclosure permitted; 2-year term;
+      3-year survival, trade secrets and personal data while confidential; DPDP-compliant personal data clause and no transfer
+      outside India without Vi approval; return or destruction with certificate; injunctive relief for both; no indemnity; laws of
+      India; arbitration seated in Mumbai; no non-compete, exclusivity or standstill; no assignment without consent; no publicity.
+      - AI partner MoU: sections S1-S16 (parties, vision, distinctiveness, scope with named use cases, Vi AI Lab delivery, phasing,
+      commercial principles only, governance, data protection and residency in India with no training on Vi data, Responsible AI
+      (GRACIE), IP with background IP retained and Vi-specific outputs owned by Vi, confidentiality, publicity by mutual consent,
+      non-exclusive, 12-24 month term with 30-60 days' notice, non-binding except confidentiality, publicity, exclusivity and legal
+      provisions; Indian law, India-seated arbitration).
+      - Vendor or AI agreement: Vi MSA prevails; defined deliverables and acceptance; fixed or capped fees, 60-day payment; Vi
+      convenience termination on 30 days; Vi owns deliverables and Vi-specific outputs; Vi data used only for the services, no
+      training; data in India; breach notice within 24 hours and audit rights; GRACIE R1-R10 Responsible AI pack; sub-contracting
+      with consent; liability cap 1x annual fees with carve-outs; Indian law, Mumbai seat; exit assistance with deletion certificate.
+      Write the full agreement with numbered clauses, then list the facts marked [to be confirmed] and the approvals needed.
+      Text extracted from the most recently uploaded file ({{doc_name}}):
+      <<<
+      {{doc_text}}
+      >>>
+      If that text is "none", the user did not upload a file in this conversation: use any document text pasted in
+      their message instead. If it is "UNREADABLE", the platform could not extract the file's text: say so and ask the
+      user to paste the text or upload a text-based PDF or Word file. If there is no document text at all, say so in
+      one sentence. Never describe, summarise or review a document you cannot see.
+      End by offering: follow-up questions on this document, or say Word to download it as a .docx.
+    STEP_CONSTRAINTS:
+      - "Use only Vi playbook positions; never invent statutory references (mark any statute [verify]) and never present the draft as approved"
+      - "Never sign, send, accept or agree anything on Vi's behalf; a named Vi lawyer approves and a human signs"
+      - "Mark every commercial value you were not given as [to be confirmed] instead of inventing it"
+    MAX_TURNS: 2
+    THEN: n2_route
+
+  # The zone hands over on the user's next message: follow-ups stay with the document, Word builds a
+  # .docx, a new command goes back to the parser
+  n2_route:
+    REASONING: false
+    ON_INPUT:
+      - IF: input matches "^[^a-z]*(done|exit|thanks|thank you|that's all|thats all)([^a-z]|$)"
+        THEN: s9_end
+      - IF: input matches "(word|docx|download|as a file|document file)"
+        SET: followup = input
+        THEN: n4_doc_prepare
+      - IF: input matches "((nda|mou|vc|dp)-[0-9][0-9]|new matter|another document|different document|start over|what is due|gold label|run the eval)"
+        SET: request = input
+        THEN: s1_parse
+      - ELSE:
+        SET: followup = input
+        THEN: ngf1_list
+
+  ngf1_list:
+    REASONING: false
+    CALL: list_attachments
+      AS: files
+    ON_RESULT:
+      - IF: files.total > 0
+        SET: last_offset = ADD(files.total, -1)
+        THEN: ngf2_last
+      - ELSE:
+        THEN: n3_followup
+
+  ngf2_last:
+    REASONING: false
+    CALL: list_attachments
+      WITH:
+        limit: 1
+        offset: last_offset
+      AS: lastf
+    THEN: ngf3_pick
+
+  ngf3_pick:
+    REASONING: false
+    SET:
+      att_id = lastf.attachments[0].id
+      doc_name = lastf.attachments[0].filename
+    THEN: ngf4_get
+
+  ngf4_get:
+    REASONING: false
+    CALL: get_attachment
+      WITH:
+        attachment_id: att_id
+      AS: got
+    ON_RESULT:
+      - IF: got.processingStatus == "completed"
+        SET: doc_text = got.content
+        THEN: n3_followup
+      - ELSE:
+        SET: doc_text = "UNREADABLE"
+        THEN: n3_followup
+
+  n3_followup:
+    REASONING: true
+    GOAL: |
+      The user is following up on the document they uploaded or pasted earlier in this conversation and your
+      earlier answer. Their message: "{{followup}}".
+      Revise the draft as asked, keeping Vi's playbook positions. If the user asks for a term outside the playbook, draft it but flag it for lawyer approval and say which playbook item it departs from.
+      Text extracted from the most recently uploaded file ({{doc_name}}):
+      <<<
+      {{doc_text}}
+      >>>
+      If that text is "none", the user did not upload a file in this conversation: use any document text pasted in
+      their message instead. If it is "UNREADABLE", the platform could not extract the file's text: say so and ask the
+      user to paste the text or upload a text-based PDF or Word file. If there is no document text at all, say so in
+      one sentence. Never describe, summarise or review a document you cannot see.
+      End by asking whether anything else is needed on this document, or say Word to download it.
+    STEP_CONSTRAINTS:
+      - "Use only Vi playbook positions; never invent statutory references (mark any statute [verify]) and never present the draft as approved"
+      - "Never sign, send, accept or agree anything on Vi's behalf; a named Vi lawyer approves and a human signs"
+      - "Mark every commercial value you were not given as [to be confirmed] instead of inventing it"
+    MAX_TURNS: 2
+    THEN: n2_route
+
+  n4_doc_prepare:
+    REASONING: true
+    GOAL: |
+      The user wants a downloadable Word document ("{{followup}}"). Do not write it in your reply. Set these session
+      fields in a single update:
+      doc_title: a short title.
+      doc_md: the full document body in simple markdown: # and ## headings, plain paragraphs, - bullets, and tables
+      as | col | col | rows with a header row. Use real line breaks.
+      Write the complete agreement as it stands after any revisions: title, parties block, recitals, numbered clauses with headings, signature blocks left blank, and a final section listing [to be confirmed] items and required approvals.
+      Then reply with one short sentence: "Preparing the Word document."
+    AVAILABLE_TOOLS: [lg_audit]
+    CONTEXT_UPDATES: [doc_title, doc_md]
+    STEP_CONSTRAINTS:
+      - "Use only Vi playbook positions; never invent statutory references (mark any statute [verify]) and never present the draft as approved"
+      - "Never sign, send, accept or agree anything on Vi's behalf; a named Vi lawyer approves and a human signs"
+      - "Mark every commercial value you were not given as [to be confirmed] instead of inventing it"
+    EXIT_WHEN: always
+    MAX_TURNS: 4
+    THEN: n5_doc_build
+
+  n5_doc_build:
+    REASONING: false
+    CALL: doc_docx
+      WITH:
+        title: doc_title
+        markdown: doc_md
+        footer_note: "AI first draft on Vi paper for Vi Legal review. Not approved, not signed and not sent to any counterparty."
+      AS: udoc
+    ON_RESULT:
+      - IF: udoc.output.ok == true
+        THEN: nd1_upload
+      - ELSE:
+        THEN: n7_doc_failed
+
+  nd1_upload:
+    REASONING: false
+    CALL: upload_attachment
+      WITH:
+        filename: udoc.output.filename
+        content_base64: udoc.output.b64
+        mime_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      AS: upf
+    ON_RESULT:
+      - IF: upf.success == true
+        SET: dl_id = upf.data.attachmentId
+        THEN: nd2_link
+      - ELSE:
+        THEN: n7_doc_failed
+
+  nd2_link:
+    REASONING: false
+    CALL: get_attachment_url
+      WITH:
+        attachment_id: dl_id
+        expires_in_seconds: 3600
+      AS: lnk
+    ON_RESULT:
+      - IF: lnk.success == true
+        THEN: nd3_ready
+      - ELSE:
+        THEN: n7_doc_failed
+
+  nd3_ready:
+    REASONING: false
+    RESPOND: "{{udoc.output.message}} [Download {{udoc.output.filename}}]({{lnk.data.url}}) (the link works for about an hour; the file also stays in this conversation's files). It is an AI draft for review; nothing has been sent. Anything else on this document, or a new request?"
+    THEN: n2_route
+
+  n7_doc_failed:
+    REASONING: false
+    RESPOND: "I couldn't build the Word document this time. Ask for Word again, or I can answer in the chat."
+    THEN: n2_route
+
+  # ---- END generated document path 'n' ----
+
+  s2_help:
+    REASONING: false
+    RESPOND: "I can take a matter through the legal workflow: intake and route a request, triage an NDA, draft or review an AI partner MoU, review a vendor or AI agreement, run the execution check, register obligations, show what is due, handle a DPDP request, record an approval (authorised approvers only), or run the gold-label evaluation. You can also upload an NDA, MoU or vendor agreement with your request in the same message (for example: triage this NDA). For example: run end-to-end MOU-04. What would you like?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- W1 Intake (LG01): one matter, deduplicated, routed ----
+  w1_intake:
+    REASONING: false
+    CALL: lg01_intake
+      WITH:
+        doc_id: req.output.doc_id
+      AS: mat
+    ON_RESULT:
+      - IF: mat.output.found != true
+        THEN: s2_help
+      - IF: req.output.intent == "intake"
+        THEN: w1_audit
+      - IF: mat.output.route == "nda-triage (LG02)"
+        THEN: w2_nda
+      - IF: mat.output.route == "ai-partner-mou review mode (LG03)" OR mat.output.route == "ai-partner-mou draft mode (LG03)"
+        THEN: w2_mou
+      - IF: mat.output.route == "vendor-ai-contract-review (LG04)"
+        THEN: w2_vendor
+      - IF: mat.output.route == "execution-check (LG05)"
+        THEN: w6_execution
+      - IF: mat.output.route == "obligations-tracker (LG06)"
+        THEN: w7_obligations
+      - IF: mat.output.route == "dpdp-rights-request (LG07)"
+        THEN: p1_dpdp
+      - ELSE:
+        THEN: w1_audit
+
+  w1_audit:
+    REASONING: false
+    CALL: lg_audit
+      WITH:
+        user: user
+        disposition: "INTAKE_LOGGED"
+        object: mat.output.matter_id
+        detail: "{{mat.output.type}} {{mat.output.counterparty}} -> {{mat.output.route}}"
+      AS: audit
+    THEN: w1_say
+
+  w1_say:
+    REASONING: false
+    RESPOND: "Matter {{mat.output.matter_id}}{{#if mat.output.duplicate_of}} (existing open matter: request appended, {{mat.output.lawyer}} notified){{/if}} · Type {{mat.output.type}}{{#if mat.output.ai_flag}} (AI/ML on Vi data detected){{/if}} · Counterparty {{mat.output.counterparty}} · Vi entity {{mat.output.vi_entity}} · Route {{mat.output.route}} · Lawyer {{mat.output.lawyer}} · Missing info (asked once): {{mat.output.missing}} · {{mat.output.authority_note}}. Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- W2/W3 NDA triage (LG02) ----
+  w2_nda:
+    REASONING: false
+    CALL: lg02_nda_triage
+      WITH:
+        doc_id: req.output.doc_id
+      AS: nda
+    ON_RESULT:
+      - IF: nda.output.tier == "RED"
+        SET: disposition = "TRIAGED_RED"
+        THEN: w3_trace
+      - IF: nda.output.tier == "YELLOW"
+        SET: disposition = "TRIAGED_YELLOW"
+        THEN: w3_trace
+      - ELSE:
+        SET: disposition = "TRIAGED_GREEN"
+        THEN: w3_trace
+
+  # ---- W2/W3 AI partner MoU (LG03) ----
+  w2_mou:
+    REASONING: false
+    CALL: lg03_mou
+      WITH:
+        doc_id: req.output.doc_id
+      AS: mou
+    ON_RESULT:
+      - IF: mou.output.mode == "draft"
+        SET: disposition = "MOU_DRAFTED"
+        THEN: w3_mou_draft_obl
+      - IF: mou.output.tier == "RED"
+        SET: disposition = "REVIEWED_RED"
+        THEN: w3_trace
+      - IF: mou.output.tier == "YELLOW"
+        SET: disposition = "REVIEWED_YELLOW"
+        THEN: w3_trace
+      - ELSE:
+        SET: disposition = "REVIEWED_GREEN"
+        THEN: w3_trace
+
+  w3_mou_draft_obl:
+    REASONING: false
+    CALL: lg06_obligations
+      WITH:
+        doc_id: req.output.doc_id
+      AS: obl
+    THEN: w3_audit
+
+  # ---- W2/W3 vendor / AI agreement (LG04) ----
+  w2_vendor:
+    REASONING: false
+    CALL: lg04_vendor_review
+      WITH:
+        doc_id: req.output.doc_id
+      AS: ven
+    ON_RESULT:
+      - IF: ven.output.tier == "RED"
+        SET: disposition = "REVIEWED_RED"
+        THEN: w3_trace
+      - IF: ven.output.tier == "YELLOW"
+        SET: disposition = "REVIEWED_YELLOW"
+        THEN: w3_trace
+      - ELSE:
+        SET: disposition = "REVIEWED_GREEN"
+        THEN: w3_trace
+
+  # ---- LG-TR exact-quote check, LG-PR strip pass ----
+  w3_trace:
+    REASONING: false
+    CALL: lg_tr_verify
+      WITH:
+        doc_id: req.output.doc_id
+      AS: tr
+    THEN: w3_privilege
+
+  w3_privilege:
+    REASONING: false
+    CALL: lg_pr_strip
+      WITH:
+        doc_id: req.output.doc_id
+      AS: pr
+    THEN: w3_audit
+
+  w3_audit:
+    REASONING: false
+    CALL: lg_audit
+      WITH:
+        user: user
+        disposition: disposition
+        object: mat.output.matter_id
+        detail: "{{req.output.doc_id}} {{nda.output.tier}}{{mou.output.tier}}{{ven.output.tier}}; LG-TR verified {{tr.output.verified}}, unverified {{tr.output.unverified}}"
+      AS: audit
+    ON_RESULT:
+      - IF: mat.output.route == "nda-triage (LG02)"
+        THEN: w3_say_nda
+      - IF: mou.output.mode == "draft"
+        THEN: w3_say_draft
+      - IF: mat.output.route == "vendor-ai-contract-review (LG04)"
+        THEN: w3_say_vendor
+      - ELSE:
+        THEN: w3_say_mou
+
+  w3_say_nda:
+    REASONING: false
+    RESPOND: |
+      {{mat.output.matter_id}} · {{req.output.doc_id}} NDA triage · Overall {{nda.output.tier}} · {{nda.output.playbook}}.
+
+      Triage (# · Item · Clause · Quote · Playbook position · Tier · Proposed): {{nda.output.table}}
+
+      Hidden terms: {{nda.output.hidden}}.{{#if nda.output.ai_flag}} Intake note: AI/ML use of Vi data indicated; route the downstream engagement as an AI vendor matter.{{/if}}
+      Traceability (LG-TR): {{tr.output.verified}} quotes verified, check manually: {{tr.output.check_manually}}.
+      Business summary: {{nda.output.business_summary}}
+      Lawyer note: {{nda.output.lawyer_note}}
+      Counterparty-facing text (LG-PR, internal material stripped): {{pr.output.text}}
+
+      Next gate: {{#if nda.output.escalate}}senior counsel / GC confirms the RED tier (W2) and approves (W5).{{else}}Legal counsel confirms and approves (W5).{{/if}} Anything else?
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  w3_say_mou:
+    REASONING: false
+    RESPOND: |
+      {{mat.output.matter_id}} · {{req.output.doc_id}} partner markup review · Overall {{mou.output.tier}}{{#if mou.output.conditional_note}} ({{mou.output.conditional_note}}){{/if}} · {{mou.output.playbook}}.
+
+      Issues (# · Section · Partner change · Vi position · Tier · Recommend · Proposed): {{mou.output.table}}
+
+      Note to Vi Legal: {{mou.output.note_to_legal}}
+      Traceability (LG-TR): {{tr.output.verified}} quotes verified, check manually: {{tr.output.check_manually}}.
+      Counterparty-facing response (LG-PR): {{pr.output.text}}
+
+      Route: {{mou.output.route}}. Next gate: lawyer confirms tiers (W2), then approval (W5). Anything else?
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  w3_say_vendor:
+    REASONING: false
+    RESPOND: |
+      {{mat.output.matter_id}} · {{req.output.doc_id}} vendor / AI agreement review · Overall {{ven.output.tier}} · AI applicability: {{#if ven.output.ai_applicable}}YES{{else}}NO{{/if}} (evidence: {{ven.output.ai_evidence}}) · {{ven.output.playbook}}.
+
+      Review (# · Family · Clause · Quote · Vi position · Tier · Proposed): {{ven.output.table}}
+
+      GRACIE R1-R10: {{ven.output.gracie}}. Gaps: {{ven.output.gaps}}.
+      Traceability (LG-TR): {{tr.output.verified}} quotes verified, check manually: {{tr.output.check_manually}}.
+      Response note to vendor (LG-PR, clean): {{pr.output.text}}
+      Business summary: {{ven.output.business_summary}}
+
+      Route: {{ven.output.route}}. Anything else?
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  w3_say_draft:
+    REASONING: false
+    RESPOND: |
+      {{mat.output.matter_id}} · {{req.output.doc_id}} AI partner MoU first draft · {{mou.output.playbook}}. AI draft for Vi Legal review.
+
+      {{mou.output.draft}}
+
+      Binding clauses: {{mou.output.binding}}.
+      Cover note to Vi Legal: {{mou.output.note_to_legal}}
+      Obligations to register on signature: {{obl.output.entries}}
+
+      Next gate: {{mou.output.route}} review (W3), then approval (W5). Anything else?
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- W5 Approve: authorised approver only; then W6 execution check and W7 register ----
+  w5_approve:
+    REASONING: false
+    CALL: lg_approve
+      WITH:
+        doc_id: req.output.doc_id
+        user: user
+      AS: appr
+    ON_RESULT:
+      - IF: appr.output.approved == true
+        SET:
+          disposition = "APPROVED"
+          approval_ref = appr.output.approval_ref
+        THEN: w6_execution
+      - ELSE:
+        SET: disposition = "APPROVAL_REFUSED"
+        THEN: w5_audit
+
+  w5_audit:
+    REASONING: false
+    CALL: lg_audit
+      WITH:
+        user: user
+        disposition: disposition
+        object: req.output.doc_id
+        detail: appr.output.message
+      AS: audit
+    THEN: w5_say
+
+  w5_say:
+    REASONING: false
+    RESPOND: "{{appr.output.message}} Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  w6_execution:
+    REASONING: false
+    CALL: lg05_execution_check
+      WITH:
+        doc_id: req.output.doc_id
+        approval_ref: approval_ref
+      AS: exe
+    ON_RESULT:
+      - IF: exe.output.result == "FAIL"
+        SET: disposition = "EXECUTION_FAIL"
+        THEN: w6_audit
+      - IF: exe.output.result == "NOT_READY"
+        THEN: w6_audit
+      - ELSE:
+        SET: disposition = "EXECUTION_CHECKED"
+        THEN: w6_audit
+
+  w6_audit:
+    REASONING: false
+    CALL: lg_audit
+      WITH:
+        user: user
+        disposition: disposition
+        object: req.output.doc_id
+        detail: "{{exe.output.result}}: {{exe.output.exceptions}}"
+      AS: audit
+    THEN: w6_say
+
+  w6_say:
+    REASONING: false
+    RESPOND: |
+      {{#if appr.output.approved}}{{appr.output.message}} {{appr.output.pending}}
+
+      {{/if}}W6 execution check for {{req.output.doc_id}}: {{exe.output.result}}. {{exe.output.checks}}
+
+      Exceptions: {{exe.output.exceptions}}. Clean execution copy: {{#if exe.output.clean_copy}}prepared{{else}}not prepared until X1, X2, X7 and X8 pass{{/if}}. {{exe.output.envelope}} Anything else?
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- W7 Register obligations (LG06) and W8 watcher ----
+  w7_obligations:
+    REASONING: false
+    CALL: lg06_obligations
+      WITH:
+        doc_id: req.output.doc_id
+      AS: obl
+    SET:
+      disposition = "OBLIGATIONS_REGISTERED"
+    THEN: w7_audit
+
+  w7_audit:
+    REASONING: false
+    CALL: lg_audit
+      WITH:
+        user: user
+        disposition: disposition
+        object: req.output.doc_id
+        detail: "{{obl.output.count}} entries; notice deadline {{obl.output.notice_deadline}}"
+      AS: audit
+    THEN: w7_say
+
+  w7_say:
+    REASONING: false
+    RESPOND: "Register entries for {{req.output.doc_id}} ({{obl.output.count}}): {{obl.output.entries}}. {{#if obl.output.auto_renewal}}Auto-renewal flagged: notice deadline {{obl.output.notice_deadline}}. {{/if}}Confirmation requests sent to the owners; unconfirmed after 5 working days they are reminded, after 10 the lawyer is told. Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  w8_watch:
+    REASONING: false
+    CALL: lg06_watch
+      WITH:
+        as_of: req.output.as_of
+      AS: wat
+    SET:
+      disposition = "WATCH_DIGEST"
+    THEN: w8_audit
+
+  w8_audit:
+    REASONING: false
+    CALL: lg_audit
+      WITH:
+        user: user
+        disposition: disposition
+        object: req.output.as_of
+        detail: "{{wat.output.count}} items"
+      AS: audit
+    THEN: w8_say
+
+  w8_say:
+    REASONING: false
+    RESPOND: "Obligations digest as of {{req.output.as_of}} ({{wat.output.count}} items; Contract | Item | Clause | Due | Days | Owner | Status): {{wat.output.digest}}. No notice is sent to any counterparty. Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- DPDP lane (LG07) ----
+  p1_dpdp:
+    REASONING: false
+    CALL: lg07_dpdp
+      WITH:
+        doc_id: req.output.doc_id
+      AS: dp
+    ON_RESULT:
+      - IF: dp.output.verification == "failed"
+        SET: disposition = "DPDP_VERIFICATION_FAILED"
+        THEN: p2_audit
+      - IF: dp.output.escalate == true
+        SET: disposition = "DPDP_ESCALATED"
+        THEN: p2_audit
+      - ELSE:
+        SET: disposition = "DPDP_LOGGED"
+        THEN: p2_audit
+
+  p2_audit:
+    REASONING: false
+    CALL: lg_audit
+      WITH:
+        user: user
+        disposition: disposition
+        object: dp.output.request_ref
+        detail: "{{dp.output.right}} {{dp.output.verification}} {{dp.output.escalations}}"
+      AS: audit
+    THEN: p3_say
+
+  p3_say:
+    REASONING: false
+    RESPOND: |
+      DPDP request {{dp.output.request_ref}} logged and acknowledged. Right: {{dp.output.right}}. Verification: {{dp.output.verification}}{{#if dp.output.disclose}}{{else}}; nothing is disclosed until verification passes{{/if}}. Escalation: {{dp.output.escalations}}. Data-owner tasks: {{dp.output.tasks}}.{{#if dp.output.flag_legal}} Retention conflict flagged to Legal; partial action expected.{{/if}} {{dp.output.l7}}.
+
+      Draft response for DPO approval: {{dp.output.draft_response}} Anything else?
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- Gold-label evaluation ----
+  g1_eval:
+    REASONING: false
+    CALL: lg_eval
+      WITH:
+        scope: "all"
+      AS: ev
+    SET:
+      disposition = "EVAL_RUN"
+    THEN: g2_audit
+
+  g2_audit:
+    REASONING: false
+    CALL: lg_audit
+      WITH:
+        user: user
+        disposition: disposition
+        object: "gold_labels"
+        detail: "{{ev.output.passed}}/{{ev.output.total}}"
+      AS: audit
+    THEN: g3_say
+
+  g3_say:
+    REASONING: false
+    RESPOND: "Gold-label evaluation on the synthetic fixtures: {{ev.output.passed}} of {{ev.output.total}} items pass ({{ev.output.by_skill}}). Critical misses: {{ev.output.critical_misses}}. Failures: {{ev.output.failures}}. Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- Hard boundary: never sign, send or accept ----
+  h1_block:
+    REASONING: false
+    CALL: lg_audit
+      WITH:
+        user: user
+        disposition: "POLICY_BLOCKED"
+        object: "policy:{{req.output.action}}"
+        detail: "Blocked: {{req.output.action}}"
+      AS: audit
+    SET:
+      disposition = "POLICY_BLOCKED"
+    THEN: h1_say
+
+  h1_say:
+    REASONING: false
+    RESPOND: "I can't {{req.output.action}}. No agent signs, sends, accepts or agrees anything on Vi's behalf; the lawyer or authorised signatory does that after the approvals are recorded. Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  s9_end:
+    REASONING: false
+    RESPOND: "Closing the session. Every run and decision is in the legal audit trail."
+    THEN: COMPLETE

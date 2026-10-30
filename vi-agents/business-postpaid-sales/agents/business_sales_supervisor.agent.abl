@@ -1,0 +1,449 @@
+AGENT: Business_Sales_Supervisor
+VERSION: "1.0"
+GOAL: |
+  Run the Vi Business Postpaid sales outcall for an inbound business lead (BPS01-BPS06): de-duplicate and
+  pass the DND/DLT/calling-window gate, disclose AI and recording, check it is a good time, confirm the
+  authorised person, qualify the company and requirement, explain one best-fit plan and one alternative from
+  the approved catalogue, answer objections only from approved knowledge, then send a secure document link
+  with the entity-specific checklist, book a field visit the scheduler confirms, or hot-transfer to a
+  sales advisor. Record the disposition. This design needs a UC ID, owner, CLI decision and G0 scorecard.
+
+PERSONA: |
+  Vi Business's virtual assistant on a sales call. Professional, consultative and concise. Respects the
+  customer's time. Never hard-codes or invents a price, data amount, benefit, competitor claim or visit time;
+  every figure comes from the catalogue or scheduler, word for word.
+
+LIMITATIONS:
+  - "Never collects PAN, Aadhaar, GST or photos in the conversation; documents go through the secure link"
+  - "Never promises a field visit time the scheduler did not confirm"
+  - "Never makes a competitor comparison without approved, current substantiation"
+  - "Cannot offer discounts; pricing questions beyond the catalogue go to a sales advisor"
+
+EXECUTION:
+  session_idle_timeout: 120000
+  voice_latency_target: 800
+  tool_timeout: 8000
+
+TOOLS:
+  #include-tools: bps01_get_lead, bps01_compliance_gate, a06_record_opt_out, bps03_get_plan_options, a10_kb_answer, bps04_send_document_link, bps05_book_appointment, bps01_schedule_callback, bps06_create_sales_handoff, a11_write_post_call
+
+MEMORY:
+  session:
+    - bad_input
+    - msisdn
+    - lead
+    - gate
+    - lines
+    - connection_type
+    - entity
+    - entity_label
+    - plans
+    - kb
+    - kb_topic
+    - objections
+    - docs
+    - appointment
+    - appointment_preference
+    - callback
+    - callback_preference
+    - handoff
+    - handoff_reason
+    - disposition
+    - outcome
+    - post_call
+    - opt_out
+
+INTENTS:
+  human_escalation: "Customer asks to speak to a person, a sales advisor or a relationship manager."
+
+ESCALATE:
+  triggers:
+    - WHEN: user.sentiment == "very_negative" OR user.sentiment == "frustrated"
+      REASON: "Negative sentiment persisted"
+      PRIORITY: high
+      TAGS: [business_sales, sentiment]
+  context_for_human:
+    - lead
+    - lines
+    - connection_type
+    - entity
+    - plans
+    - objections
+    - docs
+    - handoff_reason
+    - conversation_transcript
+  routing:
+    queue: "BUSINESS_SALES_DESK"
+    skill_tags: [vi_business, postpaid, sales]
+
+FLOW:
+  global_digressions:
+    - INTENT: opt_out_request
+      KEYWORDS: ["stop calling", "don't call", "do not call", "opt out", "unsubscribe", "remove my number"]
+      GOTO: x4_opt_out
+    - INTENT: human_request
+      KEYWORDS: ["speak to a person", "talk to a person", "talk to someone", "real person", "human agent", "speak to an agent", "talk to an agent", "sales advisor", "relationship manager", "talk to your manager"]
+      GOTO: x1_hot_transfer
+
+  # ---- BPS01 Lead and compliance ----
+  s0_trigger:
+    REASONING: false
+    SET:
+      msisdn = FIRST_NON_EMPTY(session.messageMetadata.msisdn, REGEX_EXTRACT(input, "msisdn=(\\d{10})", 1), customer_id, "none")
+      objections = "none"
+      disposition = "IN_PROGRESS"
+    THEN: s0_need_number
+
+
+  # ---- No caller ID (for example a Studio test chat): ask for the number before the call starts ----
+  s0_need_number:
+    REASONING: false
+    WHEN: msisdn == "none"
+    RESPOND: "Test chat: no caller number was passed to this session. Please type the 10-digit mobile number of the test customer (for example 9880000001) to start the call."
+    ON_INPUT:
+      - IF: input matches "(^|[^0-9])[0-9]{10}([^0-9]|$)"
+        SET: msisdn = REGEX_EXTRACT(input, "(?:^|[^0-9])([0-9]{10})(?:[^0-9]|$)", 1)
+        THEN: s0_lead
+      - ELSE:
+        SET: bad_input = input
+        THEN: s0_need_number_retry
+    THEN: s0_lead
+
+  s0_need_number_retry:
+    REASONING: false
+    RESPOND: "I received: {{bad_input}}. That is not a 10-digit mobile number. Please type exactly 10 digits, with no spaces or country code (for example 9880000001)."
+    ON_INPUT:
+      - IF: input matches "(^|[^0-9])[0-9]{10}([^0-9]|$)"
+        SET: msisdn = REGEX_EXTRACT(input, "(?:^|[^0-9])([0-9]{10})(?:[^0-9]|$)", 1)
+        THEN: s0_lead
+      - ELSE:
+        SET: bad_input = input
+        THEN: s0_need_number_retry
+    THEN: s0_lead
+
+  s0_lead:
+    REASONING: false
+    CALL: bps01_get_lead
+      WITH:
+        msisdn: msisdn
+      AS: lead
+    ON_RESULT:
+      - IF: lead.output.callable == true
+        SET:
+          lines = lead.output.requested_lines
+          entity = lead.output.entity
+        THEN: s0_compliance
+      - ELSE:
+        SET:
+          disposition = "NOT_ELIGIBLE"
+          outcome = "lead_not_callable"
+        THEN: x0_no_call
+
+  s0_compliance:
+    REASONING: false
+    CALL: bps01_compliance_gate
+      WITH:
+        msisdn: msisdn
+      AS: gate
+    ON_RESULT:
+      - IF: gate.output.allowed == true
+        THEN: s1_disclose
+      - ELSE:
+        SET:
+          disposition = "OPT_OUT"
+          outcome = FIRST_NON_EMPTY(gate.output.stop_reason, "compliance_gate_unavailable")
+        THEN: x0_no_call
+
+  # ---- Disclosure and polite time check ----
+  s1_disclose:
+    REASONING: false
+    RESPOND: "Good day, this is Vi Business's virtual assistant. I am an AI, and this call is recorded for quality and training. I'm calling about your request for Vi Business Postpaid connections. Is this a good time for a quick discussion?"
+    ON_INPUT:
+      - IF: input matches "(^|[^a-z])(no|not now|busy|later|in a meeting|call back|callback)([^a-z]|$)"
+        THEN: s5_callback_ask
+      - ELSE:
+        THEN: s2_authorised
+
+  # ---- Confirm the authorised person ----
+  s2_authorised:
+    REASONING: false
+    MAX_ATTEMPTS: 2
+    ON_EXHAUSTED: x2_fallback
+    RESPOND: "Thank you. Am I speaking with {{lead.output.contact}}, and are you authorised to decide on connections for {{lead.output.company}}?"
+    ON_INPUT:
+      - IF: input matches "(^|[^a-z])(yes|yeah|yep|speaking|i am|i'm the owner|owner|director|partner|haan|ji)([^a-z]|$)"
+        THEN: s3_lines
+      - IF: input matches "(not authorised|not the owner|my boss|someone else|not me|wrong number)"
+        SET:
+          disposition = "CALLBACK"
+          outcome = "decision_maker_not_on_call"
+        THEN: s5_callback_ask
+      - ELSE:
+        RESPOND: "Sorry, am I speaking with {{lead.output.contact}} from {{lead.output.company}}? Please say yes or no."
+        THEN: s2_authorised
+
+  # ---- BPS02 Business qualification ----
+  s3_lines:
+    REASONING: false
+    RESPOND: "As per our records, you've asked for {{lead.output.requested_lines}} Vi Business Postpaid connections. Is that still right, or would you like a different number?"
+    ON_INPUT:
+      - IF: input matches "[0-9]+"
+        SET: lines = TO_NUMBER(REGEX_EXTRACT(input, "([0-9]+)", 1))
+        THEN: s3_connection_type
+      - ELSE:
+        THEN: s3_connection_type
+
+  s3_connection_type:
+    REASONING: false
+    RESPOND: "Will these be new numbers, or would you like to port existing numbers to Vi?"
+    ON_INPUT:
+      - IF: input matches "(port|existing|move our|bring our|same numbers)"
+        SET: connection_type = "port"
+        THEN: s3_entity
+      - IF: input matches "(both|mix|some)"
+        SET: connection_type = "mixed"
+        THEN: s3_entity
+      - ELSE:
+        SET: connection_type = "new"
+        THEN: s3_entity
+
+  s3_entity:
+    REASONING: false
+    RESPOND: "And is {{lead.output.company}} a private limited company, an LLP, a partnership or a proprietorship?"
+    ON_INPUT:
+      - IF: input matches "(private limited|pvt|limited company|ltd)"
+        SET:
+          entity = "pvt_ltd"
+          entity_label = "private limited company"
+        THEN: s5_plans
+      - IF: input matches "(llp|limited liability)"
+        SET:
+          entity = "llp"
+          entity_label = "LLP"
+        THEN: s5_plans
+      - IF: input matches "(partnership|partners)"
+        SET:
+          entity = "partnership"
+          entity_label = "partnership firm"
+        THEN: s5_plans
+      - IF: input matches "(proprietor|sole|my own business|proprietorship)"
+        SET:
+          entity = "proprietorship"
+          entity_label = "proprietorship"
+        THEN: s5_plans
+      - IF: input matches "(individual|freelance|personal|not registered|no company)"
+        SET:
+          disposition = "NOT_ELIGIBLE"
+          outcome = "not_a_registered_business"
+        THEN: s5_not_eligible
+      - ELSE:
+        SET: entity_label = "business"
+        THEN: s5_plans
+
+  # ---- BPS03 Plan and value: one best fit and one alternative, from the catalogue ----
+  s5_plans:
+    REASONING: false
+    CALL: bps03_get_plan_options
+      WITH:
+        lines: lines
+      AS: plans
+    THEN: s5_present
+
+  s5_present:
+    REASONING: false
+    MAX_ATTEMPTS: 3
+    ON_EXHAUSTED: x1_hot_transfer
+    RESPOND: "For {{lines}} connections, I'd recommend {{plans.output.best_name}} at {{plans.output.best_price}}, with {{plans.output.best_benefit}}. Another option is {{plans.output.alt_name}} at {{plans.output.alt_price}}, with {{plans.output.alt_benefit}}. All connections come on a single GST-compliant bill. Would you like to go ahead?"
+    #include-snippet: decision_routes
+
+  s5_objection_answer:
+    REASONING: false
+    CALL: a10_kb_answer
+      WITH:
+        topic: kb_topic
+      AS: kb
+    THEN: s5_objection_say
+
+  s5_objection_say:
+    REASONING: false
+    RESPOND: "{{kb.output.answer}} Would you like to go ahead with {{plans.output.best_name}}?"
+    #include-snippet: decision_routes
+
+  s5_not_eligible:
+    REASONING: false
+    RESPOND: "Thank you. Vi Business Postpaid is for registered businesses, so I'm not able to set this up for an individual. Our retail postpaid plans are available in the Vi app. Thank you for your time."
+    THEN: s9_write
+
+  # ---- BPS04/BPS05 Next step: secure document link or a scheduler-confirmed visit ----
+  s6_next_step:
+    REASONING: false
+    RESPOND: "Great. To activate, we'll need your company documents. Shall I send you a secure link with the checklist for a {{entity_label}}, or would you prefer our field team to visit your office?"
+    ON_INPUT:
+      - IF: input matches "(visit|field|come|office|in person|meet)"
+        THEN: s6_visit_ask
+      - IF: input matches "(advisor|person|talk to someone)"
+        THEN: x1_hot_transfer
+      - ELSE:
+        THEN: s6_send_docs
+
+  s6_send_docs:
+    REASONING: false
+    CALL: bps04_send_document_link
+      WITH:
+        lead_id: lead.output.lead_id
+        entity: entity
+      AS: docs
+    ON_RESULT:
+      - IF: docs.output.sent == true
+        SET:
+          disposition = "DOCUMENT_LINK_SENT"
+          outcome = "document_link_sent"
+        THEN: s7_docs_sent
+      - ELSE:
+        SET:
+          handoff_reason = "Entity type unclear for the document checklist"
+          handoff_next_step = "Confirm entity type and send the document checklist"
+        THEN: x1_handoff
+
+  s6_visit_ask:
+    REASONING: false
+    RESPOND: "Sure. Which works better for the visit, a morning or an afternoon?"
+    ON_INPUT:
+      - ELSE:
+        SET: appointment_preference = input
+        THEN: s6_book_visit
+
+  s6_book_visit:
+    REASONING: false
+    CALL: bps05_book_appointment
+      WITH:
+        lead_id: lead.output.lead_id
+        preference: appointment_preference
+      AS: appointment
+    ON_RESULT:
+      - IF: appointment.output.booked == true
+        SET:
+          disposition = "APPOINTMENT_BOOKED"
+          outcome = "field_visit_booked"
+        THEN: s7_visit_booked
+      - ELSE:
+        SET:
+          handoff_reason = "No visit slot available"
+          handoff_next_step = "Arrange the field visit"
+        THEN: x1_handoff
+
+  # ---- Callback ----
+  s5_callback_ask:
+    REASONING: false
+    RESPOND: "No problem. When would be a good time to call you back?"
+    ON_INPUT:
+      - ELSE:
+        SET: callback_preference = input
+        THEN: s5_callback_book
+
+  s5_callback_book:
+    REASONING: false
+    CALL: bps01_schedule_callback
+      WITH:
+        lead_id: lead.output.lead_id
+        preference: callback_preference
+      AS: callback
+    SET:
+      disposition = "CALLBACK"
+      outcome = "callback_scheduled"
+    THEN: s5_callback_say
+
+  s5_callback_say:
+    REASONING: false
+    RESPOND: "Done. We'll call you back {{callback.output.slot}}. Thank you."
+    THEN: s9_write
+
+  s5_not_interested:
+    REASONING: false
+    SET:
+      disposition = "NOT_INTERESTED"
+      outcome = "declined"
+    RESPOND: "Understood, thank you for your time. If you'd like to revisit it, just reply to our SMS and a Vi Business advisor will call you."
+    THEN: s9_write
+
+  # ---- Confirmation ----
+  s7_docs_sent:
+    REASONING: false
+    RESPOND: "Done. I've sent a secure link to this number. For a {{entity_label}}, please upload: {{docs.output.checklist}}. Please don't share these documents on a call or in chat. A Vi Business advisor will confirm once they're verified. Thank you."
+    THEN: s9_write
+
+  s7_visit_booked:
+    REASONING: false
+    RESPOND: "Done. Our field team will visit {{appointment.output.slot}}, reference {{appointment.output.appointment_ref}}. Please keep the documents for a {{entity_label}} ready. Thank you."
+    THEN: s9_write
+
+  # ---- Disposition (A11) ----
+  # ---- Pre-call check stopped the contact: in a live campaign nobody is dialled; in a chat, say why ----
+  x0_no_call:
+    REASONING: false
+    RESPOND: "No call placed. The pre-call check stopped this contact (outcome {{disposition}}). In a live campaign the customer is not dialled and hears nothing; the outcome is recorded. In this test chat, 9880000001 is a customer who can be called."
+    THEN: s9_write
+
+  s9_write:
+    REASONING: false
+    CALL: a11_write_post_call
+      WITH:
+        msisdn: msisdn
+        disposition: disposition
+        summary: "Vi Business sales call for {{lead.output.company}} ({{lead.output.lead_id}}). {{lines}} connections, {{connection_type}}, {{entity}}. Best fit {{plans.output.best_id}}, alternative {{plans.output.alt_id}}. Objections: {{objections}}. Outcome {{outcome}}."
+        outcome: outcome
+      AS: post_call
+    THEN: COMPLETE
+
+  # ---- BPS06 Human sales handoff ----
+  x1_hot_transfer:
+    REASONING: false
+    SET:
+      handoff_reason = "Customer wants to speak to a sales advisor"
+    THEN: x1_handoff
+
+  x1_handoff:
+    REASONING: false
+    CALL: bps06_create_sales_handoff
+      WITH:
+        lead_id: lead.output.lead_id
+        reason: handoff_reason
+        requirement: "{{lines}} connections, {{connection_type}}, {{entity}}"
+        plan_discussed: "{{plans.output.best_id}} and {{plans.output.alt_id}}"
+        objections: objections
+      AS: handoff
+    SET:
+      disposition = "HOT_TRANSFERRED"
+      outcome = "hot_transfer"
+    RESPOND: "I'm connecting you to a Vi Business sales advisor now, who will have your requirement and the plans we discussed. Please stay on the line."
+    THEN: x1_post_call
+
+  x1_post_call:
+    REASONING: false
+    CALL: a11_write_post_call
+      WITH:
+        msisdn: msisdn
+        disposition: disposition
+        summary: "Vi Business sales call hot-transferred: {{handoff_reason}}. Requirement {{lines}} connections, {{entity}}."
+        outcome: "hot_transfer"
+      AS: post_call
+    THEN: ESCALATE with REASON: "Vi Business sales hot transfer"
+
+  x2_fallback:
+    REASONING: false
+    SET:
+      handoff_reason = "Clarification failed twice"
+    THEN: x1_handoff
+
+  x4_opt_out:
+    REASONING: false
+    CALL: a06_record_opt_out
+      WITH:
+        msisdn: msisdn
+        campaign: "VI_BUSINESS_POSTPAID_SALES"
+      AS: opt_out
+    SET:
+      disposition = "OPT_OUT"
+      outcome = "opted_out"
+    RESPOND: "Understood. I've recorded that you don't want these calls, and we won't call you about this again. Goodbye."
+    THEN: s9_write

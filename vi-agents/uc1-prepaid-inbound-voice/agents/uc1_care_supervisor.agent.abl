@@ -1,0 +1,683 @@
+AGENT: UC1_Care_Supervisor
+VERSION: "1.0"
+GOAL: |
+  Resolve prepaid inbound care calls end to end (S0-S9): disclose AI and recording, load the 360 context,
+  understand the request with at most two clarifications, and resolve it with the right specialist -
+  A12 Recharge & Billing, A13 Plans & Data, A14 VAS & Complaints - or approved knowledge (A10). Require
+  consent and OTP before any money, plan, SIM or VAS change, read back every result, offer more help,
+  take CSAT and write the post-call record. Warm-transfer on request, vulnerability, persistent negative
+  sentiment or repeated system failure.
+
+PERSONA: |
+  Vi's virtual assistant on a care call. Warm, quick and plain-spoken: one idea per sentence and one
+  question at a time. Reads prices, balances and policies exactly as tools return them and never invents
+  a tariff.
+
+LIMITATIONS:
+  - "Never states a tariff, balance or policy that a tool did not return"
+  - "Needs explicit consent and a verified OTP for any money, plan, SIM or VAS change"
+  - "Cannot take card, UPI or Aadhaar details on the call; payments go through a secure link"
+
+EXECUTION:
+  session_idle_timeout: 120000
+  voice_latency_target: 800
+  tool_timeout: 8000
+
+TOOLS:
+  #include-tools: a03_get_customer_360, a12_get_recent_charges, a12_send_recharge_link, a13_get_plans, a13_buy_data_pack, a14_list_vas, a14_deactivate_vas, a14_network_status, a14_raise_complaint, a10_kb_answer, a04_send_otp, a04_verify_otp, a08_record_consent, a11_record_csat, a09_create_handoff, a11_write_post_call
+
+MEMORY:
+  session:
+    - bad_input
+    - msisdn
+    - ctx
+    - intent
+    - clarify_count
+    - plans
+    - charges
+    - vas
+    - vas_sel_id
+    - vas_sel_name
+    - vas_sel_price
+    - net
+    - complaint
+    - kb
+    - kb_topic
+    - link
+    - consent
+    - otp
+    - otp_said
+    - otp_check
+    - otp_attempts
+    - otp_ref_used
+    - pending_action
+    - idem_key
+    - purchase
+    - deact
+    - csat_score
+    - csat
+    - resolved_count
+    - disposition
+    - outcome
+    - handoff_reason
+    - handoff_next_step
+    - handoff
+    - post_call
+    - spoken_language
+    - stated_request
+
+INTENTS:
+  human_escalation: "Caller asks to speak to a person, an agent, an advisor or customer care."
+
+ESCALATE:
+  triggers:
+    - WHEN: user.sentiment == "very_negative" OR user.sentiment == "frustrated"
+      REASON: "Negative sentiment persisted"
+      PRIORITY: high
+      TAGS: [uc1, care, sentiment]
+  context_for_human:
+    - msisdn
+    - ctx
+    - intent
+    - stated_request
+    - pending_action
+    - handoff_reason
+    - handoff_next_step
+    - conversation_transcript
+  routing:
+    queue: "CARE_DESK"
+    skill_tags: [prepaid, care]
+
+FLOW:
+  global_digressions:
+    - INTENT: human_request
+      KEYWORDS: ["speak to a person", "talk to a person", "talk to someone", "real person", "human agent", "speak to an agent", "talk to an agent", "speak to an advisor", "talk to an advisor", "connect me to an advisor", "agent se baat"]
+      GOTO: x1_customer_request
+    - INTENT: vulnerability_cue
+      KEYWORDS: ["in hospital", "emergency", "accident", "passed away", "bereavement", "i am disabled", "can't hear you properly", "elderly parent", "harm myself"]
+      GOTO: x1_vulnerable
+
+  # ---- S0 Care call: SIP/CLI/circle from Vi Network via Sarvam ----
+  s0_trigger:
+    REASONING: false
+    SET:
+      msisdn = FIRST_NON_EMPTY(session.messageMetadata.msisdn, REGEX_EXTRACT(input, "msisdn=(\\d{10})", 1), customer_id, "none")
+      clarify_count = 0
+      otp_attempts = 0
+      resolved_count = 0
+      disposition = "IN_PROGRESS"
+      outcome = "in_progress"
+      intent = "none"
+      csat_score = "none"
+    THEN: s0_need_number
+
+  # ---- S1 Disclose and language ----
+
+  # ---- No caller ID (for example a Studio test chat): ask for the number before the call starts ----
+  s0_need_number:
+    REASONING: false
+    WHEN: msisdn == "none"
+    RESPOND: "Test chat: no caller number was passed to this session. Please type the 10-digit mobile number of the test customer (for example 9830000001) to start the call."
+    ON_INPUT:
+      - IF: input matches "(^|[^0-9])[0-9]{10}([^0-9]|$)"
+        SET: msisdn = REGEX_EXTRACT(input, "(?:^|[^0-9])([0-9]{10})(?:[^0-9]|$)", 1)
+        THEN: s1_disclose
+      - ELSE:
+        SET: bad_input = input
+        THEN: s0_need_number_retry
+    THEN: s1_disclose
+
+  s0_need_number_retry:
+    REASONING: false
+    RESPOND: "I received: {{bad_input}}. That is not a 10-digit mobile number. Please type exactly 10 digits, with no spaces or country code (for example 9830000001)."
+    ON_INPUT:
+      - IF: input matches "(^|[^0-9])[0-9]{10}([^0-9]|$)"
+        SET: msisdn = REGEX_EXTRACT(input, "(?:^|[^0-9])([0-9]{10})(?:[^0-9]|$)", 1)
+        THEN: s1_disclose
+      - ELSE:
+        SET: bad_input = input
+        THEN: s0_need_number_retry
+    THEN: s1_disclose
+
+  s1_disclose:
+    REASONING: false
+    RESPOND: "Namaste, welcome to Vi. I'm Vi's virtual assistant, an AI, and this call is recorded for quality and training. Would you like to continue in English or Hindi?"
+    ON_INPUT:
+      - IF: input matches "(hindi|हिंदी|hindee)"
+        SET: spoken_language = "hi"
+        THEN: s3_load_context
+      - ELSE:
+        SET: spoken_language = "en"
+        THEN: s3_load_context
+
+  # ---- S2/S3 CLI-verified caller; load 360 context (A03) ----
+  s3_load_context:
+    REASONING: false
+    CALL: a03_get_customer_360
+      WITH:
+        msisdn: msisdn
+      AS: ctx
+    ON_RESULT:
+      - IF: ctx.output.found == true
+        THEN: s4_ask
+      - ELSE:
+        SET:
+          handoff_reason = "Caller's number not found"
+          handoff_next_step = "Identify the caller and resolve the request"
+          disposition = "HANDOFF_SYSTEM_FAILURE"
+        THEN: x1_handoff
+
+  # ---- S4 Discover intent (A05): keywords first, then model classification, max two clarifications ----
+  s4_ask:
+    REASONING: false
+    RESPOND: "Thanks, {{ctx.output.first_name}}. How can I help you today?"
+    #include-snippet: intent_routes
+
+  s4_ask_again:
+    REASONING: false
+    RESPOND: "Sure. What else can I help you with?"
+    #include-snippet: intent_routes
+
+  s4_clarify:
+    REASONING: false
+    MAX_ATTEMPTS: 2
+    ON_EXHAUSTED: x2_fallback
+    RESPOND: "Sorry about that. Is it about your balance, a recharge, data, subscriptions, the network, or your SIM?"
+    #include-snippet: intent_routes
+
+  # ---- S5 A12 Recharge & Billing: balance and validity ----
+  s5_balance:
+    REASONING: false
+    SET:
+      resolved_count = ADD(resolved_count, 1)
+      outcome = "balance_given"
+    RESPOND: "Your main balance is {{ctx.output.balance}}, and your {{ctx.output.plan}} plan is valid until {{ctx.output.validity}}. You have {{ctx.output.data_left}} left. Is there anything else I can help you with?"
+    #include-snippet: anything_else_routes
+
+  s5_charges:
+    REASONING: false
+    CALL: a12_get_recent_charges
+      WITH:
+        msisdn: msisdn
+      AS: charges
+    THEN: s5_charges_say
+
+  s5_charges_say:
+    REASONING: false
+    RESPOND: "Your recent deductions were {{charges.output.charge_1}}{{#if charges.output.charge_2}}, and {{charges.output.charge_2}}{{/if}}. Would you like to stop any of these subscriptions?"
+    ON_INPUT:
+      - IF: input matches "(^|[^a-z])(yes|yeah|yep|stop|cancel|deactivate|haan|ha|ji|band)([^a-z]|$)"
+        THEN: s5_vas
+      - ELSE:
+        SET:
+          resolved_count = ADD(resolved_count, 1)
+          outcome = "charges_explained"
+        THEN: s7_more
+
+  # ---- S5 A13 Plans & Data ----
+  s5_recharge:
+    REASONING: false
+    CALL: a13_get_plans
+      WITH:
+        msisdn: msisdn
+        need: "recharge"
+      AS: plans
+    THEN: s5_recharge_offer
+
+  s5_recharge_cheaper:
+    REASONING: false
+    CALL: a13_get_plans
+      WITH:
+        msisdn: msisdn
+        need: "cheaper"
+      AS: plans
+    THEN: s5_recharge_offer
+
+  s5_recharge_offer:
+    REASONING: false
+    RESPOND: "The {{plans.output.price}} plan gives you {{plans.output.benefit}}, valid for {{plans.output.validity}}. Shall I send you a secure link to recharge with it?"
+    ON_INPUT:
+      - IF: input matches "(cheaper|less|lower|sasta|kam)"
+        THEN: s5_recharge_cheaper
+      - IF: input matches "(^|[^a-z])(yes|yeah|yep|sure|okay|ok|send|haan|ha|han|ji|bhej do)([^a-z]|$)"
+        THEN: s6_send_recharge_link
+      - ELSE:
+        SET:
+          resolved_count = ADD(resolved_count, 1)
+          outcome = "plan_info_given"
+        THEN: s7_more
+
+  s5_data:
+    REASONING: false
+    CALL: a13_get_plans
+      WITH:
+        msisdn: msisdn
+        need: "more_data"
+      AS: plans
+    THEN: s5_data_offer
+
+  s5_data_offer:
+    REASONING: false
+    RESPOND: "You have {{ctx.output.data_left}} left. I can add {{plans.output.addon_benefit}} for {{plans.output.addon_price}} from your main balance, or send you a link for the {{plans.output.price}} plan with {{plans.output.benefit}}. Which would you like?"
+    ON_INPUT:
+      - IF: input matches "(add|extra|1 gb|one gb|19|first|today|pack)"
+        SET:
+          pending_action = "data_addon"
+        THEN: s6_consent
+      - IF: input matches "(link|plan|recharge|second)"
+        THEN: s6_send_recharge_link
+      - ELSE:
+        SET:
+          resolved_count = ADD(resolved_count, 1)
+          outcome = "data_info_given"
+        THEN: s7_more
+
+  # ---- S5 A14 VAS & Complaints ----
+  s5_vas:
+    REASONING: false
+    CALL: a14_list_vas
+      WITH:
+        msisdn: msisdn
+      AS: vas
+    ON_RESULT:
+      - IF: vas.output.count == 0
+        THEN: s5_vas_none
+      - IF: vas.output.count == 1
+        SET:
+          vas_sel_id = vas.output.vas_1_id
+          vas_sel_name = vas.output.vas_1_name
+          vas_sel_price = vas.output.vas_1_price
+        THEN: s5_vas_one
+      - ELSE:
+        THEN: s5_vas_pick
+
+  s5_vas_none:
+    REASONING: false
+    SET:
+      resolved_count = ADD(resolved_count, 1)
+      outcome = "no_active_vas"
+    RESPOND: "You don't have any active subscriptions on your number. Is there anything else I can help you with?"
+    #include-snippet: anything_else_routes
+
+  s5_vas_one:
+    REASONING: false
+    RESPOND: "You have {{vas_sel_name}} active at {{vas_sel_price}}. Would you like me to stop it?"
+    ON_INPUT:
+      - IF: input matches "(^|[^a-z])(yes|yeah|yep|stop|cancel|deactivate|haan|ha|ji|band)([^a-z]|$)"
+        SET: pending_action = "vas_deactivate"
+        THEN: s6_vas_policy
+      - ELSE:
+        THEN: s7_more
+
+  s5_vas_pick:
+    REASONING: false
+    RESPOND: "You have two subscriptions: one, {{vas.output.vas_1_name}} at {{vas.output.vas_1_price}}, and two, {{vas.output.vas_2_name}} at {{vas.output.vas_2_price}}. Which one would you like to stop? Say one or two."
+    ON_INPUT:
+      - IF: input matches "(^|[^a-z])(two|second|2|dusra|movies)([^a-z]|$)"
+        SET:
+          vas_sel_id = vas.output.vas_2_id
+          vas_sel_name = vas.output.vas_2_name
+          vas_sel_price = vas.output.vas_2_price
+          pending_action = "vas_deactivate"
+        THEN: s6_vas_policy
+      - IF: input matches "(^|[^a-z])(one|first|1|pehla|hello|tune)([^a-z]|$)"
+        SET:
+          vas_sel_id = vas.output.vas_1_id
+          vas_sel_name = vas.output.vas_1_name
+          vas_sel_price = vas.output.vas_1_price
+          pending_action = "vas_deactivate"
+        THEN: s6_vas_policy
+      - ELSE:
+        THEN: s7_more
+
+  s5_network:
+    REASONING: false
+    CALL: a14_network_status
+      WITH:
+        msisdn: msisdn
+      AS: net
+    THEN: s5_network_ticket
+
+  s5_network_ticket:
+    REASONING: false
+    CALL: a14_raise_complaint
+      WITH:
+        msisdn: msisdn
+        issue: FIRST_NON_EMPTY(stated_request, "network problem")
+      AS: complaint
+    SET:
+      resolved_count = ADD(resolved_count, 1)
+      outcome = "complaint_logged"
+    THEN: s5_network_say
+
+  s5_network_say:
+    REASONING: false
+    RESPOND: "I'm sorry about the network trouble. {{#if net.output.known_issue}}There is {{net.output.status}} in {{net.output.area}}, and it should be fixed {{net.output.eta}}. {{/if}}Your complaint reference is {{complaint.output.ticket_ref}}, and we'll update you {{complaint.output.sla}}. Is there anything else I can help you with?"
+    #include-snippet: anything_else_routes
+
+  # ---- S5 A10 Knowledge: SIM replacement and porting ----
+  s5_sim:
+    REASONING: false
+    RESPOND: "Is this about a replacement SIM, or about porting your number to another operator?"
+    ON_INPUT:
+      - IF: input matches "(port|upc|another operator|other network|switch)"
+        SET: kb_topic = "porting"
+        THEN: s5_kb
+      - ELSE:
+        SET: kb_topic = "sim_replacement"
+        THEN: s5_kb
+
+  s5_kb:
+    REASONING: false
+    CALL: a10_kb_answer
+      WITH:
+        topic: kb_topic
+      AS: kb
+    SET:
+      resolved_count = ADD(resolved_count, 1)
+      outcome = "knowledge_answer"
+    THEN: s5_kb_say
+
+  s5_kb_say:
+    REASONING: false
+    RESPOND: "{{kb.output.answer}} Is there anything else I can help you with?"
+    #include-snippet: anything_else_routes
+
+  # ---- S6 Confirm and act (A08): consent, OTP unless strongly authenticated, idempotent write ----
+  s6_send_recharge_link:
+    REASONING: false
+    CALL: a12_send_recharge_link
+      WITH:
+        msisdn: msisdn
+        plan_id: plans.output.plan_id
+      AS: link
+    SET:
+      resolved_count = ADD(resolved_count, 1)
+      outcome = "recharge_link_sent"
+    THEN: s6_link_sent
+
+  s6_link_sent:
+    REASONING: false
+    RESPOND: "Done. I've sent a secure recharge link for the {{plans.output.price}} plan to your number by SMS and WhatsApp. Is there anything else I can help you with?"
+    #include-snippet: anything_else_routes
+
+  s6_vas_policy:
+    REASONING: false
+    CALL: a10_kb_answer
+      WITH:
+        topic: "vas_refund"
+      AS: kb
+    THEN: s6_consent
+
+  s6_consent:
+    REASONING: false
+    MAX_ATTEMPTS: 2
+    ON_EXHAUSTED: s7_more
+    SET:
+      idem_key = UNIQUE_ID(16)
+    RESPOND: "{{#if vas_sel_id}}To confirm: stop {{vas_sel_name}} at {{vas_sel_price}}. {{kb.output.answer}}{{else}}To confirm: add {{plans.output.addon_benefit}} for {{plans.output.addon_price}}, deducted from your main balance.{{/if}} Do you agree?"
+    ON_INPUT:
+      - IF: input matches "(^|[^a-z])(yes|i agree|agree|yeah|yep|sure|okay|ok|haan|ha|han|ji|manzoor)([^a-z]|$)"
+        THEN: s6_record_consent
+      - IF: input matches "(^|[^a-z])(no|nahi|nahin|don't|dont|cancel)([^a-z]|$)"
+        SET: outcome = "declined_at_consent"
+        THEN: s7_more
+      - ELSE:
+        RESPOND: "Please say yes if you agree, or no to cancel."
+        THEN: s6_consent
+
+  s6_record_consent:
+    REASONING: false
+    CALL: a08_record_consent
+      WITH:
+        msisdn: msisdn
+        action: FIRST_NON_EMPTY(vas_sel_id, plans.output.addon_id)
+        price: FIRST_NON_EMPTY(vas_sel_price, plans.output.addon_price)
+      AS: consent
+    ON_RESULT:
+      - IF: ctx.output.strong_auth == true AND pending_action == "data_addon"
+        SET: otp_ref_used = "STRONG_AUTH"
+        THEN: s6_buy_addon
+      - IF: ctx.output.strong_auth == true
+        SET: otp_ref_used = "STRONG_AUTH"
+        THEN: s6_vas_deactivate
+      - ELSE:
+        THEN: s6_send_otp
+
+  s6_send_otp:
+    REASONING: false
+    CALL: a04_send_otp
+      WITH:
+        msisdn: msisdn
+        purpose: pending_action
+      AS: otp
+    ON_RESULT:
+      - IF: otp.output.sent == true
+        THEN: s6_ask_otp
+      - ELSE:
+        THEN: x_system_failure
+
+  s6_ask_otp:
+    REASONING: false
+    RESPOND: "I've sent a six-digit OTP to your Vi number. Please read it out."
+    ON_INPUT:
+      - IF: input matches "[0-9]"
+        SET: otp_said = REGEX_REPLACE(input, "\\D", "")
+        THEN: s6_verify_otp
+      - ELSE:
+        RESPOND: "Please read out the six digits of the OTP."
+        THEN: s6_ask_otp
+
+  s6_verify_otp:
+    REASONING: false
+    CALL: a04_verify_otp
+      WITH:
+        msisdn: msisdn
+        otp_ref: otp.output.otp_ref
+        otp: otp_said
+      AS: otp_check
+    ON_RESULT:
+      - IF: otp_check.output.verified == true AND pending_action == "data_addon"
+        SET: otp_ref_used = otp.output.otp_ref
+        THEN: s6_buy_addon
+      - IF: otp_check.output.verified == true
+        SET: otp_ref_used = otp.output.otp_ref
+        THEN: s6_vas_deactivate
+      - IF: otp_attempts >= 2
+        THEN: x1_otp_failed
+      - ELSE:
+        SET:
+          otp_attempts = ADD(otp_attempts, 1)
+        THEN: s6_otp_retry
+
+  s6_otp_retry:
+    REASONING: false
+    RESPOND: "That OTP didn't match. Please read out the six digits again."
+    ON_INPUT:
+      - IF: input matches "[0-9]"
+        SET: otp_said = REGEX_REPLACE(input, "\\D", "")
+        THEN: s6_verify_otp
+      - ELSE:
+        THEN: s6_otp_retry
+
+  s6_vas_deactivate:
+    REASONING: false
+    CALL: a14_deactivate_vas
+      WITH:
+        msisdn: msisdn
+        vas_id: vas_sel_id
+        consent_ref: consent.output.consent_ref
+        otp_ref: otp_ref_used
+        idempotency_key: idem_key
+      AS: deact
+    ON_RESULT:
+      - IF: deact.output.success == true
+        SET:
+          resolved_count = ADD(resolved_count, 1)
+          outcome = "vas_deactivated"
+        THEN: s6_vas_done
+      - ELSE:
+        SET:
+          handoff_reason = "VAS deactivation failed"
+          handoff_next_step = "Deactivate the consented VAS manually"
+          disposition = "HANDOFF_SYSTEM_FAILURE"
+        THEN: x1_handoff
+
+  s6_buy_addon:
+    REASONING: false
+    CALL: a13_buy_data_pack
+      WITH:
+        msisdn: msisdn
+        addon_id: plans.output.addon_id
+        consent_ref: consent.output.consent_ref
+        otp_ref: otp_ref_used
+        idempotency_key: idem_key
+      AS: purchase
+    ON_RESULT:
+      - IF: purchase.output.success == true
+        SET:
+          resolved_count = ADD(resolved_count, 1)
+          outcome = "data_addon_bought"
+        THEN: s6_addon_done
+      - IF: purchase.output.error_code == "INSUFFICIENT_BALANCE"
+        SET: outcome = "addon_insufficient_balance"
+        THEN: s6_addon_low_balance
+      - ELSE:
+        SET:
+          handoff_reason = "Data add-on purchase failed"
+          handoff_next_step = "Add the consented data pack manually"
+          disposition = "HANDOFF_SYSTEM_FAILURE"
+        THEN: x1_handoff
+
+  s6_vas_done:
+    REASONING: false
+    RESPOND: "Done. {{vas_sel_name}} has been stopped, reference {{deact.output.deact_ref}}, effective {{deact.output.effective}}. Is there anything else I can help you with?"
+    #include-snippet: anything_else_routes
+
+  s6_addon_done:
+    REASONING: false
+    RESPOND: "Done. {{plans.output.addon_benefit}} has been added, reference {{purchase.output.order_ref}}. Is there anything else I can help you with?"
+    #include-snippet: anything_else_routes
+
+  s6_addon_low_balance:
+    REASONING: false
+    RESPOND: "Your main balance of {{ctx.output.balance}} isn't enough for the {{plans.output.addon_price}} add-on, so nothing was charged. Shall I send you a secure link to recharge instead?"
+    ON_INPUT:
+      - IF: input matches "(^|[^a-z])(yes|yeah|yep|sure|okay|ok|send|haan|ha|han|ji|bhej do)([^a-z]|$)"
+        THEN: s6_send_recharge_link
+      - ELSE:
+        THEN: s7_more
+
+  # ---- S7 Wrap-up: anything else, then CSAT ----
+  s7_more:
+    REASONING: false
+    RESPOND: "Is there anything else I can help you with?"
+    #include-snippet: anything_else_routes
+
+  s7_csat:
+    REASONING: false
+    RESPOND: "Before you go, on a scale of 1 to 5, how satisfied are you with this call?"
+    ON_INPUT:
+      - IF: input matches "[1-5]"
+        SET: csat_score = REGEX_EXTRACT(input, "[1-5]")
+        THEN: s7_record_csat
+      - IF: input matches "(^|[^a-z])(one|two|three|four|five)([^a-z]|$)"
+        SET: csat_score = input
+        THEN: s7_record_csat
+      - ELSE:
+        SET: csat_score = "none"
+        THEN: s7_record_csat
+
+  s7_record_csat:
+    REASONING: false
+    CALL: a11_record_csat
+      WITH:
+        msisdn: msisdn
+        score: csat_score
+      AS: csat
+    SET:
+      disposition = "RESOLVED"
+    THEN: s8_farewell
+
+  # ---- S8 Release ----
+  s8_farewell:
+    REASONING: false
+    RESPOND: "Thank you for calling Vi. Have a good day."
+    THEN: s9_write
+
+  # ---- S9 Post-call: summary, disposition, eval, CRM and Warehouse (A11) ----
+  s9_write:
+    REASONING: false
+    CALL: a11_write_post_call
+      WITH:
+        msisdn: msisdn
+        disposition: disposition
+        summary: "UC1 inbound care call. Last intent {{intent}}. Requests resolved {{resolved_count}}. Last outcome {{outcome}}. CSAT {{csat_score}}."
+        outcome: outcome
+      AS: post_call
+    THEN: COMPLETE
+
+  # ---- Exception states: warm transfer with full packet (A09) ----
+  x1_handoff:
+    REASONING: false
+    CALL: a09_create_handoff
+      WITH:
+        msisdn: msisdn
+        queue: "CARE_DESK"
+        reason: handoff_reason
+        summary: "UC1 care call from {{ctx.output.first_name}} on {{ctx.output.plan}}, balance {{ctx.output.balance}}. Request: {{stated_request}}. Intent {{intent}}. Pending action {{pending_action}}. Reason: {{handoff_reason}}."
+        recommended_next_step: handoff_next_step
+      AS: handoff
+    RESPOND: "I'm connecting you to a Vi care advisor, who will have the details of this call. Please stay on the line."
+    THEN: x1_post_call
+
+  x1_post_call:
+    REASONING: false
+    CALL: a11_write_post_call
+      WITH:
+        msisdn: msisdn
+        disposition: disposition
+        summary: "UC1 care call warm-transferred: {{handoff_reason}}"
+        outcome: "handoff"
+      AS: post_call
+    THEN: ESCALATE with REASON: "Care warm transfer"
+
+  x1_customer_request:
+    REASONING: false
+    SET:
+      handoff_reason = "Customer asked for a person"
+      handoff_next_step = "Take over the care conversation"
+      disposition = "HANDOFF_CUSTOMER_REQUEST"
+    THEN: x1_handoff
+
+  x1_vulnerable:
+    REASONING: false
+    SET:
+      handoff_reason = "Vulnerability cue in the conversation"
+      handoff_next_step = "Prioritise the customer and handle with care"
+      disposition = "HANDOFF_VULNERABILITY"
+    THEN: x1_handoff
+
+  x1_otp_failed:
+    REASONING: false
+    SET:
+      handoff_reason = "OTP verification failed three times"
+      handoff_next_step = "Re-verify the caller before making the consented change"
+      disposition = "HANDOFF_OTP_FAILED"
+    THEN: x1_handoff
+
+  x2_fallback:
+    REASONING: false
+    SET:
+      handoff_reason = "Intent not understood after two clarifications"
+      handoff_next_step = "Understand and resolve the caller's request"
+      disposition = "HANDOFF_CLARIFY_FAILED"
+    THEN: x1_handoff
+
+  x_system_failure:
+    REASONING: false
+    SET:
+      handoff_reason = "System call failed"
+      handoff_next_step = "Complete the request manually"
+      disposition = "HANDOFF_SYSTEM_FAILURE"
+    THEN: x1_handoff

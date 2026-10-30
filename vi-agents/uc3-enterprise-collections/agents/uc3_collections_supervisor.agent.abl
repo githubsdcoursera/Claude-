@@ -1,0 +1,623 @@
+AGENT: UC3_Collections_Supervisor
+VERSION: "1.0"
+GOAL: |
+  Run enterprise collections end to end across IVR voice, WhatsApp and web chat (BRD FR-1.1 to FR-1.16):
+  A22 schedules reminders with a validated payment link; a confirmed payment closes the follow-up with no
+  contact; for unpaid invoices A23 follows up - verify the registered billing or authorised contact before
+  stating any amount, then route to pay now, promise-to-pay within policy, callback or dispute. A24 captures
+  every mandatory dispute field, returns the SR token in-session and pauses dunning for that invoice.
+  Waiver or settlement requests, repeated non-response and exceptions go to the collections desk with the
+  full thread. Write self-serve, PTP and dispute-TAT events.
+
+PERSONA: |
+  Vi Business's virtual assistant for billing. Courteous, firm and brief; never threatening. States amounts,
+  dates and references exactly as billing returns them. One question at a time.
+
+LIMITATIONS:
+  - "Cannot state any amount before the billing or authorised contact is verified"
+  - "Cannot grant waivers, discounts or settlements; these go to the collections desk"
+  - "Cannot accept a promise-to-pay beyond the account's policy window"
+  - "Never takes card, UPI or bank details in the conversation; payment is through the secure gateway link"
+
+EXECUTION:
+  session_idle_timeout: 120000
+  voice_latency_target: 800
+  tool_timeout: 8000
+
+TOOLS:
+  #include-tools: a03_get_billing_status, a22_schedule_reminders, a06_compliance_gate, a06_record_opt_out, a04_verify_billing_contact, a23_send_payment_link, a23_record_ptp, a23_schedule_callback, a24_create_dispute_sr, a24_pause_dunning, a23_send_message, a09_create_handoff, a11_write_post_call
+
+MEMORY:
+  session:
+    - bad_input
+    - account_id
+    - msisdn
+    - channel
+    - mode
+    - billing
+    - reminders
+    - gate
+    - verify
+    - link
+    - ptp_days
+    - ptp
+    - callback_preference
+    - callback
+    - dispute_type
+    - pending_concern
+    - dispute_amount
+    - dispute_details
+    - sr
+    - pause
+    - message
+    - disposition
+    - outcome
+    - handoff_reason
+    - handoff_next_step
+    - handoff
+    - post_call
+    - opt_out
+
+INTENTS:
+  human_escalation: "Contact asks to speak to a person, an agent, an advisor or the collections team."
+
+ESCALATE:
+  triggers:
+    - WHEN: user.sentiment == "very_negative" OR user.sentiment == "frustrated"
+      REASON: "Negative sentiment persisted"
+      PRIORITY: high
+      TAGS: [uc3, collections, sentiment]
+  context_for_human:
+    - account_id
+    - billing
+    - dispute_type
+    - dispute_amount
+    - dispute_details
+    - sr
+    - ptp
+    - handoff_reason
+    - handoff_next_step
+    - conversation_transcript
+  routing:
+    queue: "COLLECTIONS_DESK"
+    skill_tags: [enterprise, collections]
+
+FLOW:
+  global_digressions:
+    - INTENT: waiver_request
+      KEYWORDS: ["waiver", "waive", "settlement", "settle for", "discount on the bill", "reduce the amount", "write off"]
+      GOTO: x1_waiver
+    - INTENT: human_request
+      KEYWORDS: ["speak to a person", "talk to a person", "talk to someone", "real person", "human agent", "speak to an agent", "talk to an agent", "collections team", "account manager"]
+      GOTO: x1_customer_request
+    - INTENT: opt_out_request
+      KEYWORDS: ["stop calling", "don't call", "do not call", "stop messaging"]
+      GOTO: x4_opt_out
+
+  # ---- Trigger: billing feed (A22 reminder run) or unpaid escalation nudge (A23 follow-up) ----
+  s0_trigger:
+    REASONING: false
+    SET:
+      account_id = UPPER(FIRST_NON_EMPTY(session.messageMetadata.account_id, REGEX_EXTRACT(input, "account=([A-Za-z0-9]+)", 1), "none"))
+      msisdn = FIRST_NON_EMPTY(session.messageMetadata.msisdn, REGEX_EXTRACT(input, "msisdn=(\\d{10})", 1), customer_id, "none")
+      channel = FIRST_NON_EMPTY(session.messageMetadata.channel, REGEX_EXTRACT(input, "channel=(\\w+)", 1), "ivr")
+      mode = FIRST_NON_EMPTY(session.messageMetadata.mode, REGEX_EXTRACT(input, "mode=(\\w+)", 1), "followup")
+      disposition = "IN_PROGRESS"
+      pending_concern = "none"
+    THEN: s0_need_number
+
+
+  # ---- No caller ID (for example a Studio test chat): ask for the number before the call starts ----
+  s0_need_number:
+    REASONING: false
+    WHEN: msisdn == "none" OR account_id == "NONE"
+    RESPOND: "Test chat: no call details were passed to this session. Please type the enterprise account id and the billing contact's 10-digit mobile number (for example: ENT5001 9870000001) to start the call."
+    ON_INPUT:
+      - IF: input matches "[A-Za-z]{3}[0-9]{4}" AND input matches "(^|[^0-9])[0-9]{10}([^0-9]|$)"
+        SET:
+          account_id = UPPER(REGEX_EXTRACT(input, "([A-Za-z]{3}[0-9]{4})", 1))
+          msisdn = REGEX_EXTRACT(input, "(?:^|[^0-9])([0-9]{10})(?:[^0-9]|$)", 1)
+        THEN: s0_billing
+      - ELSE:
+        SET: bad_input = input
+        THEN: s0_need_number_retry
+    THEN: s0_billing
+
+  s0_need_number_retry:
+    REASONING: false
+    RESPOND: "I received: {{bad_input}}. I need the enterprise account id and the 10-digit number together (for example ENT5001 9870000001)."
+    ON_INPUT:
+      - IF: input matches "[A-Za-z]{3}[0-9]{4}" AND input matches "(^|[^0-9])[0-9]{10}([^0-9]|$)"
+        SET:
+          account_id = UPPER(REGEX_EXTRACT(input, "([A-Za-z]{3}[0-9]{4})", 1))
+          msisdn = REGEX_EXTRACT(input, "(?:^|[^0-9])([0-9]{10})(?:[^0-9]|$)", 1)
+        THEN: s0_billing
+      - ELSE:
+        SET: bad_input = input
+        THEN: s0_need_number_retry
+    THEN: s0_billing
+
+  s0_billing:
+    REASONING: false
+    CALL: a03_get_billing_status
+      WITH:
+        account_id: account_id
+      AS: billing
+    ON_RESULT:
+      - IF: billing.output.found == true AND billing.output.status == "paid"
+        SET:
+          disposition = "PAID_AUTO_CLOSED"
+          outcome = "payment_confirmed_by_gateway"
+        THEN: x0_no_call
+      - IF: billing.output.found == true AND mode == "reminder"
+        THEN: s0_reminders
+      - IF: billing.output.found == true
+        THEN: s0_compliance
+      - ELSE:
+        SET:
+          disposition = "SYSTEM_FAILURE"
+          outcome = "billing_record_unavailable"
+        THEN: x0_no_call
+
+  # ---- A22 Reminder: schedule reminders and send the validated link (no live contact) ----
+  s0_reminders:
+    REASONING: false
+    CALL: a22_schedule_reminders
+      WITH:
+        account_id: account_id
+      AS: reminders
+    SET:
+      disposition = "REMINDERS_SCHEDULED"
+      outcome = "reminders_scheduled"
+    THEN: x0_no_call
+
+  # ---- A06 contact gate: fail closed ----
+  s0_compliance:
+    REASONING: false
+    CALL: a06_compliance_gate
+      WITH:
+        msisdn: msisdn
+        campaign: "ENT_COLLECTIONS_FOLLOWUP"
+      AS: gate
+    ON_RESULT:
+      - IF: gate.output.allowed == true
+        THEN: s1_disclose
+      - ELSE:
+        SET:
+          disposition = "COMPLIANCE_STOP"
+          outcome = FIRST_NON_EMPTY(gate.output.stop_reason, "compliance_gate_unavailable")
+        THEN: x0_no_call
+
+  # ---- S1 Disclose ----
+  s1_disclose:
+    REASONING: false
+    MAX_ATTEMPTS: 3
+    ON_EXHAUSTED: x2_fallback
+    RESPOND: "Hello, this is Vi Business's virtual assistant. I am an AI, and this conversation is recorded for quality and training. Am I speaking with {{billing.output.contact_name}}, the billing contact for {{billing.output.company}}?"
+    ON_INPUT:
+      - IF: input matches "(^|[^a-z])(yes|yeah|yep|speaking|haan|ha|ji|that's me|it is me)([^a-z]|$)"
+        THEN: s2_verify
+      - IF: input matches "(^|[^a-z])(no|nahi|not me|wrong number|not here|left the company)([^a-z]|$)"
+        SET:
+          disposition = "WRONG_PARTY"
+          outcome = "billing_contact_not_reached"
+        THEN: x3_wrong_party
+      - IF: input matches "(bill|invoice|statement|charge|amount|dispute|payment|received)"
+        SET: pending_concern = input
+        RESPOND: "I can help with that. First, to protect your account, am I speaking with {{billing.output.contact_name}}? Please say yes or no."
+        THEN: s1_disclose
+      - ELSE:
+        RESPOND: "Sorry, am I speaking with {{billing.output.contact_name}}? Please say yes or no."
+        THEN: s1_disclose
+
+  # ---- S2 Verify registered billing / authorised contact (A04) before stating the amount ----
+  s2_verify:
+    REASONING: false
+    CALL: a04_verify_billing_contact
+      WITH:
+        account_id: account_id
+        msisdn: msisdn
+      AS: verify
+    ON_RESULT:
+      - IF: verify.output.authorised == true AND pending_concern matches "(not received|haven.t received|have not received|didn.t receive|did not receive|didn.t get|did not get|never got|no bill|not got|bill copy|copy of the bill|invoice copy|copy of the invoice)"
+        THEN: s5_bill_copy
+      - IF: verify.output.authorised == true AND pending_concern matches "(dispute|wrong|incorrect|not ours|overcharged|error)"
+        SET: dispute_details = pending_concern
+        THEN: s5_dispute_type
+      - IF: verify.output.authorised == true
+        THEN: s3_state_amount
+      - ELSE:
+        SET:
+          disposition = "NOT_AUTHORISED_CONTACT"
+          outcome = "contact_not_verified"
+        THEN: x3_not_authorised
+
+  # ---- S3/S4 State the amount (must-say) and route intent ----
+  s3_state_amount:
+    REASONING: false
+    MAX_ATTEMPTS: 2
+    ON_EXHAUSTED: x2_fallback
+    RESPOND: "Thank you. The {{billing.output.cycle}} invoice {{billing.output.invoice}} for {{billing.output.amount_due}} was due on {{billing.output.due_date}} and is now {{billing.output.days_overdue}} days overdue. Would you like to pay now, tell me when you can pay, get a callback, or raise a dispute?"
+    ON_INPUT:
+      - IF: input matches "(not received|haven.t received|have not received|didn.t receive|did not receive|didn.t get|did not get|never got|no bill|not got|bill copy|copy of the bill|invoice copy|copy of the invoice)"
+        SET: pending_concern = input
+        THEN: s5_bill_copy
+      - IF: input matches "(dispute|wrong|incorrect|not ours|overcharged|didn't use|did not use|error in the bill)"
+        SET: dispute_details = input
+        THEN: s5_dispute_type
+      - IF: input matches "(pay now|send.*link|payment link|right now|immediately|pay it now)"
+        THEN: s5_pay_now
+      - IF: input matches "(call back|callback|later|busy|in a meeting)"
+        THEN: s5_callback_ask
+      - IF: input matches "(day after)"
+        SET: ptp_days = 2
+        THEN: s5_ptp_record
+      - IF: input matches "(tomorrow)"
+        SET: ptp_days = 1
+        THEN: s5_ptp_record
+      - IF: input matches "(next week|end of the week|a week)"
+        SET: ptp_days = 7
+        THEN: s5_ptp_record
+      - IF: input matches "[0-9]+ days"
+        SET: ptp_days = TO_NUMBER(REGEX_EXTRACT(input, "([0-9]+) days", 1))
+        THEN: s5_ptp_record
+      - IF: input matches "(will pay|can pay|pay by|pay on|pay later|promise)"
+        THEN: s5_ptp_ask_date
+      - ELSE:
+        RESPOND: "Would you like a payment link now, to tell me a date you can pay, a callback, or to raise a dispute?"
+        THEN: s3_state_amount
+
+  # ---- S5 Pay now: validated gateway link (self-serve) ----
+  s5_pay_now:
+    REASONING: false
+    CALL: a23_send_payment_link
+      WITH:
+        account_id: account_id
+        channel: "whatsapp"
+      AS: link
+    SET:
+      disposition = "PAYMENT_LINK_SENT"
+      outcome = "self_serve_link"
+    THEN: s5_pay_now_say
+
+  s5_pay_now_say:
+    REASONING: false
+    RESPOND: "I've sent a secure payment link for {{billing.output.amount_due}} to this number on WhatsApp, reference {{link.output.link_ref}}. Once the payment goes through, the follow-up closes automatically. Thank you."
+    THEN: s9_write
+
+  # ---- S5 Promise-to-pay within policy ----
+  s5_ptp_record:
+    REASONING: false
+    CALL: a23_record_ptp
+      WITH:
+        account_id: account_id
+        days: ptp_days
+      AS: ptp
+    ON_RESULT:
+      - IF: ptp.output.accepted == true
+        SET:
+          disposition = "PTP_RECORDED"
+          outcome = "promise_to_pay"
+        THEN: s5_ptp_message
+      - IF: ptp.output.reason == "beyond_policy"
+        THEN: s5_ptp_too_late
+      - ELSE:
+        THEN: s5_ptp_ask_date
+
+  s5_ptp_ask_date:
+    REASONING: false
+    RESPOND: "In how many days can you make the payment? For example, in three days."
+    ON_INPUT:
+      - IF: input matches "[0-9]+"
+        SET: ptp_days = TO_NUMBER(REGEX_EXTRACT(input, "([0-9]+)", 1))
+        THEN: s5_ptp_record
+      - IF: input matches "(tomorrow)"
+        SET: ptp_days = 1
+        THEN: s5_ptp_record
+      - IF: input matches "(next week|a week|end of the week)"
+        SET: ptp_days = 7
+        THEN: s5_ptp_record
+      - ELSE:
+        THEN: x2_fallback
+
+  s5_ptp_too_late:
+    REASONING: false
+    RESPOND: "I can only record a payment date within {{billing.output.ptp_max_days}} days. Could you pay within {{billing.output.ptp_max_days}} days, or would you like the collections team to call you?"
+    ON_INPUT:
+      - IF: input matches "(team|person|call me|advisor|desk)"
+        THEN: x1_beyond_policy
+      - IF: input matches "[0-9]+"
+        SET: ptp_days = TO_NUMBER(REGEX_EXTRACT(input, "([0-9]+)", 1))
+        THEN: s5_ptp_record
+      - IF: input matches "(^|[^a-z])(yes|okay|ok|fine|sure)([^a-z]|$)"
+        SET: ptp_days = billing.output.ptp_max_days
+        THEN: s5_ptp_record
+      - ELSE:
+        THEN: x1_beyond_policy
+
+  s5_ptp_message:
+    REASONING: false
+    CALL: a23_send_message
+      WITH:
+        account_id: account_id
+        template: "ptp_confirmation"
+        channel: "whatsapp"
+      AS: message
+    THEN: s5_ptp_say
+
+  s5_ptp_say:
+    REASONING: false
+    RESPOND: "Thank you. I've recorded your commitment to pay {{billing.output.amount_due}} by {{ptp.output.pay_by}}, reference {{ptp.output.ptp_ref}}, and sent a confirmation on WhatsApp with the payment link."
+    THEN: s9_write
+
+  # ---- S5 Callback ----
+  s5_callback_ask:
+    REASONING: false
+    RESPOND: "Of course. When would be a good time to call you back?"
+    ON_INPUT:
+      - ELSE:
+        SET: callback_preference = input
+        THEN: s5_callback_book
+
+  s5_callback_book:
+    REASONING: false
+    CALL: a23_schedule_callback
+      WITH:
+        account_id: account_id
+        preference: callback_preference
+      AS: callback
+    SET:
+      disposition = "CALLBACK_SCHEDULED"
+      outcome = "callback"
+    THEN: s5_callback_say
+
+  s5_callback_say:
+    REASONING: false
+    RESPOND: "Done. We'll call you back {{callback.output.slot}}. Thank you."
+    THEN: s9_write
+
+  # ---- S5 A24 Dispute: mandatory fields, SR token in-session, pause dunning ----
+  s5_dispute_type:
+    REASONING: false
+    RESPOND: "I'm sorry to hear that. Is this a billing error, a service that wasn't delivered, a plan mismatch, or something else?"
+    ON_INPUT:
+      - IF: input matches "(not delivered|didn't get|did not get|not working|never received|service)"
+        SET: dispute_type = "service_not_delivered"
+        THEN: s5_dispute_amount
+      - IF: input matches "(plan|wrong plan|mismatch|tariff)"
+        SET: dispute_type = "plan_mismatch"
+        THEN: s5_dispute_amount
+      - IF: input matches "(billing|bill|charge|overcharg|error|double)"
+        SET: dispute_type = "billing_error"
+        THEN: s5_dispute_amount
+      - ELSE:
+        SET: dispute_type = "other"
+        THEN: s5_dispute_amount
+
+  s5_dispute_amount:
+    REASONING: false
+    MAX_ATTEMPTS: 2
+    ON_EXHAUSTED: x2_fallback
+    RESPOND: "What amount are you disputing?"
+    ON_INPUT:
+      - IF: input matches "[0-9]"
+        SET: dispute_amount = REGEX_EXTRACT(input, "([0-9][0-9,]*)", 1)
+        THEN: s5_dispute_details
+      - IF: input matches "(whole|entire|full|all of it)"
+        SET: dispute_amount = REGEX_REPLACE(billing.output.amount_due, "[^0-9,]", "")
+        THEN: s5_dispute_details
+      - ELSE:
+        RESPOND: "Please tell me the amount in rupees, or say the full amount."
+        THEN: s5_dispute_amount
+
+  s5_dispute_details:
+    REASONING: false
+    RESPOND: "Briefly, what is wrong with the charge?"
+    ON_INPUT:
+      - ELSE:
+        SET: dispute_details = input
+        THEN: s5_dispute_create
+
+  s5_dispute_create:
+    REASONING: false
+    CALL: a24_create_dispute_sr
+      WITH:
+        account_id: account_id
+        msisdn: msisdn
+        dispute_type: dispute_type
+        amount: dispute_amount
+        details: dispute_details
+      AS: sr
+    ON_RESULT:
+      - IF: sr.output.created == true
+        THEN: s5_dispute_pause
+      - ELSE:
+        SET:
+          handoff_reason = "Dispute SR could not be created"
+          handoff_next_step = "Create the dispute SR manually with the captured fields"
+          disposition = "SYSTEM_FAILURE"
+        THEN: x1_handoff
+
+  s5_dispute_pause:
+    REASONING: false
+    CALL: a24_pause_dunning
+      WITH:
+        account_id: account_id
+        invoice: billing.output.invoice
+        sr_token: sr.output.sr_number
+      AS: pause
+    THEN: s5_dispute_ack
+
+  s5_dispute_ack:
+    REASONING: false
+    CALL: a23_send_message
+      WITH:
+        account_id: account_id
+        template: "dispute_acknowledgement"
+        channel: "whatsapp"
+      AS: message
+    SET:
+      disposition = "DISPUTE_RAISED"
+      outcome = "dispute_sr_created"
+    THEN: s5_dispute_say
+
+  s5_dispute_say:
+    REASONING: false
+    RESPOND: "I've raised your dispute of ₹{{dispute_amount}}. Your dispute reference number is {{sr.output.sr_number}}, and we'll resolve it within {{sr.output.tat}}. Payment reminders for invoice {{billing.output.invoice}} are paused until then, and I've sent the details on WhatsApp. Thank you."
+    THEN: s9_write
+
+  # ---- Bill not received: service request, invoice copy to the registered email, reminders paused ----
+  s5_bill_copy:
+    REASONING: false
+    CALL: a24_create_dispute_sr
+      WITH:
+        account_id: account_id
+        msisdn: msisdn
+        dispute_type: "bill_not_received"
+        amount: billing.output.amount_due
+        details: pending_concern
+      AS: sr
+    ON_RESULT:
+      - IF: sr.output.created == true
+        THEN: s5_bill_pause
+      - ELSE:
+        SET:
+          handoff_reason = "Bill-not-received request could not be created"
+          handoff_next_step = "Raise the service request and resend the invoice"
+          disposition = "SYSTEM_FAILURE"
+        THEN: x1_handoff
+
+  s5_bill_pause:
+    REASONING: false
+    CALL: a24_pause_dunning
+      WITH:
+        account_id: account_id
+        invoice: billing.output.invoice
+        sr_token: sr.output.sr_number
+      AS: pause
+    THEN: s5_bill_send
+
+  s5_bill_send:
+    REASONING: false
+    CALL: a23_send_message
+      WITH:
+        account_id: account_id
+        template: "invoice_copy"
+        channel: "email"
+      AS: message
+    SET:
+      disposition = "BILL_COPY_REQUEST"
+      outcome = "invoice_resent_sr_created"
+    THEN: s5_bill_say
+
+  s5_bill_say:
+    REASONING: false
+    RESPOND: "I'm sorry the bill didn't reach you. I've raised a service request, reference {{sr.output.sr_number}}, and sent a copy of the {{billing.output.cycle}} invoice {{billing.output.invoice}} for {{billing.output.amount_due}} (due {{billing.output.due_date}}) to your registered email. Payment reminders for this invoice are paused while the request is open, up to {{sr.output.tat}}. Would you like a payment link now, or is there anything else?"
+    ON_INPUT:
+      - IF: input matches "(pay|link|yes|yeah|sure|ok)"
+        THEN: s5_pay_now
+      - ELSE:
+        THEN: s5_bill_close
+
+  s5_bill_close:
+    REASONING: false
+    RESPOND: "Thank you. The invoice copy and your request reference are on their way. Goodbye."
+    THEN: s9_write
+
+  # ---- S9 Post-call: self-serve, PTP and dispute-TAT events (A11) ----
+  # ---- Pre-call check stopped the contact: in a live campaign nobody is dialled; in a chat, say why ----
+  x0_no_call:
+    REASONING: false
+    RESPOND: "No call placed. The pre-call check stopped this contact (outcome {{disposition}}). In a live campaign the customer is not dialled and hears nothing; the outcome is recorded. In this test chat, ENT5001 9870000001 is a customer who can be called."
+    THEN: s9_write
+
+  s9_write:
+    REASONING: false
+    CALL: a11_write_post_call
+      WITH:
+        msisdn: msisdn
+        disposition: disposition
+        summary: "UC3 collections {{mode}} on {{channel}} for {{account_id}} ({{billing.output.company}}). Invoice {{billing.output.invoice}} {{billing.output.amount_due}}. PTP {{ptp.output.ptp_ref}}. Dispute {{sr.output.sr_number}} type {{dispute_type}} amount {{dispute_amount}}. Outcome {{outcome}}."
+        outcome: outcome
+      AS: post_call
+    THEN: COMPLETE
+
+  # ---- Exception states: collections desk with full thread (A09) ----
+  x1_handoff:
+    REASONING: false
+    CALL: a09_create_handoff
+      WITH:
+        msisdn: msisdn
+        queue: "COLLECTIONS_DESK"
+        reason: handoff_reason
+        summary: "UC3 collections for {{account_id}} ({{billing.output.company}}). Invoice {{billing.output.invoice}} {{billing.output.amount_due}}, {{billing.output.days_overdue}} days overdue. Reason: {{handoff_reason}}."
+        recommended_next_step: handoff_next_step
+      AS: handoff
+    RESPOND: "I'm connecting you to our collections team, who will have the details of this conversation. Please hold."
+    THEN: x1_post_call
+
+  x1_post_call:
+    REASONING: false
+    CALL: a11_write_post_call
+      WITH:
+        msisdn: msisdn
+        disposition: disposition
+        summary: "UC3 collections handed to the collections desk: {{handoff_reason}}"
+        outcome: "handoff"
+      AS: post_call
+    THEN: ESCALATE with REASON: "Collections desk handoff"
+
+  x1_waiver:
+    REASONING: false
+    SET:
+      handoff_reason = "Waiver or settlement requested"
+      handoff_next_step = "Review the waiver or settlement request under the collections authority matrix"
+      disposition = "HANDOFF_WAIVER_REQUEST"
+    THEN: x1_handoff
+
+  x1_beyond_policy:
+    REASONING: false
+    SET:
+      handoff_reason = "Promise-to-pay requested beyond the policy window"
+      handoff_next_step = "Agree a payment plan within authority"
+      disposition = "HANDOFF_PTP_BEYOND_POLICY"
+    THEN: x1_handoff
+
+  x1_customer_request:
+    REASONING: false
+    SET:
+      handoff_reason = "Contact asked for a person"
+      handoff_next_step = "Take over the collections conversation"
+      disposition = "HANDOFF_CUSTOMER_REQUEST"
+    THEN: x1_handoff
+
+  x2_fallback:
+    REASONING: false
+    SET:
+      handoff_reason = "Clarification failed twice"
+      handoff_next_step = "Continue the collections conversation"
+      disposition = "HANDOFF_CLARIFY_FAILED"
+    THEN: x1_handoff
+
+  x3_wrong_party:
+    REASONING: false
+    RESPOND: "Sorry for the trouble. We'll reach the right contact another way. Goodbye."
+    THEN: s9_write
+
+  x3_not_authorised:
+    REASONING: false
+    RESPOND: "I'm sorry, I can only discuss this account with the registered billing contact. We'll reach them directly. Goodbye."
+    THEN: s9_write
+
+  x4_opt_out:
+    REASONING: false
+    CALL: a06_record_opt_out
+      WITH:
+        msisdn: msisdn
+        campaign: "ENT_COLLECTIONS_FOLLOWUP"
+      AS: opt_out
+    SET:
+      disposition = "OPT_OUT_REQUESTED"
+      outcome = "opt_out_recorded_for_review"
+    RESPOND: "Understood. I've recorded your request. Statutory billing notices may still be sent by email. Goodbye."
+    THEN: s9_write

@@ -1,0 +1,7 @@
+test_id,agent_id,test_name,input_reference,expected_outcome,must_not_do,severity
+GOLD-001,A02,Premature rent before RFS,SITE MHGOA-SYN-0003 / 2026-06,Flag PREMATURE_BILLING and recommend hold,Mark payable or invent RFS,CRITICAL
+GOLD-002,A24,Duplicate invoice line,scenario_label=DUPLICATE_LINE,Flag duplicate and exclude from payable baseline,Count twice,HIGH
+GOLD-003,A26,Double escalation,SITE MHGOA-SYN-0009 / 2026-08,Use one approved 5% escalation only,Apply 10.25% cumulative in same anniversary,HIGH
+GOLD-004,A31,Reused EB consumer number,CONS-SYN-00014,Flag consumer number mapped to multiple sites,Auto-approve,HIGH
+GOLD-005,A22,Missing support documents,SITE MHGOA-SYN-0005 / 2026-06,Flag incomplete and open vendor request,Infer completeness,MEDIUM
+GOLD-006,A39,Underbilling detection,SITE MHGOA-SYN-0017 / 2026-09,Classify UNDERBILLED and report upside/downside accurately,Suppress vendor-favourable variance,MEDIUM

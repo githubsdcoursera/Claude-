@@ -1,0 +1,717 @@
+AGENT: RA_UC3_Compliance_Supervisor
+VERSION: "1.0"
+GOAL: |
+  RA-UC3 AI-Enabled Communications & Compliance Manager (R00 Supervisor). Zero missed or late regulatory
+  actions: every inbound communication from a regulator, ministry or industry body is classified (RC01),
+  its obligations and deadlines extracted with a dual check (RC02), an owner, deputy and approver assigned and
+  notified (RC03), tracked with reminders and escalations (RC04), given a templated reply for routine items or
+  an RA-UC2 drafting request for substantive ones (RC05), and shown on a permission-trimmed dashboard (RC06).
+  Runs at pilot autonomy L0-L2: never sends to a Government body; replies wait for the named approver.
+
+PERSONA: |
+  A meticulous regulatory compliance desk assistant for Vi's Regulatory & Corporate Affairs officers and
+  managers. Formal Indian-English register; exact dates and references; clear about what is an AI proposal and
+  who must approve it.
+
+LIMITATIONS:
+  - "Never sends, files or submits anything to a regulator, ministry, court or industry body"
+  - "Never guesses or extends a deadline; disagreements and missing deadlines go to an officer"
+  - "Never archives or deletes mail, or marks an item no-action without the owner's confirmation"
+  - "Never shows restricted matters to users outside the authorised group"
+  - "Uses a synthetic corpus in this build"
+
+EXECUTION:
+  session_idle_timeout: 600000
+  tool_timeout: 8000
+
+TOOLS:
+  list_attachments(limit?: number, offset?: number) -> object
+    description: "List the files the user shared in this conversation, oldest first."
+    effect: read_only
+    confirm: never
+    params:
+      limit:
+        description: "Maximum number of files to return"
+      offset:
+        description: "Number of files to skip"
+  get_attachment(attachment_id: string) -> object
+    description: "Read one shared file; returns its extracted text in content."
+    effect: read_only
+    confirm: never
+    params:
+      attachment_id:
+        description: "File id from list_attachments"
+  upload_attachment(filename: string, content_base64: string, mime_type: string) -> object
+    description: "Save a generated file to this conversation so the user can download it."
+    effect: side_effect
+    confirm: never
+    params:
+      filename:
+        description: "File name, e.g. report.docx"
+      content_base64:
+        description: "File content, base64-encoded"
+      mime_type:
+        description: "File type"
+  get_attachment_url(attachment_id: string, expires_in_seconds?: number) -> object
+    description: "Short-lived download link for one file in this conversation."
+    effect: read_only
+    confirm: never
+    params:
+      attachment_id:
+        description: "File id"
+      expires_in_seconds:
+        description: "Link lifetime in seconds, up to 86400"
+  #include-tools: rc_parse, rc01_classify, rc02_extract, rc03_route, rc05_prepare, rc_approve, rc04_escalations, rc06_dashboard, rc_reassign, rc_replay, r_notify, r_audit_log, r_ref_lookup, doc_docx
+
+MEMORY:
+  session:
+    - lnk
+    - dl_id
+    - upf
+    - doc_name
+    - doc_text
+    - got
+    - att_id
+    - last_offset
+    - lastf
+    - files
+    - udoc
+    - doc_md
+    - doc_title
+    - followup
+    - user
+    - request
+    - req
+    - cls
+    - obl
+    - route
+    - prep
+    - appr
+    - esc
+    - dash
+    - reas
+    - replay
+    - note
+    - ntf
+    - disposition
+    - audit
+    - rref
+
+FLOW:
+  s0_start:
+    REASONING: false
+    SET:
+      doc_text = "none"
+      doc_name = "none"
+      doc_title = "none"
+      doc_md = "none"
+      user = FIRST_NON_EMPTY(session.messageMetadata.user, REGEX_EXTRACT(input, "user=([a-z]+\\.[a-z]+)", 1), "officer.asha")
+      request = input
+      disposition = "IN_PROGRESS"
+    THEN: s1_parse
+
+  s1_parse:
+    REASONING: false
+    CALL: rc_parse
+      WITH:
+        text: request
+      AS: req
+    ON_RESULT:
+      - IF: req.output.intent == "intake"
+        THEN: i1_classify
+      - IF: req.output.intent == "dashboard"
+        THEN: d1_dashboard
+      - IF: req.output.intent == "escalations"
+        THEN: e1_escalations
+      - IF: req.output.intent == "reassign"
+        THEN: r1_reassign
+      - IF: req.output.intent == "approve"
+        THEN: a1_approve
+      - IF: req.output.intent == "replay"
+        THEN: v1_replay
+      - IF: req.output.intent == "done"
+        THEN: s9_end
+      - IF: req.output.intent == "uploaded"
+        THEN: u0_audit
+      - IF: req.output.intent == "lookup"
+        THEN: k1_lookup
+      - IF: req.output.intent == "ack"
+        THEN: k3_ack
+      - ELSE:
+        THEN: s2_help
+
+  # ---- BEGIN generated document path 'u' (build/add_upload_path.py) ----
+  u0_audit:
+    REASONING: false
+    CALL: r_audit_log
+      WITH:
+        user: user
+        disposition: "UPLOADED_COMM_TRIAGED"
+        object: "uploaded document"
+        detail: "Model review of an uploaded or pasted document"
+      AS: audit
+    THEN: uf1_list
+
+  uf1_list:
+    REASONING: false
+    CALL: list_attachments
+      AS: files
+    ON_RESULT:
+      - IF: files.total > 0
+        SET: last_offset = ADD(files.total, -1)
+        THEN: uf2_last
+      - ELSE:
+        THEN: u1_review
+
+  uf2_last:
+    REASONING: false
+    CALL: list_attachments
+      WITH:
+        limit: 1
+        offset: last_offset
+      AS: lastf
+    THEN: uf3_pick
+
+  uf3_pick:
+    REASONING: false
+    SET:
+      att_id = lastf.attachments[0].id
+      doc_name = lastf.attachments[0].filename
+    THEN: uf4_get
+
+  uf4_get:
+    REASONING: false
+    CALL: get_attachment
+      WITH:
+        attachment_id: att_id
+      AS: got
+    ON_RESULT:
+      - IF: got.processingStatus == "completed"
+        SET: doc_text = got.content
+        THEN: u1_review
+      - ELSE:
+        SET: doc_text = "UNREADABLE"
+        THEN: u1_review
+
+  u1_review:
+    REASONING: true
+    GOAL: |
+      The officer asked: "{{request}}". Read the regulatory communication they uploaded or pasted in this conversation (letter, direction,
+      show-cause notice, order, circular or email from TRAI, DoT, a court or another authority). If none is visible, say so in one
+      sentence and ask them to upload it again with the request in the same message; do not guess.
+      Produce a compliance intake note:
+      1. Classification: sender authority, reference number, date received, type (direction, show-cause, information request,
+      consultation, circular, order, other) and urgency.
+      2. Obligations: a table with each obligation, the exact quoted text and paragraph, the deadline exactly as stated (and the
+      computed calendar date only if the document gives a start date), the suggested Vi owner function, and the deliverable.
+      3. Penalties or consequences stated for non-compliance.
+      4. Recommended next steps and who must approve any reply.
+      Text extracted from the most recently uploaded file ({{doc_name}}):
+      <<<
+      {{doc_text}}
+      >>>
+      If that text is "none", the user did not upload a file in this conversation: use any document text pasted in
+      their message instead. If it is "UNREADABLE", the platform could not extract the file's text: say so and ask the
+      user to paste the text or upload a text-based PDF or Word file. If there is no document text at all, say so in
+      one sentence. Never describe, summarise or review a document you cannot see.
+      End by offering: follow-up questions on this document, or say Word to download it as a .docx.
+    STEP_CONSTRAINTS:
+      - "Quote only text that appears in the document, with its paragraph or page reference; never invent citations, dates or numbers"
+      - "Separate what the document says from Vi's position and from your own analysis; mark unsupported statements [unverified]"
+      - "Never send, file or submit anything to a regulator; a named Vi officer reviews and approves"
+    MAX_TURNS: 2
+    THEN: u2_route
+
+  # The zone hands over on the user's next message: follow-ups stay with the document, Word builds a
+  # .docx, a new command goes back to the parser
+  u2_route:
+    REASONING: false
+    ON_INPUT:
+      - IF: input matches "^[^a-z]*(done|exit|thanks|thank you|that's all|thats all)([^a-z]|$)"
+        THEN: s9_end
+      - IF: input matches "(word|docx|download|as a file|document file)"
+        SET: followup = input
+        THEN: u4_doc_prepare
+      - IF: input matches "(mail-syn-|obl-syn-|drf-|dashboard|overdue|escalat|replay|reassign|new document|another document|start over)"
+        SET: request = input
+        THEN: s1_parse
+      - ELSE:
+        SET: followup = input
+        THEN: ugf1_list
+
+  ugf1_list:
+    REASONING: false
+    CALL: list_attachments
+      AS: files
+    ON_RESULT:
+      - IF: files.total > 0
+        SET: last_offset = ADD(files.total, -1)
+        THEN: ugf2_last
+      - ELSE:
+        THEN: u3_followup
+
+  ugf2_last:
+    REASONING: false
+    CALL: list_attachments
+      WITH:
+        limit: 1
+        offset: last_offset
+      AS: lastf
+    THEN: ugf3_pick
+
+  ugf3_pick:
+    REASONING: false
+    SET:
+      att_id = lastf.attachments[0].id
+      doc_name = lastf.attachments[0].filename
+    THEN: ugf4_get
+
+  ugf4_get:
+    REASONING: false
+    CALL: get_attachment
+      WITH:
+        attachment_id: att_id
+      AS: got
+    ON_RESULT:
+      - IF: got.processingStatus == "completed"
+        SET: doc_text = got.content
+        THEN: u3_followup
+      - ELSE:
+        SET: doc_text = "UNREADABLE"
+        THEN: u3_followup
+
+  u3_followup:
+    REASONING: true
+    GOAL: |
+      The user is following up on the document they uploaded or pasted earlier in this conversation and your
+      earlier answer. Their message: "{{followup}}".
+      Answer from the communication and your intake note only. If asked for a reply draft, write it as an AI draft for officer review with the reference quoted; never send it.
+      Text extracted from the most recently uploaded file ({{doc_name}}):
+      <<<
+      {{doc_text}}
+      >>>
+      If that text is "none", the user did not upload a file in this conversation: use any document text pasted in
+      their message instead. If it is "UNREADABLE", the platform could not extract the file's text: say so and ask the
+      user to paste the text or upload a text-based PDF or Word file. If there is no document text at all, say so in
+      one sentence. Never describe, summarise or review a document you cannot see.
+      End by asking whether anything else is needed on this document, or say Word to download it.
+    STEP_CONSTRAINTS:
+      - "Quote only text that appears in the document, with its paragraph or page reference; never invent citations, dates or numbers"
+      - "Separate what the document says from Vi's position and from your own analysis; mark unsupported statements [unverified]"
+      - "Never send, file or submit anything to a regulator; a named Vi officer reviews and approves"
+    MAX_TURNS: 2
+    THEN: u2_route
+
+  u4_doc_prepare:
+    REASONING: true
+    GOAL: |
+      The user wants a downloadable Word document ("{{followup}}"). Do not write it in your reply. Set these session
+      fields in a single update:
+      doc_title: a short title.
+      doc_md: the full document body in simple markdown: # and ## headings, plain paragraphs, - bullets, and tables
+      as | col | col | rows with a header row. Use real line breaks.
+      Write the compliance intake note: classification, obligations table (obligation, quoted text and paragraph, deadline, owner, deliverable), penalties, next steps and approvals.
+      Then reply with one short sentence: "Preparing the Word document."
+    AVAILABLE_TOOLS: [r_audit_log]
+    CONTEXT_UPDATES: [doc_title, doc_md]
+    STEP_CONSTRAINTS:
+      - "Quote only text that appears in the document, with its paragraph or page reference; never invent citations, dates or numbers"
+      - "Separate what the document says from Vi's position and from your own analysis; mark unsupported statements [unverified]"
+      - "Never send, file or submit anything to a regulator; a named Vi officer reviews and approves"
+    EXIT_WHEN: always
+    MAX_TURNS: 4
+    THEN: u5_doc_build
+
+  u5_doc_build:
+    REASONING: false
+    CALL: doc_docx
+      WITH:
+        title: doc_title
+        markdown: doc_md
+        footer_note: "AI compliance intake note for Vi Regulatory review. Deadlines must be confirmed by the officer; nothing has been sent to the authority."
+      AS: udoc
+    ON_RESULT:
+      - IF: udoc.output.ok == true
+        THEN: ud1_upload
+      - ELSE:
+        THEN: u7_doc_failed
+
+  ud1_upload:
+    REASONING: false
+    CALL: upload_attachment
+      WITH:
+        filename: udoc.output.filename
+        content_base64: udoc.output.b64
+        mime_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      AS: upf
+    ON_RESULT:
+      - IF: upf.success == true
+        SET: dl_id = upf.data.attachmentId
+        THEN: ud2_link
+      - ELSE:
+        THEN: u7_doc_failed
+
+  ud2_link:
+    REASONING: false
+    CALL: get_attachment_url
+      WITH:
+        attachment_id: dl_id
+        expires_in_seconds: 3600
+      AS: lnk
+    ON_RESULT:
+      - IF: lnk.success == true
+        THEN: ud3_ready
+      - ELSE:
+        THEN: u7_doc_failed
+
+  ud3_ready:
+    REASONING: false
+    RESPOND: "{{udoc.output.message}} [Download {{udoc.output.filename}}]({{lnk.data.url}}) (the link works for about an hour; the file also stays in this conversation's files). It is an AI draft for review; nothing has been sent. Anything else on this document, or a new request?"
+    THEN: u2_route
+
+  u7_doc_failed:
+    REASONING: false
+    RESPOND: "I couldn't build the Word document this time. Ask for Word again, or I can answer in the chat."
+    THEN: u2_route
+
+  # ---- END generated document path 'u' ----
+
+  # ---- References returned earlier (drafting request, audit, task, obligation) ----
+  k1_lookup:
+    REASONING: false
+    CALL: r_ref_lookup
+      WITH:
+        ref: req.output.ref
+        user: user
+      AS: rref
+    THEN: k2_say
+
+  k2_say:
+    REASONING: false
+    RESPOND: "{{rref.output.summary}} Anything else? For example: show my items, due this week, or another mail."
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  k3_ack:
+    REASONING: false
+    RESPOND: "Noted. Anything else? For example: show my items, overdue, due this week, process another mail (INBOUND mail=MAIL-SYN-002), or done."
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  s2_help:
+    REASONING: false
+    RESPOND: "I can process an inbound communication (for example: INBOUND mail=MAIL-SYN-001), show the dashboard (all, my items, overdue, due this week, awaiting approval), run escalations as of a date, reassign an obligation (managers), record an approver's decision on a prepared reply, or replay the historical inbox evaluation. What would you like?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- C0 -> C1: RC01 classify; spoofed or low-confidence -> CX1 ----
+  i1_classify:
+    REASONING: false
+    CALL: rc01_classify
+      WITH:
+        mail_id: req.output.mail_id
+        user: user
+      AS: cls
+    ON_RESULT:
+      - IF: cls.output.found != true
+        THEN: s2_help
+      - IF: cls.output.cx1 == true
+        SET: note = cls.output.cx1_reason
+        THEN: x1_triage
+      - ELSE:
+        THEN: i2_extract
+
+  # ---- C2: RC02 obligations with dual-check deadlines ----
+  i2_extract:
+    REASONING: false
+    CALL: rc02_extract
+      WITH:
+        mail_id: req.output.mail_id
+      AS: obl
+    THEN: i3_route
+
+  # ---- C3: RC03 owner, deputy, approver; leave handling; internal forward ----
+  i3_route:
+    REASONING: false
+    CALL: rc03_route
+      WITH:
+        mail_id: req.output.mail_id
+        type: cls.output.type
+      AS: route
+    THEN: i4_prepare
+
+  # ---- RC05: routine template (awaits approver) or RA-UC2 drafting request ----
+  i4_prepare:
+    REASONING: false
+    CALL: rc05_prepare
+      WITH:
+        mail_id: req.output.mail_id
+        approver: route.output.approver
+      AS: prep
+    THEN: i5_notify
+
+  i5_notify:
+    REASONING: false
+    CALL: r_notify
+      WITH:
+        to: route.output.owner
+        message: "New regulatory item {{cls.output.reference}} from {{cls.output.issuer}} ({{cls.output.urgency}}): {{obl.output.obligations}}"
+      AS: ntf
+    ON_RESULT:
+      - IF: obl.output.cx1 == true
+        SET: disposition = "CX1_DEADLINE_CONFIRM"
+        THEN: i6_audit
+      - IF: cls.output.restricted == true
+        SET: disposition = "RESTRICTED_ROUTED"
+        THEN: i6_audit
+      - IF: obl.output.linked > 0
+        SET: disposition = "LINKED_TO_MATTER"
+        THEN: i6_audit
+      - ELSE:
+        SET: disposition = "CLASSIFIED_ASSIGNED"
+        THEN: i6_audit
+
+  i6_audit:
+    REASONING: false
+    CALL: r_audit_log
+      WITH:
+        user: user
+        disposition: disposition
+        object: req.output.mail_id
+        detail: "{{cls.output.type}} {{cls.output.urgency}}; {{obl.output.obligations}}; owner {{route.output.owner}}; reply {{prep.output.reply_class}} {{prep.output.draft_id}}{{prep.output.uc2_request}}"
+      AS: audit
+    ON_RESULT:
+      - IF: cls.output.visible_to_user != true
+        THEN: i7_say_restricted
+      - ELSE:
+        THEN: i7_say
+
+  i7_say:
+    REASONING: false
+    RESPOND: |
+      {{req.output.mail_id}} from {{cls.output.issuer}}: {{cls.output.subject}}, reference {{cls.output.reference}}. Classified {{cls.output.type}}, urgency {{cls.output.urgency}}{{#if cls.output.thread_matter}}, linked to existing matter {{cls.output.thread_matter}}{{/if}}.
+
+      Obligations: {{obl.output.obligations}}.{{#if obl.output.cx1}} CX1 Needs human triage: {{obl.output.cx1_reason}}. The officer must confirm the deadline.{{/if}}
+
+      Owner {{route.output.owner_name}}{{#if route.output.on_leave}} (the matrix owner is on leave, so the deputy is assigned and {{route.output.manager_notified}} has been notified){{/if}}; approver {{route.output.approver}}; task {{route.output.task_id}}; forwarded to {{route.output.forwarded_to}}.
+
+      {{#if prep.output.draft_id}}Routine reply drafted from the approved template ({{prep.output.draft_id}}): '{{prep.output.draft_text}}' It will not be sent without the approver's token.{{/if}}{{#if prep.output.uc2_request}}Substantive item: drafting request {{prep.output.uc2_request}} sent to RA-UC2; no templated reply.{{/if}} Audit record {{audit.output.audit_id}}.
+
+      Next: {{#if prep.output.uc2_request}}to draft the reply, open RA-UC2 Drafting and type {{prep.output.uc2_request}}; {{/if}}{{#if prep.output.draft_id}}the approver can type approve {{prep.output.draft_id}}; {{/if}}say show my items or due this week for the dashboard, give another mail, or say done.
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  i7_say_restricted:
+    REASONING: false
+    RESPOND: "{{req.output.mail_id}} is a restricted matter. It has been classified, its obligations registered and routed to the authorised group only; details are not shown to you. Audit {{audit.output.audit_id}}. Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- CX1 human triage (spoofed sender or low confidence): not auto-processed ----
+  x1_triage:
+    REASONING: false
+    CALL: r_notify
+      WITH:
+        to: "triage.officer"
+        message: "CX1 triage needed for {{req.output.mail_id}}: {{note}}"
+      AS: ntf
+    SET:
+      disposition = "CX1_TRIAGE"
+    THEN: x1_audit
+
+  x1_audit:
+    REASONING: false
+    CALL: r_audit_log
+      WITH:
+        user: user
+        disposition: disposition
+        object: req.output.mail_id
+        detail: cls.output.cx1_reason
+      AS: audit
+    THEN: x1_say
+
+  x1_say:
+    REASONING: false
+    RESPOND: "{{req.output.mail_id}} was not auto-processed. CX1 Needs human triage: {{cls.output.cx1_reason}}. It has been sent to the triage officer; no obligation, task or reply was created, and the mail is left in place. Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- RC06 dashboard ----
+  d1_dashboard:
+    REASONING: false
+    CALL: rc06_dashboard
+      WITH:
+        user: user
+        view: req.output.view
+      AS: dash
+    SET:
+      disposition = "DASHBOARD"
+    THEN: d2_audit
+
+  d2_audit:
+    REASONING: false
+    CALL: r_audit_log
+      WITH:
+        user: user
+        disposition: disposition
+        object: req.output.view
+        detail: "{{dash.output.count}} items"
+      AS: audit
+    THEN: d3_say
+
+  d3_say:
+    REASONING: false
+    RESPOND: "Dashboard ({{req.output.view}}, as of 27 October 2026): {{dash.output.count}} items. {{dash.output.rows}}. Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- RC04 escalation ladder ----
+  e1_escalations:
+    REASONING: false
+    CALL: rc04_escalations
+      WITH:
+        as_of: req.output.as_of
+      AS: esc
+    SET:
+      disposition = "ESCALATIONS_RUN"
+    THEN: e2_audit
+
+  e2_audit:
+    REASONING: false
+    CALL: r_audit_log
+      WITH:
+        user: user
+        disposition: disposition
+        object: req.output.as_of
+        detail: esc.output.actions
+      AS: audit
+    THEN: e3_say
+
+  e3_say:
+    REASONING: false
+    RESPOND: "Escalation run as of {{req.output.as_of}}: {{esc.output.count}} actions. {{esc.output.actions}}. Notifications go to the named people; deadlines are never extended by the agent. Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- Manager reassignment, audited ----
+  r1_reassign:
+    REASONING: false
+    CALL: rc_reassign
+      WITH:
+        obligation_id: req.output.obligation_id
+        new_owner: req.output.target_user
+        reason: req.output.reason
+        user: user
+      AS: reas
+    ON_RESULT:
+      - IF: reas.output.done == true
+        SET: disposition = "REASSIGNED"
+        THEN: r2_audit
+      - ELSE:
+        SET: disposition = "REASSIGN_REFUSED"
+        THEN: r2_audit
+
+  r2_audit:
+    REASONING: false
+    CALL: r_audit_log
+      WITH:
+        user: user
+        disposition: disposition
+        object: req.output.obligation_id
+        detail: reas.output.message
+      AS: audit
+    THEN: r3_say
+
+  r3_say:
+    REASONING: false
+    RESPOND: "{{reas.output.message}} Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- Approver decision on a prepared reply (never sent by the agent) ----
+  a1_approve:
+    REASONING: false
+    CALL: rc_approve
+      WITH:
+        draft_id: req.output.draft_id
+        user: user
+      AS: appr
+    ON_RESULT:
+      - IF: appr.output.approved == true
+        SET: disposition = "APPROVED_NOT_SENT"
+        THEN: a2_audit
+      - ELSE:
+        SET: disposition = "SEND_REFUSED"
+        THEN: a2_audit
+
+  a2_audit:
+    REASONING: false
+    CALL: r_audit_log
+      WITH:
+        user: user
+        disposition: disposition
+        object: req.output.draft_id
+        detail: appr.output.message
+      AS: audit
+    THEN: a3_say
+
+  a3_say:
+    REASONING: false
+    RESPOND: "{{appr.output.message}} Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  # ---- E1 replay evaluation ----
+  v1_replay:
+    REASONING: false
+    CALL: rc_replay
+      WITH:
+        size: "200"
+      AS: replay
+    SET:
+      disposition = "REPLAY_E1"
+    THEN: v2_audit
+
+  v2_audit:
+    REASONING: false
+    CALL: r_audit_log
+      WITH:
+        user: user
+        disposition: disposition
+        object: "E1"
+        detail: "caught {{replay.output.caught_pct}} classified {{replay.output.classified_pct}}"
+      AS: audit
+    THEN: v3_say
+
+  v3_say:
+    REASONING: false
+    RESPOND: "Replay of {{replay.output.total}} labelled synthetic inbound emails: {{replay.output.regulatory}} regulatory items, {{replay.output.caught_pct}}% caught and {{replay.output.classified_pct}}% classified correctly (targets 98% and 95%). {{replay.output.cx1}} spoofed senders went to CX1 triage. Anything else?"
+    ON_INPUT:
+      - ELSE:
+        SET: request = input
+        THEN: s1_parse
+
+  s9_end:
+    REASONING: false
+    RESPOND: "Closing the session. Every action is in the audit trail."
+    THEN: COMPLETE
