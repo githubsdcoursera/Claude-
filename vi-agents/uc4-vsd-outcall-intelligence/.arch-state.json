@@ -22,11 +22,11 @@
   "projectId": "01a17d1e-6cee-7e45-bb2a-c3e8f0269129",
   "deployment": {
     "env": "dev",
-    "id": "01a18112-9d7d-797c-9c6b-6899cd11c614",
-    "endpointSlug": "01a17d1e-dev-mvrp8nef-6dc4fd",
+    "id": "01a18ce5-75b9-7059-bf2f-8b8310cddf95",
+    "endpointSlug": "01a17d1e-dev-mvuzcckz-26ccf4",
     "agents": {
       "UC4_VSD_Assist": {
-        "version": "1.0.1"
+        "version": "1.0.2"
       }
     },
     "preflight": "warnings"
