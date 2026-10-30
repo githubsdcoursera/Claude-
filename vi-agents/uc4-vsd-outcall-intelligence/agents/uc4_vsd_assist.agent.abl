@@ -27,6 +27,7 @@ TOOLS:
 
 MEMORY:
   session:
+    - bad_input
     - account_id
     - campaign
     - agent_name
@@ -75,7 +76,22 @@ FLOW:
           campaign = UPPER(FIRST_NON_EMPTY(REGEX_EXTRACT(input, "campaign=([A-Za-z_]+)", 1), campaign))
         THEN: s1_brief
       - ELSE:
-        THEN: s0_need_account
+        SET: bad_input = input
+        THEN: s0_need_account_retry
+    THEN: s1_brief
+
+  s0_need_account_retry:
+    REASONING: false
+    RESPOND: "I received: {{bad_input}}. That does not look like an account id. Please type the account id, three letters and digits (for example ACC1001)."
+    ON_INPUT:
+      - IF: input matches "[A-Za-z]{3}[0-9]{3,}"
+        SET:
+          account_id = UPPER(REGEX_EXTRACT(input, "([A-Za-z]{3}[0-9]{3,})", 1))
+          campaign = UPPER(FIRST_NON_EMPTY(REGEX_EXTRACT(input, "campaign=([A-Za-z_]+)", 1), campaign))
+        THEN: s1_brief
+      - ELSE:
+        SET: bad_input = input
+        THEN: s0_need_account_retry
     THEN: s1_brief
 
   s1_brief:

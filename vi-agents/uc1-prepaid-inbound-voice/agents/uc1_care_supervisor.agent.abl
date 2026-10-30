@@ -28,6 +28,7 @@ TOOLS:
 
 MEMORY:
   session:
+    - bad_input
     - msisdn
     - ctx
     - intent
@@ -118,11 +119,24 @@ FLOW:
     WHEN: msisdn == "none"
     RESPOND: "Test chat: no caller number was passed to this session. Please type the 10-digit mobile number of the test customer (for example 9830000001) to start the call."
     ON_INPUT:
-      - IF: input matches "[0-9]{10}"
-        SET: msisdn = REGEX_EXTRACT(input, "([0-9]{10})", 1)
+      - IF: input matches "(^|[^0-9])[0-9]{10}([^0-9]|$)"
+        SET: msisdn = REGEX_EXTRACT(input, "(?:^|[^0-9])([0-9]{10})(?:[^0-9]|$)", 1)
         THEN: s1_disclose
       - ELSE:
-        THEN: s0_need_number
+        SET: bad_input = input
+        THEN: s0_need_number_retry
+    THEN: s1_disclose
+
+  s0_need_number_retry:
+    REASONING: false
+    RESPOND: "I received: {{bad_input}}. That is not a 10-digit mobile number. Please type exactly 10 digits, with no spaces or country code (for example 9830000001)."
+    ON_INPUT:
+      - IF: input matches "(^|[^0-9])[0-9]{10}([^0-9]|$)"
+        SET: msisdn = REGEX_EXTRACT(input, "(?:^|[^0-9])([0-9]{10})(?:[^0-9]|$)", 1)
+        THEN: s1_disclose
+      - ELSE:
+        SET: bad_input = input
+        THEN: s0_need_number_retry
     THEN: s1_disclose
 
   s1_disclose:
