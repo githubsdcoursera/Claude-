@@ -38,11 +38,11 @@
   "projectId": "01a17dcf-db32-7271-aca2-6893eb4d8025",
   "deployment": {
     "env": "dev",
-    "id": "01a1811b-96b5-7a64-a2ce-fa998b5173f0",
-    "endpointSlug": "01a17dcf-dev-mvrpl967-21cc3c",
+    "id": "01a18cbf-b770-77e6-af67-316a82dafe9f",
+    "endpointSlug": "01a17dcf-dev-mvuxvbyy-c9acd8",
     "agents": {
       "UC6_Dropped_Lead_Supervisor": {
-        "version": "1.0.1"
+        "version": "1.0.2"
       }
     },
     "preflight": "ready"
